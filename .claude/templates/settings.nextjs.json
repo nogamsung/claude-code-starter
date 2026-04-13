@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); FILE=$(echo \"$INPUT\" | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path',''))\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx ]] && [ -f \"package.json\" ]; then echo \"[Harness] TS 파일 변경 감지 → ESLint 검사 중...\"; npx eslint \"$FILE\" --max-warnings 0 2>&1 | tail -20; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"package.json\" ]; then echo \"[Harness] 작업 완료 전 타입 체크 + 테스트 실행 중...\"; npx tsc --noEmit 2>&1 | tail -20 && npx jest --passWithNoTests 2>&1 | tail -20; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

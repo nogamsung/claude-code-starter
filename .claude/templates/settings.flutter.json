@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); FILE=$(echo \"$INPUT\" | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path',''))\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.dart ]] && [[ \"$FILE\" != *.g.dart ]] && [[ \"$FILE\" != *.freezed.dart ]] && command -v dart &>/dev/null; then echo \"[Harness] Dart 파일 변경 감지 → dart analyze 실행 중...\"; dart analyze \"$FILE\" 2>&1 | tail -20; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v flutter &>/dev/null && [ -f \"pubspec.yaml\" ]; then echo \"[Harness] 작업 완료 전 flutter test 실행 중...\"; flutter test 2>&1 | tail -30; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
