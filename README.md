@@ -8,9 +8,9 @@
 
 <br/>
 
-[![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?style=for-the-badge&logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=for-the-badge)](CHANGELOG.md)
-[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+[![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
 
