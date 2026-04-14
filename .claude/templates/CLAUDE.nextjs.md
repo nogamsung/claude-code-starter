@@ -142,6 +142,31 @@ const [email, setEmail] = useState('')
 
 ---
 
+## 커버리지 게이트
+
+**git push 전 Jest 라인 커버리지 90% 이상 필수** (`.claude/hooks/pre-push.sh` 자동 검사)
+
+커버리지 미달 시 동작:
+1. pre-push 훅이 푸시를 차단하고 미달 수치를 출력합니다
+2. 커버리지가 낮은 파일에 `/test <파일>` 커맨드로 테스트를 추가합니다
+3. `npx jest --coverage`로 커버리지를 재확인합니다
+4. 90% 이상이 되면 다시 `git push`를 시도합니다
+
+**jest.config.ts에 coverageThreshold 설정 권장:**
+```ts
+coverageThreshold: {
+  global: {
+    lines: 90,
+    branches: 80,
+    functions: 90,
+    statements: 90,
+  },
+},
+coverageReporters: ['json-summary', 'text', 'lcov'],
+```
+
+---
+
 ## 학습된 규칙 (AI 실수 후 추가)
 
 <!-- /improve 커맨드로 새 규칙이 여기에 추가됩니다 -->

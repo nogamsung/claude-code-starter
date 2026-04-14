@@ -21,6 +21,17 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-push.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
@@ -37,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v flutter &>/dev/null && [ -f \"pubspec.yaml\" ]; then echo \"[Harness] 작업 완료 전 flutter test 실행 중...\"; flutter test 2>&1 | tail -30; fi"
+            "command": "if command -v flutter &>/dev/null && [ -f \"pubspec.yaml\" ]; then echo \"[Harness] 작업 완료 → flutter test 실행 중...\"; flutter test 2>&1 | tail -30; fi"
           }
         ]
       }

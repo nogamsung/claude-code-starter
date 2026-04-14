@@ -98,7 +98,23 @@ cp .claude/templates/CLAUDE.{stack}.md ./CLAUDE.md
 
 **사용자에게 프로젝트명을 물어보고** `CLAUDE.md` 첫 줄의 `[프로젝트명]`을 실제 이름으로 교체합니다.
 
-#### 4-2. settings.json 설치 (기둥 2+3: CI/CD 게이트 + 도구 경계)
+#### 4-2. 커버리지 게이트 훅 설치
+
+`.claude/hooks/pre-push.sh`가 있는지 확인합니다.
+bootstrap.sh로 설치했다면 이미 존재합니다.
+없으면 이 레포의 `.claude/hooks/pre-push.sh`를 복사합니다.
+
+```bash
+mkdir -p .claude/hooks
+# (bootstrap으로 이미 복사된 경우 생략)
+```
+
+훅은 `git push` 시 자동으로 동작합니다:
+- 스택 자동 감지 (Kotlin → Jacoco, Next.js → Jest, Flutter → flutter test)
+- 테스트 전체 실행
+- 라인 커버리지 90% 미만 시 푸시 차단
+
+#### 4-3. settings.json 설치 (기둥 2+3: CI/CD 게이트 + 도구 경계)
 
 **신규 프로젝트** (`.claude/settings.json` 없음):
 ```bash

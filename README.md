@@ -141,6 +141,25 @@ rm -rf claude
 |--------|--------|---------|---------|
 | 파일 저장 후 | `ktlint` 검사 | `eslint` 검사 | `dart analyze` 검사 |
 | 작업 완료 전 | `./gradlew test` | `tsc --noEmit` + `jest` | `flutter test` |
+| **git push 전** | **Jacoco 커버리지 ≥ 90%** | **Jest 커버리지 ≥ 90%** | **Flutter 커버리지 ≥ 90%** |
+
+### 커버리지 게이트 동작
+
+`git push` 시 `.claude/hooks/pre-push.sh`가 자동 실행됩니다.
+
+```
+[Pre-push] 커버리지 게이트 (기준: 90%)
+[Pre-push] 스택: Kotlin Spring Boot
+[Pre-push] ./gradlew test jacocoTestReport 실행 중...
+
+[Pre-push] 라인 커버리지: 87.3%  (기준: 90%)
+[Pre-push] ❌ 커버리지 87.3%가 기준 90% 미만입니다.
+
+  커버리지가 낮은 파일을 찾아 테스트를 추가하세요:
+    /test <파일경로>   # 테스트 자동 생성
+```
+
+커버리지 미달 시 Claude가 자동으로 `/test`를 실행해 테스트를 보강하고 재시도합니다.
 
 ---
 

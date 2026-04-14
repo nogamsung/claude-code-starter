@@ -122,6 +122,35 @@ throw EntityNotFoundException("User not found: $id")
 - 새 DB 컬럼/테이블은 반드시 Flyway migration과 함께
 - PR당 하나의 기능 단위로 atomic하게 커밋
 
+## 커버리지 게이트
+
+**git push 전 Jacoco 라인 커버리지 90% 이상 필수** (`.claude/hooks/pre-push.sh` 자동 검사)
+
+커버리지 미달 시 동작:
+1. pre-push 훅이 푸시를 차단하고 미달 수치를 출력합니다
+2. 커버리지가 낮은 파일에 `/test <파일>` 커맨드로 테스트를 추가합니다
+3. `./gradlew test jacocoTestReport`로 커버리지를 재확인합니다
+4. 90% 이상이 되면 다시 `git push`를 시도합니다
+
+**Jacoco 설정 (build.gradle.kts에 반드시 포함):**
+```kotlin
+plugins {
+    jacoco
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+}
+```
+
 ---
 
 ## 학습된 규칙 (AI 실수 후 추가)
