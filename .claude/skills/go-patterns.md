@@ -210,7 +210,7 @@ type CreateOrderRequest struct {
 }
 ```
 
-### Handler
+### Handler (swag 주석 필수)
 ```go
 // internal/handler/order_handler.go
 package handler
@@ -239,6 +239,15 @@ func (h *OrderHandler) RegisterRoutes(rg *gin.RouterGroup) {
     g.POST("", h.CreateOrder)
 }
 
+// GetOrder godoc
+// @Summary      주문 단건 조회
+// @Tags         orders
+// @Produce      json
+// @Param        id   path      int           true  "주문 ID"
+// @Success      200  {object}  OrderResponse
+// @Failure      404  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /orders/{id} [get]
 func (h *OrderHandler) GetOrder(c *gin.Context) {
     id, err := strconv.ParseUint(c.Param("id"), 10, 32)
     if err != nil {
@@ -259,6 +268,16 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
     c.JSON(http.StatusOK, toOrderResponse(order))
 }
 
+// CreateOrder godoc
+// @Summary      주문 생성
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Param        request  body      CreateOrderRequest  true  "주문 생성 요청"
+// @Success      201      {object}  OrderResponse
+// @Failure      400      {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /orders [post]
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
     var req usecase.CreateOrderRequest
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -277,7 +296,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 }
 ```
 
-### Response DTO
+### Response / Request DTO (swag example 태그 필수)
 ```go
 // internal/handler/order_response.go
 package handler
@@ -288,9 +307,13 @@ import (
 )
 
 type OrderResponse struct {
-    ID        uint      `json:"id"`
-    Status    string    `json:"status"`
-    CreatedAt time.Time `json:"created_at"`
+    ID        uint      `json:"id"         example:"1"`
+    Status    string    `json:"status"     example:"PENDING"`
+    CreatedAt time.Time `json:"created_at" example:"2024-01-01T00:00:00Z"`
+}
+
+type ErrorResponse struct {
+    Error string `json:"error" example:"not found"`
 }
 
 func toOrderResponse(order *domain.Order) *OrderResponse {

@@ -7,6 +7,7 @@
 - **쿼리 생성**: **sqlc** (필수 — 동적·복잡 쿼리는 sqlc로 타입 안전하게 생성)
 - **Migration**: golang-migrate
 - **Lint**: **golangci-lint** (필수 — 모든 PR/push 전 통과 의무)
+- **Docs**: **swaggo/swag** — Swagger UI `/swagger/index.html`
 - **Validation**: Gin binding tags (`binding:"required"`)
 - **Testing**: testify + mockery
 - **Config**: godotenv / viper
@@ -156,6 +157,98 @@ c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 - `db/sqlc/` 아래 자동 생성 파일 수동 수정 (항상 `sqlc generate`로 재생성)
 - sqlc 없이 raw SQL 문자열을 코드에 직접 작성
 - golangci-lint 경고를 `//nolint` 주석으로 무분별하게 억제
+- swag 주석 없이 새 Handler 엔드포인트 추가
+
+---
+
+## Swagger (swaggo) 규칙 (MUST)
+
+### 설치
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+go get github.com/swaggo/gin-swagger
+go get github.com/swaggo/files
+```
+
+### main.go — 전역 주석 + 라우트 등록
+```go
+// @title           [프로젝트명] API
+// @version         1.0
+// @description     API 명세서
+// @host            localhost:8080
+// @BasePath        /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+func main() { ... }
+```
+
+```go
+// cmd/main.go — Swagger UI 라우트
+import (
+    swaggerFiles "github.com/swaggo/files"
+    ginSwagger   "github.com/swaggo/gin-swagger"
+    _ "github.com/yourorg/project/docs"  // swag generate 결과물
+)
+
+r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+```
+
+### Handler 주석 (필수)
+```go
+// GetOrder godoc
+// @Summary      주문 단건 조회
+// @Description  ID로 주문을 조회합니다
+// @Tags         orders
+// @Produce      json
+// @Param        id   path      int           true  "주문 ID"
+// @Success      200  {object}  OrderResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /orders/{id} [get]
+func (h *OrderHandler) GetOrder(c *gin.Context) { ... }
+
+// CreateOrder godoc
+// @Summary      주문 생성
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Param        request  body      CreateOrderRequest  true  "주문 생성 요청"
+// @Success      201      {object}  OrderResponse
+// @Failure      400      {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /orders [post]
+func (h *OrderHandler) CreateOrder(c *gin.Context) { ... }
+```
+
+### Response/Request DTO 주석
+```go
+// OrderResponse godoc
+type OrderResponse struct {
+    ID        uint      `json:"id"         example:"1"`
+    Status    string    `json:"status"     example:"PENDING"`
+    CreatedAt time.Time `json:"created_at" example:"2024-01-01T00:00:00Z"`
+}
+
+// CreateOrderRequest godoc
+type CreateOrderRequest struct {
+    ProductID uint `json:"product_id" binding:"required" example:"10"`
+    Quantity  int  `json:"quantity"   binding:"required,min=1" example:"2"`
+}
+
+// ErrorResponse godoc
+type ErrorResponse struct {
+    Error string `json:"error" example:"not found"`
+}
+```
+
+### 문서 재생성 (Handler 주석 변경 시 필수)
+```bash
+swag init -g cmd/main.go -o docs
+```
+
+`.gitignore`에 `docs/` 추가 여부는 팀 정책에 따름 (CI에서 생성하는 경우 추가).
 
 ---
 

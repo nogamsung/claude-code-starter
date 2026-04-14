@@ -98,17 +98,29 @@ class OrderService(
 }
 ```
 
-### Controller
+### Controller (SpringDoc 어노테이션 필수)
 ```kotlin
+@Tag(name = "Order", description = "주문 관리 API")
 @RestController
 @RequestMapping("/api/v1/orders")
 @Validated
 class OrderController(private val orderService: OrderService) {
 
+    @Operation(summary = "주문 단건 조회")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "조회 성공",
+            content = [Content(schema = Schema(implementation = OrderResponse::class))]),
+        ApiResponse(responseCode = "404", description = "주문 없음",
+            content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+    ])
     @GetMapping("/{id}")
-    fun getOrder(@PathVariable id: Long): ResponseEntity<OrderResponse> =
+    fun getOrder(
+        @Parameter(description = "주문 ID", required = true) @PathVariable id: Long,
+    ): ResponseEntity<OrderResponse> =
         ResponseEntity.ok(orderService.getOrder(id))
 
+    @Operation(summary = "주문 생성")
+    @ApiResponse(responseCode = "201", description = "생성 성공")
     @PostMapping
     fun createOrder(
         @AuthenticationPrincipal userId: Long,
@@ -118,12 +130,13 @@ class OrderController(private val orderService: OrderService) {
 }
 ```
 
-### Response DTO
+### Response DTO (Schema 어노테이션 필수)
 ```kotlin
+@Schema(description = "주문 응답")
 data class OrderResponse(
-    val id: Long,
-    val status: OrderStatus,
-    val createdAt: LocalDateTime,
+    @Schema(description = "주문 ID", example = "1") val id: Long,
+    @Schema(description = "주문 상태", example = "PENDING") val status: OrderStatus,
+    @Schema(description = "생성일시") val createdAt: LocalDateTime,
 ) {
     companion object {
         fun from(order: Order) = OrderResponse(
@@ -135,11 +148,14 @@ data class OrderResponse(
 }
 ```
 
-### Request DTO
+### Request DTO (Schema 어노테이션 필수)
 ```kotlin
+@Schema(description = "주문 생성 요청")
 data class CreateOrderRequest(
-    @field:NotNull val productId: Long,
-    @field:Min(1) val quantity: Int,
+    @field:NotNull
+    @Schema(description = "상품 ID", example = "10", required = true) val productId: Long,
+    @field:Min(1)
+    @Schema(description = "수량", example = "2", required = true) val quantity: Int,
 )
 ```
 

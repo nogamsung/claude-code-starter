@@ -24,6 +24,13 @@ Entity · Repository (JpaRepository + QueryDSL Impl) · Service · Controller ·
 - DTO는 `data class` 사용
 - 생성 코드는 수정 없이 컴파일 가능해야 함
 
+## SpringDoc 어노테이션 규칙 (필수)
+- Controller 클래스: `@Tag(name, description)` 필수
+- 모든 엔드포인트 메서드: `@Operation(summary)` + `@ApiResponse` 필수
+- Path/Query 파라미터: `@Parameter(description, required)` 필수
+- Request/Response DTO: `@Schema(description)` 클래스 + 각 필드에 `@Schema(description, example)` 필수
+- 새 Controller 추가 시 `SwaggerConfig`의 보안 스키마 적용 여부 확인
+
 ## Repository 생성 규칙 (필수)
 - **반드시** `JpaRepository` + `{Resource}RepositoryCustom` + `{Resource}RepositoryImpl` 3개 세트로 생성
 - 동적 조건이 1개라도 있으면 QueryDSL `JPAQueryFactory` 사용

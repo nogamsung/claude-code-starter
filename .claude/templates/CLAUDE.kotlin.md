@@ -8,7 +8,7 @@
 - **동적 쿼리**: QueryDSL (모든 동적 쿼리에 사용) — 복잡한 집계/보고서 쿼리는 jOOQ 추가 가능
 - **Migration**: Flyway (절대 기존 migration 파일 수정 금지)
 - **Security**: Spring Security + JWT
-- **Docs**: SpringDoc OpenAPI
+- **Docs**: SpringDoc OpenAPI (`springdoc-openapi-starter-webmvc-ui`) — Swagger UI `/swagger-ui.html`
 
 ## Agents
 | 작업 | Agent |
@@ -154,8 +154,106 @@ throw EntityNotFoundException("User not found: $id")
 - `@SpringBootApplication` 클래스에 비즈니스 코드 추가
 - 테스트 없이 새로운 public 메서드 추가
 - N+1 쿼리를 유발하는 즉시 로딩(`FetchType.EAGER`) 추가
+- SpringDoc 어노테이션 없이 새 Controller 엔드포인트 추가
 - QueryDSL 없이 `@Query` JPQL 또는 Native Query로 동적 쿼리 작성
 - 동적 조건이 있는 쿼리를 `JpaRepository` 메서드 이름 방식으로 억지 처리
+
+---
+
+## SpringDoc OpenAPI 규칙 (MUST)
+
+### 의존성 (build.gradle.kts)
+```kotlin
+dependencies {
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+}
+```
+
+### application.yml
+```yaml
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+```
+
+### Controller 어노테이션 (필수)
+```kotlin
+@Tag(name = "User", description = "사용자 관리 API")
+@RestController
+@RequestMapping("/api/v1/users")
+class UserController(private val userService: UserService) {
+
+    @Operation(summary = "사용자 단건 조회", description = "ID로 사용자를 조회합니다.")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "조회 성공",
+            content = [Content(schema = Schema(implementation = UserResponse::class))]),
+        ApiResponse(responseCode = "404", description = "사용자 없음",
+            content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+    ])
+    @GetMapping("/{id}")
+    fun getUser(
+        @Parameter(description = "사용자 ID", required = true) @PathVariable id: Long,
+    ): ResponseEntity<UserResponse> = ResponseEntity.ok(userService.getUser(id))
+
+    @Operation(summary = "사용자 생성")
+    @ApiResponse(responseCode = "201", description = "생성 성공")
+    @PostMapping
+    fun createUser(
+        @RequestBody @Valid request: CreateUserRequest,
+    ): ResponseEntity<UserResponse> =
+        ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request))
+}
+```
+
+### Request/Response DTO 어노테이션
+```kotlin
+@Schema(description = "사용자 생성 요청")
+data class CreateUserRequest(
+    @field:NotBlank
+    @Schema(description = "이메일", example = "user@example.com", required = true)
+    val email: String,
+
+    @field:NotBlank
+    @Schema(description = "이름", example = "홍길동", required = true)
+    val name: String,
+)
+
+@Schema(description = "사용자 응답")
+data class UserResponse(
+    @Schema(description = "사용자 ID", example = "1")
+    val id: Long,
+    @Schema(description = "이메일", example = "user@example.com")
+    val email: String,
+    @Schema(description = "이름", example = "홍길동")
+    val name: String,
+)
+```
+
+### OpenAPI 전역 설정 (config/)
+```kotlin
+@Configuration
+class SwaggerConfig {
+    @Bean
+    fun openAPI(): OpenAPI = OpenAPI()
+        .info(Info()
+            .title("[프로젝트명] API")
+            .description("API 명세서")
+            .version("v1.0.0")
+            .contact(Contact().name("Team").email("team@example.com")))
+        .components(Components()
+            .addSecuritySchemes("bearerAuth",
+                SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("bearer")
+                    .bearerFormat("JWT")))
+        .addSecurityItem(SecurityRequirement().addList("bearerAuth"))
+}
+```
 
 ---
 

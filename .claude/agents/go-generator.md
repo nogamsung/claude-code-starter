@@ -26,6 +26,14 @@ Domain Entity · Domain Errors (없으면) · Repository Interface · Repository
 - Handler는 UseCase만 호출 — Repository 직접 호출 금지
 - mock은 mockery로 생성: `mockery --name=OrderRepository --dir=internal/domain --output=mocks`
 
+## Swagger 주석 규칙 (필수)
+- 모든 Handler 메서드에 `// FuncName godoc` + `@Summary` `@Tags` `@Router` 최소 3개 필수
+- Path 파라미터: `@Param id path int true "설명"`
+- Body 파라미터: `@Param request body RequestDTO true "설명"`
+- 성공/실패 응답: `@Success` / `@Failure` + DTO 타입 명시
+- Response/Request DTO 필드에 `example:"값"` 태그 필수
+- Handler 주석 변경 후 반드시 `swag init -g cmd/main.go -o docs` 실행 안내
+
 ## sqlc 생성 규칙 (필수)
 - 조건 검색·페이징·조인·집계 쿼리는 **반드시 sqlc** 쿼리 파일(`db/query/*.sql`)로 작성
 - 단순 CRUD(Create/FindByID/Update/Delete)는 GORM으로 처리
