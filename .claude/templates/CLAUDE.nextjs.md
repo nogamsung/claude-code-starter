@@ -16,11 +16,13 @@
 | 기존 코드 수정 | `nextjs-modifier` |
 | 테스트 작성 | `nextjs-tester` |
 | 코드 리뷰 | `code-reviewer` |
+| 디자인 시스템 / UI 일관성 | `ui-designer` |
 
 ## Commands
 | 커맨드 | 용도 |
 |--------|------|
 | `/plan <기능>` | 코드 작성 전 설계 및 확인 |
+| `ui-designer` 에이전트에게 요청 | DESIGN.md 설정 · 디자인 토큰 적용 · 디자인 리뷰 |
 | `/new-component <Name> [--page\|--feature\|--ui]` | 컴포넌트 생성 |
 | `/test [파일]` | 테스트 자동 생성 |
 | `/review [staged\|diff\|파일]` | 코드 리뷰 |

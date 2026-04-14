@@ -121,6 +121,7 @@ rm -rf claude
 | Agent | 역할 |
 |-------|------|
 | `code-reviewer` | 정확성 · 보안 · 성능 · 유지보수성 관점 코드 리뷰 |
+| `ui-designer` | DESIGN.md 기반 디자인 시스템 구축 (Next.js: Tailwind 토큰, Flutter: ThemeData) |
 | `kotlin-generator` | 새 Kotlin 파일 생성 |
 | `kotlin-modifier` | 기존 Kotlin 파일 수정 / 리팩토링 |
 | `kotlin-tester` | Kotlin 테스트 코드 작성 |

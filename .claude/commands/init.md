@@ -52,8 +52,11 @@ agents: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `flutter-generat
 commands: `new-component.md`, `new-screen.md`
 templates: `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.nextjs.json`, `settings.flutter.json`
 
-유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`
+유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`
 유지 commands: `new-api.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+
+> `ui-designer`는 Kotlin 백엔드 전용으로는 불필요합니다.
+> 단, Kotlin + Next.js/Flutter 풀스택 구성이라면 유지하세요.
 
 ---
 
@@ -62,8 +65,11 @@ agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generat
 commands: `new-api.md`, `new-screen.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.flutter.json`
 
-유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`
+유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`
 유지 commands: `new-component.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+
+> `ui-designer`는 Next.js에서 **핵심 에이전트**입니다.
+> DESIGN.md → Tailwind 토큰 → shadcn/ui 컴포넌트 일관성을 담당합니다.
 
 ---
 
@@ -72,8 +78,12 @@ agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `nextjs-generato
 commands: `new-api.md`, `new-component.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `settings.kotlin.json`, `settings.nextjs.json`
 
-유지: `flutter-generator`, `flutter-modifier`, `flutter-tester`, `code-reviewer`
+유지: `flutter-generator`, `flutter-modifier`, `flutter-tester`, `code-reviewer`, `ui-designer`
 유지 commands: `new-screen.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+
+> `ui-designer`는 Flutter에서 **디자인 토큰 전담** 에이전트로 활용됩니다.
+> DESIGN.md → ColorScheme · TextTheme · 스페이싱 상수 → `lib/core/theme/` 파일 생성을 담당합니다.
+> CSS/Tailwind 스펙은 Flutter 모드에서 자동으로 무시됩니다.
 
 ---
 

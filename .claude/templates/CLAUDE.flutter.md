@@ -16,11 +16,13 @@
 | 기존 코드 수정 | `flutter-modifier` |
 | 테스트 작성 | `flutter-tester` |
 | 코드 리뷰 | `code-reviewer` |
+| 디자인 토큰 → ThemeData | `ui-designer` (Flutter 모드: 디자인 토큰만 추출) |
 
 ## Commands
 | 커맨드 | 용도 |
 |--------|------|
 | `/plan <기능>` | 코드 작성 전 설계 및 확인 |
+| `ui-designer` 에이전트에게 요청 | DESIGN.md → ThemeData · ColorScheme · TextTheme 생성 |
 | `/new-screen <Name>` | Screen + 전체 레이어 생성 |
 | `/test [파일]` | 테스트 자동 생성 |
 | `/review [staged\|diff\|파일]` | 코드 리뷰 |
