@@ -80,8 +80,10 @@ rm -rf claude-code-starter
 ### 3. 기능 개발 시작
 
 ```bash
-/new-feature 42        # .worktrees/feature-42/ 에 격리된 작업공간 생성
-                       # 의존성 자동 설치 후 바로 작업 가능
+/new-feature feature-login    # .worktrees/feature-login/ 에 격리된 작업공간 생성
+/new-feature fix-signup       # .worktrees/fix-signup/ 에 격리된 작업공간 생성
+/new-feature refactor-auth    # .worktrees/refactor-auth/ 에 격리된 작업공간 생성
+                              # 의존성 자동 설치 후 바로 작업 가능
 
 /new-feature pr        # 작업 완료 후 dev 브랜치로 PR 생성
 ```
@@ -91,7 +93,7 @@ rm -rf claude-code-starter
 ## 워크플로
 
 ```
-/new-feature 42        # 1. 새 기능 worktree 생성 (dev/feature-42 브랜치)
+/new-feature feature-login  # 1. worktree 생성 (dev/feature-login 브랜치)
 /plan <기능 설명>       # 2. 코드 전 설계 합의
                         # 3. Claude가 적절한 agent로 구현
 /test <파일>            # 4. 테스트 코드 자동 생성
@@ -113,11 +115,12 @@ rm -rf claude-code-starter
 ## 브랜치 전략
 
 ```
-main  ←──── dev  ←──── dev/feature-{number}
+main  ←──── dev  ←──── dev/{feature|fix|hotfix|refactor|chore}-{name}
 (배포)      (통합)         (기능 개발)
 ```
 
-각 feature 브랜치는 `.worktrees/feature-{number}/` 에 격리된 작업공간으로 생성됩니다.  
+각 브랜치는 `.worktrees/{type}-{name}/` 에 격리된 작업공간으로 생성됩니다.
+타입: `feature` · `fix` · `hotfix` · `refactor` · `chore` · `docs` · `test` · `perf`  
 여러 터미널 / Claude Code 인스턴스에서 **병렬 작업**이 가능합니다.
 
 ---
@@ -129,7 +132,7 @@ main  ←──── dev  ←──── dev/feature-{number}
 | 커맨드 | 설명 |
 |--------|------|
 | `/init [stack]` | 스택 감지 및 하네스 구성 |
-| `/new-feature [number\|pr]` | Worktree 기반 기능 브랜치 생성 / PR 생성 |
+| `/new-feature [{type}-{name}\|pr]` | Worktree 기반 작업 브랜치 생성 / PR 생성 (feature·fix·hotfix·refactor·chore 등) |
 | `/plan <기능>` | 코드 작성 전 설계 검토 및 합의 |
 | `/test [파일]` | 테스트 코드 자동 생성 |
 | `/review [대상]` | 코드 리뷰 |

@@ -1,9 +1,9 @@
 ---
-description: 새 기능을 위한 git worktree 생성 — dev/feature-{number} 브랜치를 .worktrees/ 에 격리된 작업공간으로 준비
-argument-hint: <이슈번호 또는 기능명>  예: 42 / user-auth / 42-user-auth  |  pr (PR 생성 모드)
+description: 작업 유형에 맞는 git worktree 생성 — dev/{type}-{name} 브랜치를 .worktrees/ 에 격리된 작업공간으로 준비
+argument-hint: <타입-이름>  예: feature-login / fix-signup / hotfix-payment / refactor-auth  |  pr (PR 생성 모드)
 ---
 
-새 기능 개발을 위한 격리된 worktree를 생성합니다.
+작업 유형에 맞는 격리된 worktree를 생성합니다.
 
 **작업 내용**: $ARGUMENTS
 
@@ -40,26 +40,31 @@ git pull origin dev
 
 ---
 
-## Step 3 — 브랜치 번호 결정
+## Step 3 — 브랜치명 결정
 
-`$ARGUMENTS`를 분석합니다:
+`$ARGUMENTS`를 분석합니다. 형식: `{타입}-{이름}` (kebab-case, 이름은 1~2단어)
 
-- **숫자 포함** (예: `42`, `42-user-auth`) → 해당 번호 사용
-- **기능명만** (예: `user-auth`) → 기존 worktree 목록 확인 후 다음 번호 자동 부여
+| 타입 | 의미 | 예시 |
+|------|------|------|
+| `feature` | 새 기능 | `feature-login`, `feature-cart` |
+| `fix` | 버그 수정 | `fix-signup`, `fix-null-crash` |
+| `hotfix` | 긴급 프로덕션 수정 | `hotfix-payment`, `hotfix-auth` |
+| `refactor` | 리팩토링 | `refactor-auth`, `refactor-db` |
+| `chore` | 설정·의존성·잡무 | `chore-deps`, `chore-ci` |
+| `docs` | 문서 | `docs-api`, `docs-readme` |
+| `test` | 테스트 추가/수정 | `test-user`, `test-order` |
+| `perf` | 성능 개선 | `perf-query`, `perf-render` |
 
-```bash
-# 기존 feature 번호 확인
-git worktree list | grep 'feature-' | sort -t- -k2 -n | tail -5
-```
+- **타입 없이 이름만** (예: `login`) → `feature-login`으로 자동 처리
 
 ---
 
 ## Step 4 — Worktree 생성
 
 ```bash
-# 브랜치명: dev/feature-{number}
-# 디렉토리: .worktrees/feature-{number}
-git worktree add .worktrees/feature-{number} -b dev/feature-{number}
+# 예: $ARGUMENTS = feature-login  →  dev/feature-login, .worktrees/feature-login
+# 예: $ARGUMENTS = fix-signup     →  dev/fix-signup,    .worktrees/fix-signup
+git worktree add .worktrees/{type}-{name} -b dev/{type}-{name}
 ```
 
 ---
@@ -69,7 +74,7 @@ git worktree add .worktrees/feature-{number} -b dev/feature-{number}
 worktree 디렉토리에서 프로젝트 파일 확인 후 자동 실행:
 
 ```bash
-cd .worktrees/feature-{number}
+cd .worktrees/{type}-{name}
 
 # Go
 if [ -f go.mod ]; then go mod download; fi
@@ -91,19 +96,19 @@ if [ -f pubspec.yaml ]; then flutter pub get; fi
 ```
 Worktree 준비 완료
 
-브랜치:     dev/feature-{number}
-경로:       .worktrees/feature-{number}/
+브랜치:     dev/{type}-{name}
+경로:       .worktrees/{type}-{name}/
 베이스:     dev
 
 병렬 작업:
-  다른 터미널에서 cd .worktrees/feature-{number} 으로 이동하여 독립 작업 가능
-  Claude Code: claude --dir .worktrees/feature-{number}
+  다른 터미널에서 cd .worktrees/{type}-{name} 으로 이동하여 독립 작업 가능
+  Claude Code: claude --dir .worktrees/{type}-{name}
 
 작업 완료 후:
   /new-feature pr   → PR 생성 (base: dev)
   정리:
-    git worktree remove .worktrees/feature-{number}
-    git branch -d dev/feature-{number}
+    git worktree remove .worktrees/{type}-{name}
+    git branch -d dev/{type}-{name}
 ```
 
 ---
@@ -115,7 +120,7 @@ Worktree 준비 완료
 ### 사전 확인
 ```bash
 BRANCH=$(git branch --show-current)
-# dev/feature-{number} 형식인지 확인
+# dev/{type}-{name} 형식인지 확인
 echo "브랜치: $BRANCH → PR base: dev"
 ```
 
@@ -144,8 +149,8 @@ EOF
 ### PR merge 후 정리
 ```bash
 # PR merge 확인 후 실행
-git worktree remove .worktrees/feature-{number}
-git branch -d dev/feature-{number}
+git worktree remove .worktrees/{type}-{name}
+git branch -d dev/{type}-{name}
 git remote prune origin
 ```
 
@@ -158,7 +163,8 @@ git worktree list
 ```
 
 ```
-/path/to/project          abc1234 [dev]
-/path/to/.worktrees/feature-42  def5678 [dev/feature-42]
-/path/to/.worktrees/feature-43  ghi9012 [dev/feature-43]
+/path/to/project                        abc1234 [dev]
+/path/to/.worktrees/feature-login       def5678 [dev/feature-login]
+/path/to/.worktrees/fix-signup          ghi9012 [dev/fix-signup]
+/path/to/.worktrees/refactor-auth       jkl3456 [dev/refactor-auth]
 ```

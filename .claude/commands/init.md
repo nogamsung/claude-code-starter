@@ -252,8 +252,8 @@ git push -u origin dev
 
 #### 5-3. 기본 작업 브랜치 안내
 
-> 앞으로 모든 기능 개발은 `/new-feature {번호}` 커맨드로 시작하세요.
-> 생성되는 브랜치: `dev/feature-{번호}` → PR base: `dev`
+> 앞으로 모든 작업은 `/new-feature {타입-이름}` 커맨드로 시작하세요.
+> 생성되는 브랜치: `dev/{feature|fix|hotfix|refactor|chore}-{name}` → PR base: `dev`
 
 ---
 
@@ -274,7 +274,7 @@ git push -u origin dev
 기둥 5 (팀 지식 축적): memory/MEMORY.md ✅ 생성됨
 
 [Git 브랜치 & Worktree]
-main ← dev ← dev/feature-{number}
+main ← dev ← dev/{feature|fix|hotfix|refactor|chore}-{name}
 dev 브랜치:  ✅ 생성됨
 .worktrees/: ✅ gitignore 등록됨
 
@@ -284,7 +284,7 @@ dev 브랜치:  ✅ 생성됨
 이제 할 일:
 1. CLAUDE.md를 열고 프로젝트에 맞게 커스터마이징하세요
 2. GitHub에서 main·dev 브랜치 보호 규칙을 설정하세요
-3. /new-feature {번호} 로 첫 기능 브랜치를 만드세요
+3. /new-feature feature-{이름} 또는 fix-{이름} 으로 첫 브랜치를 만드세요
 4. /plan <기능> 으로 설계를 시작하세요
 5. AI가 실수하면 /improve 로 규칙을 추가하세요
 6. memory/MEMORY.md 에 중요한 결정과 교훈을 계속 기록하세요
