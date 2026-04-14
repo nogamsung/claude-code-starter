@@ -28,6 +28,19 @@
 | `/commit [힌트]` | Conventional Commits 커밋 |
 | `/memory [add\|search]` | Second Brain 조회·추가·검색 |
 
+## 플러그인 커맨드 (설치된 플러그인)
+| 커맨드 | 플러그인 | 설명 |
+|--------|---------|------|
+| `/feature-dev <기능>` | feature-dev | 7단계 체계적 기능 개발 (탐색→설계→구현→리뷰) |
+| `/code-review` | code-review | 현재 PR에 병렬 4-agent 자동 리뷰 + CLAUDE.md 준수 검사 |
+| `/commit-push-pr` | commit-commands | 커밋→푸시→PR 생성 한 번에 |
+| `/clean_gone` | commit-commands | 삭제된 원격 브랜치의 로컬 정리 |
+| `/hookify [설명]` | hookify | 반복 실수를 자동 방지 훅으로 등록 |
+| (자동) | kotlin-lsp | 타입 오류·심볼 참조·리팩토링 실시간 지원 |
+| (자동) | context7 | Spring Boot·Kotlin 최신 공식 문서를 컨텍스트로 주입 |
+| (자동) | security-guidance | 위험 명령어 실행 전 보안 경고 |
+| (자동) | claude-md-management | CLAUDE.md 규칙 자동 관리 |
+
 ---
 
 ## 아키텍처 규칙

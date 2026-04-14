@@ -133,6 +133,35 @@ rm -rf claude
 
 ---
 
+## 플러그인 (스택별 자동 설치)
+
+`/init` 실행 시 스택에 맞는 플러그인이 `settings.json`에 자동으로 활성화됩니다.
+
+### 공통 (전 스택)
+
+| 플러그인 | 설명 |
+|---------|------|
+| `github` | GitHub 레포 · PR · 이슈 관리 |
+| `context7` | Spring Boot · Next.js · Flutter 최신 공식 문서를 컨텍스트로 자동 주입 |
+| `feature-dev` | `/feature-dev` — 탐색→설계→구현→리뷰 7단계 체계적 개발 |
+| `code-review` | `/code-review` — 병렬 4-agent PR 자동 리뷰 + CLAUDE.md 준수 검사 |
+| `pr-review-toolkit` | 6종 전문 리뷰 에이전트 (테스트 분석 · 버그 탐지 · 타입 설계 · 간소화) |
+| `security-guidance` | 위험 명령어 실행 전 보안 경고 |
+| `hookify` | `/hookify` — 반복 실수를 자동 방지 훅으로 등록 |
+| `commit-commands` | `/commit-push-pr` — 커밋·푸시·PR 생성 원스텝 |
+| `claude-md-management` | CLAUDE.md 규칙 자동 관리 |
+
+### 스택별 추가 플러그인
+
+| 플러그인 | 스택 | 설명 |
+|---------|------|------|
+| `kotlin-lsp` | Kotlin | 타입 오류 · 심볼 참조 · 리팩토링 실시간 지원 |
+| `typescript-lsp` | Next.js | TypeScript 코드 인텔리전스 실시간 지원 |
+| `frontend-design` | Next.js | UI 컴포넌트 디자인 패턴 · 접근성 가이드 |
+| `playwright` | Next.js | E2E 브라우저 테스트 자동화 |
+
+---
+
 ## 자동 훅 (settings.json)
 
 `/init` 후 설치되는 `settings.json`에는 스택별 자동 검사 훅이 포함됩니다.
