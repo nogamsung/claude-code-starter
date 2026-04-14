@@ -1,5 +1,5 @@
 ---
-description: 프로젝트 스택을 선언하고 관련 없는 agent/command 파일을 제거, CLAUDE.md + settings.json을 설치하여 하네스를 구성
+description: 프로젝트 스택을 선언하고 관련 없는 agent/command/skills 파일을 제거, CLAUDE.md + settings.json을 설치하여 하네스를 구성
 argument-hint: [kotlin | go | nextjs | flutter] (생략 시 자동 감지)
 ---
 
@@ -53,11 +53,13 @@ argument-hint: [kotlin | go | nextjs | flutter] (생략 시 자동 감지)
 agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`
 commands: `new-api.md`, `new-component.md`, `new-screen.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.nextjs.json`, `settings.flutter.json`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 
 유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`
 유지 commands: `new-go-api.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `go-patterns.md`
 
-> `ui-designer`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
+> `ui-designer`와 `ui-design-impl.md`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
 > Go + Next.js/Flutter 풀스택 구성이라면 유지하세요.
 
 ---
@@ -66,11 +68,13 @@ templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `setting
 agents: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
 commands: `new-component.md`, `new-screen.md`
 templates: `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.nextjs.json`, `settings.flutter.json`
+skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 
 유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`
 유지 commands: `new-api.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `kotlin-patterns.md`
 
-> `ui-designer`는 Kotlin 백엔드 전용으로는 불필요합니다.
+> `ui-designer`와 `ui-design-impl.md`는 Kotlin 백엔드 전용으로는 불필요합니다.
 > 단, Kotlin + Next.js/Flutter 풀스택 구성이라면 유지하세요.
 
 ---
@@ -79,9 +83,11 @@ templates: `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.nextjs.json`, `set
 agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
 commands: `new-api.md`, `new-screen.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.flutter.json`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
 
 유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`
 유지 commands: `new-component.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `nextjs-patterns.md`, `ui-design-impl.md`
 
 > `ui-designer`는 Next.js에서 **핵심 에이전트**입니다.
 > DESIGN.md → Tailwind 토큰 → shadcn/ui 컴포넌트 일관성을 담당합니다.
@@ -92,9 +98,11 @@ templates: `CLAUDE.kotlin.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `set
 agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`
 commands: `new-api.md`, `new-component.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `settings.kotlin.json`, `settings.nextjs.json`
+skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
 
 유지: `flutter-generator`, `flutter-modifier`, `flutter-tester`, `code-reviewer`, `ui-designer`
 유지 commands: `new-screen.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `flutter-patterns.md`, `ui-design-impl.md`
 
 > `ui-designer`는 Flutter에서 **디자인 토큰 전담** 에이전트로 활용됩니다.
 > DESIGN.md → ColorScheme · TextTheme · 스페이싱 상수 → `lib/core/theme/` 파일 생성을 담당합니다.
