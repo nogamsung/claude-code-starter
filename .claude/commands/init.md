@@ -81,16 +81,51 @@ cp .claude/templates/settings.{stack}.json ./.claude/settings.json
 
 이미 있으면: 기존 파일의 `hooks`와 `permissions` 섹션을 템플릿 내용으로 업데이트합니다.
 
-#### 4-3. Second Brain 설치 (기둥 5: 팀 지식 축적)
+#### 4-3. Second Brain 초기화 (기둥 5: 팀 지식 축적)
 
-`memory/MEMORY.md`가 없으면:
+`/init`은 새 프로젝트 시작을 의미하므로 **기존 memory가 있어도 항상 초기화합니다.**
+
 ```bash
 mkdir -p memory
 cp .claude/templates/memory.md ./memory/MEMORY.md
 ```
 
-`memory/MEMORY.md`의 `[프로젝트명]`을 실제 프로젝트명으로 교체합니다.
-이미 있으면: 그대로 유지합니다.
+초기화 후 사용자에게 다음 질문을 합니다. **한 번에 모두 물어보세요.**
+
+> 1. 이 프로젝트의 목적 또는 배경을 한 줄로 설명해주세요.
+> 2. 주요 도메인이나 핵심 기능은 무엇인가요?
+> 3. 특별한 제약사항이 있나요? (마감일, 성능 요구사항, 팀 규모 등)
+> 4. 연동할 외부 시스템이나 참고할 레퍼런스가 있나요? (없으면 생략)
+
+답변을 받으면 `memory/MEMORY.md`에 아래 두 항목을 자동으로 기록합니다:
+
+**[1] 프로젝트 개요**
+```markdown
+## YYYY-MM-DD: 프로젝트 시작
+
+**카테고리:** 결정
+
+- **프로젝트명:** [프로젝트명]
+- **스택:** [선택한 스택]
+- **목적:** [질문 1 답변]
+- **핵심 기능:** [질문 2 답변]
+- **제약사항:** [질문 3 답변]
+- **외부 연동:** [질문 4 답변 또는 없음]
+```
+
+**[2] 하네스 구성 기록**
+```markdown
+## YYYY-MM-DD: Claude Code 하네스 구성
+
+**카테고리:** 참고
+
+/init [스택]으로 하네스를 구성했습니다.
+- CLAUDE.md: 아키텍처 규칙 및 코딩 컨벤션
+- .claude/settings.json: 권한 및 훅 설정
+- memory/MEMORY.md: Second Brain 초기화
+
+앞으로 중요한 결정·교훈은 /memory add 로 기록하세요.
+```
 
 ---
 
@@ -116,4 +151,5 @@ cp .claude/templates/memory.md ./memory/MEMORY.md
 1. CLAUDE.md를 열고 프로젝트에 맞게 커스터마이징하세요
 2. /plan <기능> 으로 코드 작성을 시작하세요
 3. AI가 실수하면 /improve 로 규칙을 추가하세요
+4. memory/MEMORY.md 에 중요한 결정과 교훈을 계속 기록하세요
 ```
