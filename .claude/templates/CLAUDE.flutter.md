@@ -26,6 +26,7 @@
 | `/review [staged\|diff\|파일]` | 코드 리뷰 |
 | `/improve <실수 설명>` | 새 규칙을 이 파일에 추가 |
 | `/commit [힌트]` | Conventional Commits 커밋 |
+| `/memory [add\|search]` | Second Brain 조회·추가·검색 |
 
 ---
 

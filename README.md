@@ -17,9 +17,10 @@
 
 Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, 에이전트, 템플릿**을 미리 세팅한 스타터입니다.
 
-- `/init <stack>` 한 번으로 프로젝트에 맞는 하네스 구성
+- `/init` 한 번으로 스택에 맞는 하네스 구성 (스택 자동 감지 지원)
 - 스택별 전문 subagent로 생성·수정·테스트 역할 분리
 - AI가 실수할 때마다 `/improve`로 규칙을 누적해 점점 정교해지는 피드백 루프
+- `memory/MEMORY.md`에 팀 지식 자동 축적 — Second Brain
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter
 
@@ -27,15 +28,28 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 
 ## 빠른 시작
 
-### 1. `.claude` 폴더를 프로젝트에 복사
+### 1. 새 프로젝트에 `.claude` 폴더 설치
+
+**방법 A — 부트스트랩 스크립트 (권장)**
+
+새 프로젝트 루트에서 실행합니다.
 
 ```bash
-cp -r /path/to/claude-code-starter/.claude /path/to/your-project/.claude
+curl -fsSL https://raw.githubusercontent.com/nogamsung/claude/main/bootstrap.sh | bash
+```
+
+**방법 B — 수동 복사**
+
+```bash
+git clone --depth=1 https://github.com/nogamsung/claude.git
+cp -r claude/.claude /path/to/your-project/
+rm -rf claude
 ```
 
 ### 2. Claude Code에서 스택 초기화
 
 ```
+/init           # 자동 감지 (package.json / build.gradle.kts / pubspec.yaml)
 /init kotlin    # Kotlin Spring Boot 백엔드
 /init nextjs    # Next.js 프론트엔드
 /init flutter   # Flutter 모바일
@@ -44,9 +58,11 @@ cp -r /path/to/claude-code-starter/.claude /path/to/your-project/.claude
 <details>
 <summary><code>/init</code>이 하는 일</summary>
 
-- 선택한 스택과 무관한 agent/command 파일 제거
-- `CLAUDE.md` 설치 — 프로젝트 컨텍스트 파일 (아키텍처 규칙, 금지 패턴 등)
-- `.claude/settings.json` 설치 — 권한 및 훅 설정
+1. 스택 자동 감지 (인수 생략 시)
+2. 선택한 스택과 무관한 agent/command/template 파일 제거
+3. `CLAUDE.md` 설치 — 아키텍처 규칙, 코딩 컨벤션
+4. `.claude/settings.json` 설치 — 스택별 허용 명령어 + 자동 lint/test 훅
+5. `memory/MEMORY.md` 초기화 — 프로젝트 정보 인터뷰 후 자동 기록
 
 </details>
 
@@ -67,6 +83,11 @@ cp -r /path/to/claude-code-starter/.claude /path/to/your-project/.claude
 
 # AI가 실수하면:
 /improve <실수 설명>   # → CLAUDE.md 규칙으로 등록 (반복 방지)
+                       #   + memory/MEMORY.md에 자동 기록
+
+# 팀 지식 관리:
+/memory                # → Second Brain 전체 조회
+/memory add <내용>     # → 결정·교훈 수동 기록
 ```
 
 ---
@@ -77,13 +98,13 @@ cp -r /path/to/claude-code-starter/.claude /path/to/your-project/.claude
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/init <stack>` | 스택 선택 및 하네스 구성 |
+| `/init [stack]` | 스택 감지 및 하네스 구성 |
 | `/plan <기능>` | 코드 작성 전 설계 검토 및 합의 |
 | `/test [파일]` | 테스트 코드 자동 생성 |
 | `/review [대상]` | 코드 리뷰 |
 | `/commit [힌트]` | Conventional Commits 형식으로 커밋 |
 | `/improve <설명>` | AI 실수를 CLAUDE.md 규칙으로 등록 |
-| `/memory [add\|search]` | 프로젝트 Second Brain 조회·추가·검색 |
+| `/memory [add\|search]` | Second Brain 조회·추가·검색 |
 
 ### 스택별
 
@@ -96,8 +117,6 @@ cp -r /path/to/claude-code-starter/.claude /path/to/your-project/.claude
 ---
 
 ## Agents
-
-스택별로 역할이 분리된 전문 subagent가 포함되어 있습니다.
 
 | Agent | 역할 |
 |-------|------|
@@ -114,30 +133,47 @@ cp -r /path/to/claude-code-starter/.claude /path/to/your-project/.claude
 
 ---
 
+## 자동 훅 (settings.json)
+
+`/init` 후 설치되는 `settings.json`에는 스택별 자동 검사 훅이 포함됩니다.
+
+| 이벤트 | Kotlin | Next.js | Flutter |
+|--------|--------|---------|---------|
+| 파일 저장 후 | `ktlint` 검사 | `eslint` 검사 | `dart analyze` 검사 |
+| 작업 완료 전 | `./gradlew test` | `tsc --noEmit` + `jest` | `flutter test` |
+
+---
+
 ## 디렉토리 구조
 
 ```
-.claude/
-├── agents/                   # 스택별 전문 subagent 정의
-│   ├── code-reviewer.md
-│   ├── kotlin-{generator,modifier,tester}.md
-│   ├── nextjs-{generator,modifier,tester}.md
-│   └── flutter-{generator,modifier,tester}.md
-├── commands/                 # 슬래시 커맨드 정의
-│   ├── init.md
-│   ├── plan.md
-│   ├── test.md
-│   ├── review.md
-│   ├── commit.md
-│   ├── improve.md
-│   ├── new-api.md
-│   ├── new-component.md
-│   └── new-screen.md
-└── templates/                # 스택별 CLAUDE.md / settings.json 템플릿
-    ├── CLAUDE.kotlin.md
-    ├── CLAUDE.nextjs.md
-    ├── CLAUDE.flutter.md
-    ├── settings.kotlin.json
-    ├── settings.nextjs.json
-    └── settings.flutter.json
+.
+├── bootstrap.sh              # 새 프로젝트에 .claude 설치 스크립트
+├── memory/
+│   └── MEMORY.md             # 이 레포의 Second Brain
+└── .claude/
+    ├── agents/               # 스택별 전문 subagent 정의
+    │   ├── code-reviewer.md
+    │   ├── kotlin-{generator,modifier,tester}.md
+    │   ├── nextjs-{generator,modifier,tester}.md
+    │   └── flutter-{generator,modifier,tester}.md
+    ├── commands/             # 슬래시 커맨드 정의
+    │   ├── init.md           # 스택 초기화 (자동 감지 포함)
+    │   ├── plan.md
+    │   ├── test.md
+    │   ├── review.md
+    │   ├── commit.md
+    │   ├── improve.md
+    │   ├── memory.md
+    │   ├── new-api.md
+    │   ├── new-component.md
+    │   └── new-screen.md
+    └── templates/            # 스택별 설치 템플릿
+        ├── CLAUDE.kotlin.md
+        ├── CLAUDE.nextjs.md
+        ├── CLAUDE.flutter.md
+        ├── settings.kotlin.json
+        ├── settings.nextjs.json
+        ├── settings.flutter.json
+        └── memory.md
 ```

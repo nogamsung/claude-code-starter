@@ -1,22 +1,28 @@
 {
-  "enabledPlugins": {
-    "github@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "kotlin-lsp@claude-plugins-official": true,
-    "atomic-agents@claude-plugins-official": true,
-    "playground@claude-plugins-official": true,
-    "telegram@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true
-  },
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Bash(./gradlew *)",
+      "Bash(./mvnw *)",
+      "Bash(git *)",
+      "Bash(docker *)",
+      "Bash(docker-compose *)",
+      "Bash(docker compose *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)"
+    ],
     "deny": [
-      "Bash(rm -rf*)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~*)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
       "Bash(DROP TABLE*)",
-      "Bash(TRUNCATE*)",
-      "Bash(git push --force*)"
+      "Bash(TRUNCATE *)"
     ]
   },
   "hooks": {
