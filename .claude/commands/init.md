@@ -1,6 +1,6 @@
 ---
 description: 프로젝트 스택을 선언하고 관련 없는 agent/command 파일을 제거, CLAUDE.md + settings.json을 설치하여 하네스를 구성
-argument-hint: [kotlin | nextjs | flutter] (생략 시 자동 감지)
+argument-hint: [kotlin | go | nextjs | flutter] (생략 시 자동 감지)
 ---
 
 이 프로젝트의 스택을 설정하고 하네스를 구성합니다.
@@ -16,6 +16,7 @@ argument-hint: [kotlin | nextjs | flutter] (생략 시 자동 감지)
 #### 1-1. `$ARGUMENTS` 확인
 
 - `kotlin` → Kotlin Spring Boot 백엔드 프로젝트
+- `go` → Go Gin 백엔드 프로젝트
 - `nextjs` → Next.js 프론트엔드 프로젝트
 - `flutter` → Flutter 모바일 프로젝트
 
@@ -26,6 +27,7 @@ argument-hint: [kotlin | nextjs | flutter] (생략 시 자동 감지)
 | 파일 | 감지 스택 |
 |------|----------|
 | `build.gradle.kts` 또는 `pom.xml` | `kotlin` |
+| `go.mod` | `go` |
 | `package.json` (`next` 의존성 포함) | `nextjs` |
 | `pubspec.yaml` | `flutter` |
 
@@ -46,6 +48,19 @@ argument-hint: [kotlin | nextjs | flutter] (생략 시 자동 감지)
 ### Step 2 — 제거할 파일 목록 제시
 
 **반드시 목록을 사용자에게 보여주고 확인을 받은 후에 삭제하세요.**
+
+#### `go` 선택 시 — 제거 대상
+agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`
+commands: `new-api.md`, `new-component.md`, `new-screen.md`
+templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.nextjs.json`, `settings.flutter.json`
+
+유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`
+유지 commands: `new-go-api.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+
+> `ui-designer`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
+> Go + Next.js/Flutter 풀스택 구성이라면 유지하세요.
+
+---
 
 #### `kotlin` 선택 시 — 제거 대상
 agents: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`

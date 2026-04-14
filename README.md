@@ -8,6 +8,7 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-Spring_Boot-7F52FF?logo=kotlin&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)
+![Go](https://img.shields.io/badge/Go-Gin-00ADD8?logo=go&logoColor=white)
 
 </div>
 
@@ -22,7 +23,7 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - AI가 실수할 때마다 `/improve`로 규칙을 누적해 점점 정교해지는 피드백 루프
 - `memory/MEMORY.md`에 팀 지식 자동 축적 — Second Brain
 
-**지원 스택:** Kotlin Spring Boot · Next.js · Flutter
+**지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
 
 ---
 
@@ -49,10 +50,11 @@ rm -rf claude
 ### 2. Claude Code에서 스택 초기화
 
 ```
-/init           # 자동 감지 (package.json / build.gradle.kts / pubspec.yaml)
+/init           # 자동 감지 (package.json / build.gradle.kts / pubspec.yaml / go.mod)
 /init kotlin    # Kotlin Spring Boot 백엔드
 /init nextjs    # Next.js 프론트엔드
 /init flutter   # Flutter 모바일
+/init go        # Go Gin 백엔드
 ```
 
 <details>
@@ -111,6 +113,7 @@ rm -rf claude
 | 커맨드 | 스택 | 설명 |
 |--------|------|------|
 | `/new-api` | Kotlin | Controller / Service / Repository 스캐폴딩 |
+| `/new-go-api` | Go | Handler / UseCase / Repository / Domain 스캐폴딩 |
 | `/new-component` | Next.js | React 컴포넌트 생성 |
 | `/new-screen` | Flutter | 화면 및 Provider 생성 |
 
@@ -131,6 +134,9 @@ rm -rf claude
 | `flutter-generator` | 새 Flutter 파일 생성 |
 | `flutter-modifier` | 기존 Flutter 파일 수정 / 리팩토링 |
 | `flutter-tester` | Flutter 테스트 코드 작성 |
+| `go-generator` | 새 Go 파일 생성 (Domain · Repository · UseCase · Handler) |
+| `go-modifier` | 기존 Go 파일 수정 / 리팩토링 |
+| `go-tester` | Go 테스트 코드 작성 (testify + mockery) |
 
 ---
 
@@ -161,17 +167,19 @@ rm -rf claude
 | `frontend-design` | Next.js | UI 컴포넌트 디자인 패턴 · 접근성 가이드 |
 | `playwright` | Next.js | E2E 브라우저 테스트 자동화 |
 
+> Go · Flutter는 별도 LSP 플러그인 없이 공통 플러그인만 사용합니다.
+
 ---
 
 ## 자동 훅 (settings.json)
 
 `/init` 후 설치되는 `settings.json`에는 스택별 자동 검사 훅이 포함됩니다.
 
-| 이벤트 | Kotlin | Next.js | Flutter |
-|--------|--------|---------|---------|
-| 파일 저장 후 | `ktlint` 검사 | `eslint` 검사 | `dart analyze` 검사 |
-| 작업 완료 전 | `./gradlew test` | `tsc --noEmit` + `jest` | `flutter test` |
-| **git push 전** | **Jacoco 커버리지 ≥ 90%** | **Jest 커버리지 ≥ 90%** | **Flutter 커버리지 ≥ 90%** |
+| 이벤트 | Kotlin | Next.js | Flutter | Go |
+|--------|--------|---------|---------|-----|
+| 파일 저장 후 | `ktlint` 검사 | `eslint` 검사 | `dart analyze` 검사 | `go vet` 검사 |
+| 작업 완료 전 | `./gradlew test` | `tsc --noEmit` + `jest` | `flutter test` | `go test ./...` |
+| **git push 전** | **Jacoco 커버리지 ≥ 90%** | **Jest 커버리지 ≥ 90%** | **Flutter 커버리지 ≥ 90%** | **Go 커버리지 ≥ 90%** |
 
 ### 커버리지 게이트 동작
 
@@ -203,9 +211,11 @@ rm -rf claude
 └── .claude/
     ├── agents/               # 스택별 전문 subagent 정의
     │   ├── code-reviewer.md
+    │   ├── ui-designer.md
     │   ├── kotlin-{generator,modifier,tester}.md
     │   ├── nextjs-{generator,modifier,tester}.md
-    │   └── flutter-{generator,modifier,tester}.md
+    │   ├── flutter-{generator,modifier,tester}.md
+    │   └── go-{generator,modifier,tester}.md
     ├── commands/             # 슬래시 커맨드 정의
     │   ├── init.md           # 스택 초기화 (자동 감지 포함)
     │   ├── plan.md
@@ -215,14 +225,23 @@ rm -rf claude
     │   ├── improve.md
     │   ├── memory.md
     │   ├── new-api.md
+    │   ├── new-go-api.md
     │   ├── new-component.md
     │   └── new-screen.md
+    ├── skills/               # 스택별 코드 패턴 참조 (agents가 읽음)
+    │   ├── kotlin-patterns.md
+    │   ├── nextjs-patterns.md
+    │   ├── flutter-patterns.md
+    │   ├── go-patterns.md
+    │   └── ui-design-impl.md
     └── templates/            # 스택별 설치 템플릿
         ├── CLAUDE.kotlin.md
         ├── CLAUDE.nextjs.md
         ├── CLAUDE.flutter.md
+        ├── CLAUDE.go.md
         ├── settings.kotlin.json
         ├── settings.nextjs.json
         ├── settings.flutter.json
+        ├── settings.go.json
         └── memory.md
 ```

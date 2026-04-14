@@ -1,0 +1,283 @@
+# Kotlin Spring Boot Code Patterns
+
+## Generation Patterns
+
+### Entity
+```kotlin
+@Entity
+@Table(name = "orders")
+class Order(
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    val user: User,
+
+    @Column(nullable = false)
+    var status: OrderStatus = OrderStatus.PENDING,
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
+
+    @CreationTimestamp val createdAt: LocalDateTime = LocalDateTime.now(),
+    @UpdateTimestamp var updatedAt: LocalDateTime = LocalDateTime.now(),
+)
+```
+
+### Repository
+```kotlin
+interface OrderRepository : JpaRepository<Order, Long> {
+    fun findAllByUserId(userId: Long): List<Order>
+    fun findByIdAndUserId(id: Long, userId: Long): Order?
+}
+```
+
+### Service
+```kotlin
+@Service
+@Transactional(readOnly = true)
+class OrderService(
+    private val orderRepository: OrderRepository,
+    private val userRepository: UserRepository,
+) {
+    fun getOrder(id: Long): OrderResponse {
+        val order = orderRepository.findById(id)
+            .orElseThrow { EntityNotFoundException("Order not found: $id") }
+        return OrderResponse.from(order)
+    }
+
+    @Transactional
+    fun createOrder(userId: Long, request: CreateOrderRequest): OrderResponse {
+        val user = userRepository.findById(userId)
+            .orElseThrow { EntityNotFoundException("User not found: $userId") }
+        val order = orderRepository.save(Order(user = user))
+        return OrderResponse.from(order)
+    }
+}
+```
+
+### Controller
+```kotlin
+@RestController
+@RequestMapping("/api/v1/orders")
+@Validated
+class OrderController(private val orderService: OrderService) {
+
+    @GetMapping("/{id}")
+    fun getOrder(@PathVariable id: Long): ResponseEntity<OrderResponse> =
+        ResponseEntity.ok(orderService.getOrder(id))
+
+    @PostMapping
+    fun createOrder(
+        @AuthenticationPrincipal userId: Long,
+        @RequestBody @Valid request: CreateOrderRequest,
+    ): ResponseEntity<OrderResponse> =
+        ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(userId, request))
+}
+```
+
+### Response DTO
+```kotlin
+data class OrderResponse(
+    val id: Long,
+    val status: OrderStatus,
+    val createdAt: LocalDateTime,
+) {
+    companion object {
+        fun from(order: Order) = OrderResponse(
+            id = order.id,
+            status = order.status,
+            createdAt = order.createdAt,
+        )
+    }
+}
+```
+
+### Request DTO
+```kotlin
+data class CreateOrderRequest(
+    @field:NotNull val productId: Long,
+    @field:Min(1) val quantity: Int,
+)
+```
+
+### Migration SQL
+```sql
+CREATE TABLE orders (
+    id         BIGINT       NOT NULL AUTO_INCREMENT,
+    user_id    BIGINT       NOT NULL,
+    status     VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    created_at DATETIME(6)  NOT NULL,
+    updated_at DATETIME(6)  NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users (id)
+);
+```
+
+---
+
+## Modification Patterns
+
+### Field Addition Migration
+```sql
+-- V5__add_description_to_orders.sql
+ALTER TABLE orders ADD COLUMN description VARCHAR(500) NULL;
+```
+
+### Pagination
+```kotlin
+// Repository
+fun findAllByUserId(userId: Long, pageable: Pageable): Page<Order>
+
+// Service
+fun getOrders(userId: Long, pageable: Pageable): Page<OrderResponse> =
+    orderRepository.findAllByUserId(userId, pageable).map { OrderResponse.from(it) }
+
+// Controller
+@GetMapping
+fun getOrders(
+    @AuthenticationPrincipal userId: Long,
+    @PageableDefault(size = 20, sort = ["createdAt"], direction = Sort.Direction.DESC) pageable: Pageable,
+): ResponseEntity<Page<OrderResponse>> =
+    ResponseEntity.ok(orderService.getOrders(userId, pageable))
+```
+
+### Soft Delete
+```kotlin
+// Entity field
+@Column(nullable = false)
+var deletedAt: LocalDateTime? = null
+
+val isDeleted: Boolean get() = deletedAt != null
+
+// Repository
+fun findByIdAndDeletedAtIsNull(id: Long): Order?
+
+// Service
+@Transactional
+fun deleteOrder(id: Long) {
+    val order = orderRepository.findByIdAndDeletedAtIsNull(id)
+        ?: throw EntityNotFoundException("Order not found: $id")
+    order.deletedAt = LocalDateTime.now()
+}
+```
+
+---
+
+## Test Patterns
+
+### Service Unit Test
+```kotlin
+@ExtendWith(MockKExtension::class)
+class OrderServiceTest {
+
+    @MockK lateinit var orderRepository: OrderRepository
+    @MockK lateinit var userRepository: UserRepository
+    @InjectMockKs lateinit var orderService: OrderService
+
+    @Nested
+    inner class `getOrder` {
+        @Test
+        fun `주문이 존재하면 OrderResponse를 반환한다`() {
+            val order = OrderFixture.create()
+            every { orderRepository.findById(1L) } returns Optional.of(order)
+
+            val result = orderService.getOrder(1L)
+
+            assertThat(result.id).isEqualTo(order.id)
+        }
+
+        @Test
+        fun `주문이 없으면 EntityNotFoundException을 던진다`() {
+            every { orderRepository.findById(999L) } returns Optional.empty()
+            assertThrows<EntityNotFoundException> { orderService.getOrder(999L) }
+        }
+    }
+}
+```
+
+### Fixture Pattern
+```kotlin
+object OrderFixture {
+    fun create(
+        user: User = UserFixture.create(),
+        status: OrderStatus = OrderStatus.PENDING,
+        id: Long = 1L,
+    ) = Order(user = user, status = status).apply {
+        val idField = Order::class.java.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(this, id)
+    }
+}
+```
+
+### Controller Test (@WebMvcTest)
+```kotlin
+@WebMvcTest(OrderController::class)
+@Import(SecurityConfig::class)
+class OrderControllerTest {
+
+    @Autowired lateinit var mockMvc: MockMvc
+    @MockkBean lateinit var orderService: OrderService
+
+    @Test
+    @WithMockUser
+    fun `GET orders - id로 주문 조회 성공`() {
+        val response = OrderResponse(id = 1L, status = OrderStatus.PENDING, createdAt = LocalDateTime.now())
+        every { orderService.getOrder(1L) } returns response
+
+        mockMvc.get("/api/v1/orders/1")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.id") { value(1) }
+            }
+    }
+
+    @Test
+    @WithMockUser
+    fun `POST orders - 유효성 실패 시 400 반환`() {
+        mockMvc.post("/api/v1/orders") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"productId": null, "quantity": 0}"""
+        }.andExpect { status { isBadRequest() } }
+    }
+}
+```
+
+### Repository Test (@DataJpaTest + Testcontainers)
+```kotlin
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Testcontainers
+class OrderRepositoryTest {
+
+    companion object {
+        @Container
+        val mysql = MySQLContainer("mysql:8.0")
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun properties(registry: DynamicPropertyRegistry) {
+            registry.add("spring.datasource.url", mysql::getJdbcUrl)
+            registry.add("spring.datasource.username", mysql::getUsername)
+            registry.add("spring.datasource.password", mysql::getPassword)
+        }
+    }
+
+    @Autowired lateinit var orderRepository: OrderRepository
+    @Autowired lateinit var userRepository: UserRepository
+
+    @Test
+    fun `userId로 주문 목록을 조회한다`() {
+        val user = userRepository.save(UserFixture.createUnsaved())
+        repeat(2) { orderRepository.save(OrderFixture.createUnsaved(user = user)) }
+
+        assertThat(orderRepository.findAllByUserId(user.id)).hasSize(2)
+    }
+}
+```
+
+### Test Anti-patterns
+- mock 동작 자체를 테스트하는 것 (실제 로직 테스트해야 함)
+- 테스트가 설정하지 않은 값에 대한 assertion
+- 여러 동작을 하나의 거대한 테스트에 묶기
+- 테스트 대상 클래스 자체를 mock
+- 특정 값이 중요한데 `any()` 사용

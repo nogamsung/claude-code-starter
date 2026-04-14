@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-04-14
+
+### Added
+
+- **Go Gin 스택 지원** — 4번째 지원 스택 추가
+  - `go-generator` / `go-modifier` / `go-tester` 에이전트
+  - `/new-go-api` 커맨드 — Handler / UseCase / Repository / Domain 스캐폴딩
+  - `CLAUDE.go.md` 템플릿 — Clean Architecture 규칙, GORM, golang-migrate
+  - `settings.go.json` 템플릿 — 공통 플러그인 + go vet / go test 훅
+  - `/init go` 지원 (`go.mod` 자동 감지 포함)
+  - 커버리지 게이트 Go 지원 — `go test -coverprofile` 기반 90% 차단
+- **Skills 시스템** (`.claude/skills/`) — 스택별 코드 패턴을 agents에서 분리
+  - `kotlin-patterns.md`, `nextjs-patterns.md`, `flutter-patterns.md`, `go-patterns.md`, `ui-design-impl.md`
+  - agents 파일 경량화 (역할·워크플로 선언만 유지, 패턴은 skills 참조)
+
+---
+
 ## [1.0.0] - 2026-04-14
 
 ### Added
@@ -54,4 +71,5 @@ claude-code-starter/
 
 | Version | Date       | Summary               |
 |---------|------------|-----------------------|
+| 1.1.0   | 2026-04-14 | Go Gin 스택 추가, Skills 시스템 도입 |
 | 1.0.0   | 2026-04-14 | 초기 릴리즈            |
