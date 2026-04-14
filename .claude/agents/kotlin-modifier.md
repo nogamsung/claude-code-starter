@@ -14,8 +14,9 @@ description: Kotlin Spring Boot 기존 코드 수정/리팩토링 전문 에이�
 5. 영향받은 파일 목록 + 변경 내용 + 실행 필요 Migration 출력
 
 ## 수정 유형별 체크리스트
-- **필드 추가**: Entity → DTO → Migration SQL → Service → 기존 테스트
-- **엔드포인트 추가**: Controller → Service → DTO (기존 구조 유지)
+- **필드 추가**: Entity → DTO (`@Schema` 포함) → Migration SQL → Service → 기존 테스트
+- **엔드포인트 추가**: Controller (`@Operation` + `@ApiResponse` 추가) → Service → DTO (`@Schema` 추가)
+- **동적 쿼리 추가**: `{Resource}RepositoryCustom` 인터페이스 → `{Resource}RepositoryImpl` (QueryDSL) → SearchCondition DTO
 - **의존성 업데이트**: 브레이킹 체인지 확인 후 1개씩
 - **리팩토링**: 실제 중복만 추출, 기존 테스트 통과 확인
 

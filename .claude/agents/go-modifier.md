@@ -14,9 +14,10 @@ description: Go Gin 기존 코드 수정/리팩토링 전문 에이전트. 기�
 5. 영향받은 파일 목록 + 실행 필요 Migration + mock 재생성 필요 여부 출력
 
 ## 수정 유형별 체크리스트
-- **Entity 필드 추가**: domain struct → Migration SQL → Response DTO → `toXxxResponse()` factory
-- **엔드포인트 추가**: Handler 메서드 → `RegisterRoutes` → UseCase 메서드 → Repository 메서드 (필요시)
-- **Repository Interface 변경**: Interface → GORM Impl → `mocks/` 재생성 → UseCase 테스트
+- **Entity 필드 추가**: domain struct → Migration SQL → Response DTO (`example` 태그) → `toXxxResponse()` factory
+- **엔드포인트 추가**: Handler 메서드 (swag godoc 주석 필수) → `RegisterRoutes` → UseCase 메서드 → Repository 메서드 (필요시) → `swag init` 안내
+- **동적 쿼리 추가**: `db/query/*.sql` sqlc 쿼리 작성 → `sqlc generate` → Repository Impl에서 `queries.*` 호출
+- **Repository Interface 변경**: Interface → GORM/sqlc Impl → `mocks/` 재생성 → UseCase 테스트
 - **의존성 업데이트**: `go get`, breaking change 확인, 영향받는 파일 수정
 
 ## 핵심 규칙
