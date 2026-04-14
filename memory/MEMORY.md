@@ -155,6 +155,39 @@ git push 시 "This repository moved" 경고가 발생했으나 리다이렉트�
 
 ---
 
+## 2026-04-14: v1.2.0 — 대규모 기능 추가
+
+**카테고리:** 결정
+
+### Git Worktree 병렬 작업 전략
+- 모든 파생 프로젝트에 `.worktrees/feature-{n}` 구조 강제
+- `superpowers:using-git-worktrees` 스킬 원칙 적용:
+  - `.worktrees/` gitignore 미등록 시 즉시 추가·커밋 (안전 검증 필수)
+  - worktree 생성 후 스택별 의존성 자동 설치
+- `/new-feature` 커맨드를 worktree 기반으로 전면 개편
+
+### 브랜치 전략
+- `main ← dev ← dev/feature-{number}` 3단계 구조
+- `main` / `dev` 모두 PR + CI 통과 보호
+- `/init` 실행 시 `dev` 브랜치 자동 생성
+
+### Docker → GitHub Container Registry 배포
+- Kotlin/Go/Next.js 스택별 멀티스테이지 Dockerfile 패턴 확립
+- Flutter는 Docker 배포 미지원으로 명시 제외
+- `publish.yml`: semver 태그 자동 생성 + 멀티플랫폼(`linux/amd64,linux/arm64`)
+
+### Swagger 필수화
+- Kotlin: SpringDoc OpenAPI — Controller에 `@Tag/@Operation/@ApiResponse`, DTO에 `@Schema` 필수
+- Go: swaggo/swag — Handler에 godoc 주석 필수, DTO에 `example` 태그 필수
+
+### 쿼리 레이어 표준화
+- Kotlin: JPA + QueryDSL (동적 쿼리) + jOOQ (복잡 집계, 선택)
+- Go: GORM (단순 CRUD) + sqlc (동적/페이징) + golangci-lint 필수
+
+**관련 파일:** 대부분의 `.claude/**/*.md`, `CHANGELOG.md`, `VERSION`
+
+---
+
 ## 2026-04-14: bootstrap.sh 도입
 
 **카테고리:** 결정

@@ -1,86 +1,128 @@
 ---
-description: 새 기능 브랜치 생성 및 작업 완료 후 PR 생성 가이드 (dev/feature-{number})
-argument-hint: <이슈번호 또는 기능명>  예: 42 / user-auth / 42-user-auth
+description: 새 기능을 위한 git worktree 생성 — dev/feature-{number} 브랜치를 .worktrees/ 에 격리된 작업공간으로 준비
+argument-hint: <이슈번호 또는 기능명>  예: 42 / user-auth / 42-user-auth  |  pr (PR 생성 모드)
 ---
 
-새 기능 개발을 위한 브랜치를 생성하고 PR을 준비합니다.
+새 기능 개발을 위한 격리된 worktree를 생성합니다.
 
 **작업 내용**: $ARGUMENTS
 
 ---
 
-## Step 1 — dev 브랜치 최신화
+## PR 생성 모드 (`$ARGUMENTS`가 `pr`인 경우)
+
+현재 브랜치에서 `dev`를 base로 PR을 생성합니다. → [PR 생성 섹션](#pr-생성)으로 이동
+
+---
+
+## Step 1 — .worktrees/ 안전 확인
+
+```bash
+# 1. .worktrees/가 .gitignore에 등록되어 있는지 확인
+git check-ignore -q .worktrees 2>/dev/null
+```
+
+**등록되어 있지 않으면 즉시 추가 후 커밋:**
+```bash
+echo ".worktrees/" >> .gitignore
+git add .gitignore
+git commit -m "chore: .worktrees/ gitignore 추가"
+```
+
+---
+
+## Step 2 — dev 브랜치 최신화
 
 ```bash
 git checkout dev
 git pull origin dev
 ```
 
-현재 브랜치가 `dev`인지, 로컬이 원격과 동기화되었는지 확인합니다.
-
 ---
 
-## Step 2 — 브랜치 번호 결정
+## Step 3 — 브랜치 번호 결정
 
 `$ARGUMENTS`를 분석합니다:
 
 - **숫자 포함** (예: `42`, `42-user-auth`) → 해당 번호 사용
-- **기능명만** (예: `user-auth`) → 기존 `dev/feature-*` 브랜치 목록 확인 후 다음 번호 자동 부여
+- **기능명만** (예: `user-auth`) → 기존 worktree 목록 확인 후 다음 번호 자동 부여
 
 ```bash
-# 기존 feature 브랜치 번호 확인
-git branch -a | grep 'dev/feature-' | sort -t- -k3 -n | tail -5
+# 기존 feature 번호 확인
+git worktree list | grep 'feature-' | sort -t- -k2 -n | tail -5
 ```
 
 ---
 
-## Step 3 — 브랜치 생성
+## Step 4 — Worktree 생성
 
 ```bash
-git checkout -b dev/feature-{number}
+# 브랜치명: dev/feature-{number}
+# 디렉토리: .worktrees/feature-{number}
+git worktree add .worktrees/feature-{number} -b dev/feature-{number}
 ```
-
-브랜치명 형식: `dev/feature-{number}` 또는 `dev/feature-{number}-{slug}`
-
-예시:
-- `dev/feature-42`
-- `dev/feature-42-user-auth`
 
 ---
 
-## Step 4 — 작업 안내
+## Step 5 — 스택별 의존성 설치
 
-브랜치 생성 후 아래를 출력합니다:
+worktree 디렉토리에서 프로젝트 파일 확인 후 자동 실행:
+
+```bash
+cd .worktrees/feature-{number}
+
+# Go
+if [ -f go.mod ]; then go mod download; fi
+
+# Next.js / Node.js
+if [ -f package.json ]; then npm ci; fi
+
+# Kotlin / Spring Boot
+if [ -f gradlew ]; then ./gradlew dependencies --no-daemon -q; fi
+
+# Flutter
+if [ -f pubspec.yaml ]; then flutter pub get; fi
+```
+
+---
+
+## Step 6 — 작업 안내 출력
 
 ```
-브랜치 생성 완료: dev/feature-{number}
-베이스 브랜치:    dev
+Worktree 준비 완료
+
+브랜치:     dev/feature-{number}
+경로:       .worktrees/feature-{number}/
+베이스:     dev
+
+병렬 작업:
+  다른 터미널에서 cd .worktrees/feature-{number} 으로 이동하여 독립 작업 가능
+  Claude Code: claude --dir .worktrees/feature-{number}
 
 작업 완료 후:
-  /commit         → 커밋 메시지 작성
-  /new-feature pr → PR 생성 (base: dev)
+  /new-feature pr   → PR 생성 (base: dev)
+  정리:
+    git worktree remove .worktrees/feature-{number}
+    git branch -d dev/feature-{number}
 ```
 
 ---
 
-## PR 생성 모드 (`$ARGUMENTS`가 `pr`인 경우)
+## PR 생성
 
-현재 브랜치에서 `dev`를 base로 PR을 생성합니다.
+현재 worktree의 브랜치에서 `dev` base PR을 생성합니다.
 
-### PR 생성 전 체크리스트
-1. 커밋이 모두 push되었는지 확인
-2. CI가 통과 가능한 상태인지 확인 (lint, test)
-
-### PR 생성
-
+### 사전 확인
 ```bash
-# 현재 브랜치 확인
 BRANCH=$(git branch --show-current)
+# dev/feature-{number} 형식인지 확인
+echo "브랜치: $BRANCH → PR base: dev"
+```
 
-# 브랜치 push
+### push & PR 생성
+```bash
 git push -u origin $BRANCH
 
-# PR 생성 (base: dev)
 gh pr create \
   --base dev \
   --title "feat: {기능 요약}" \
@@ -92,25 +134,31 @@ gh pr create \
 - 
 
 ## Test plan
-- [ ] 
+- [ ] 단위 테스트 추가/통과
+- [ ] 로컬 동작 확인
 
 EOF
 )"
 ```
 
-### PR 제목 규칙
-- Conventional Commits 형식: `feat:`, `fix:`, `refactor:` 등
-- 50자 이내
-
-### PR 생성 후 출력
+### PR merge 후 정리
+```bash
+# PR merge 확인 후 실행
+git worktree remove .worktrees/feature-{number}
+git branch -d dev/feature-{number}
+git remote prune origin
 ```
-PR 생성 완료
-URL: {PR URL}
 
-다음 단계:
-1. GitHub에서 PR 리뷰어 지정
-2. CI 통과 확인
-3. dev에 merge 후 브랜치 삭제:
-   git push origin --delete dev/feature-{number}
-   git branch -d dev/feature-{number}
+---
+
+## Worktree 현황 확인
+
+```bash
+git worktree list
+```
+
+```
+/path/to/project          abc1234 [dev]
+/path/to/.worktrees/feature-42  def5678 [dev/feature-42]
+/path/to/.worktrees/feature-43  ghi9012 [dev/feature-43]
 ```

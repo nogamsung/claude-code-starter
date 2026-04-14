@@ -206,7 +206,22 @@ cp .claude/templates/memory.md ./memory/MEMORY.md
 
 ---
 
-### Step 5 — Git 브랜치 초기 설정
+### Step 5 — .gitignore 초기 설정
+
+프로젝트 루트에 `.gitignore`가 없거나 `.worktrees/`가 없으면 추가합니다:
+
+```bash
+# .worktrees/ 미등록 시 추가
+grep -q "\.worktrees/" .gitignore 2>/dev/null || echo ".worktrees/" >> .gitignore
+git add .gitignore
+git commit -m "chore: .worktrees/ gitignore 추가" 2>/dev/null || true
+```
+
+> `.worktrees/`가 gitignore에 없으면 worktree 디렉토리가 git에 추적될 위험이 있습니다.
+
+---
+
+### Step 6 — Git 브랜치 초기 설정
 
 **신규 프로젝트**인 경우에만 실행합니다. 기존 프로젝트는 생략합니다.
 
@@ -238,7 +253,7 @@ git push -u origin dev
 
 ---
 
-### Step 6 — 완료 메시지
+### Step 7 — 완료 메시지
 
 ```
 ✅ 프로젝트 하네스 구성 완료
@@ -254,9 +269,10 @@ git push -u origin dev
 기둥 4 (피드백 루프):  /improve 커맨드 ✅ 사용 가능
 기둥 5 (팀 지식 축적): memory/MEMORY.md ✅ 생성됨
 
-[Git 브랜치]
+[Git 브랜치 & Worktree]
 main ← dev ← dev/feature-{number}
-dev 브랜치: ✅ 생성됨
+dev 브랜치:  ✅ 생성됨
+.worktrees/: ✅ gitignore 등록됨
 
 남은 agents: [목록]
 남은 commands: [목록]

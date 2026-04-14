@@ -33,7 +33,7 @@
 
 ---
 
-## Git 브랜치 전략
+## Git 브랜치 전략 & 병렬 작업 (Worktree)
 
 | 브랜치 | 역할 | 보호 |
 |--------|------|------|
@@ -42,22 +42,34 @@
 | `dev/feature-{number}` | 기능 개발 | - |
 | `dev/hotfix-{number}` | 긴급 수정 | - |
 
+### Worktree 병렬 작업 흐름
+
 ```bash
-# 새 기능 시작
-git checkout dev && git pull origin dev
-git checkout -b dev/feature-42
+# 새 기능 시작 — worktree로 격리된 작업공간 생성
+/new-feature 42          # dev/feature-42 브랜치 + .worktrees/feature-42/ 생성
+
+# 여러 기능 동시 작업 가능
+git worktree list
+# /project              [dev]
+# /project/.worktrees/feature-42  [dev/feature-42]
+# /project/.worktrees/feature-43  [dev/feature-43]
 
 # 작업 후 PR 생성 (base: dev)
-gh pr create --base dev --title "feat: ..."
+/new-feature pr
+
+# PR merge 후 정리
+git worktree remove .worktrees/feature-42
+git branch -d dev/feature-42
 
 # dev → main 릴리스 PR
 gh pr create --base main --title "release: v1.2.0"
 ```
 
-**규칙**
-- feature 브랜치는 반드시 `dev`에서 분기 → `dev`로 PR
-- `main` 직접 push 금지
-- PR merge 후 feature 브랜치 즉시 삭제
+### Worktree 디렉토리 규칙
+- 위치: `.worktrees/feature-{number}/` (프로젝트 내부, gitignore 필수)
+- `.gitignore`에 `.worktrees/` 반드시 포함
+- 각 worktree는 독립된 의존성·빌드 캐시 보유 (`go mod download` 자동 실행)
+- `main` 직접 push 금지 — 반드시 `dev`를 거쳐 PR
 
 ---
 
