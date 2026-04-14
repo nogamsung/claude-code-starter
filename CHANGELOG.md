@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> **릴리즈 규칙:** VERSION 파일을 올린 뒤 반드시 git 태그를 생성하고 푸시한다.
+> ```bash
+> git tag v$(cat VERSION) && git push origin v$(cat VERSION)
+> ```
+
 ---
 
 ## [1.1.0] - 2026-04-14

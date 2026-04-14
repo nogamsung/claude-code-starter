@@ -42,6 +42,11 @@ Conventional Commits 규칙에 따라 커밋을 생성합니다.
 4. `$ARGUMENTS`에 힌트가 있으면 참고하여 메시지 보완
 5. 커밋 메시지를 사용자에게 보여주고 확인 요청
 6. 확인 후 `git commit` 실행
+7. **VERSION 파일이 변경된 경우** — 버전 태그를 생성하고 푸시
+   ```bash
+   git tag v$(cat VERSION)
+   git push origin v$(cat VERSION)
+   ```
 
 ## 커밋 메시지 작성 규칙
 - `subject`는 50자 이내, 현재형 동사로 시작 (한국어 가능)
