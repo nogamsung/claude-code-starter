@@ -42,9 +42,9 @@ curl -fsSL https://raw.githubusercontent.com/nogamsung/claude-code-starter/main/
 **방법 B — 수동 복사**
 
 ```bash
-git clone --depth=1 https://github.com/nogamsung/claude.git
-cp -r claude/.claude /path/to/your-project/
-rm -rf claude
+git clone --depth=1 https://github.com/nogamsung/claude-code-starter.git
+cp -r claude-code-starter/.claude /path/to/your-project/
+rm -rf claude-code-starter
 ```
 
 ### 2. Claude Code에서 스택 초기화
