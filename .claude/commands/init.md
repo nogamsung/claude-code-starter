@@ -54,6 +54,7 @@ agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generat
 commands: `new-api.md`, `new-component.md`, `new-screen.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.nextjs.json`, `settings.flutter.json`
 skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
+기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `github-actions-designer`
 유지 commands: `new-go-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
@@ -69,6 +70,7 @@ agents: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `flutter-generat
 commands: `new-component.md`, `new-screen.md`
 templates: `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.nextjs.json`, `settings.flutter.json`
 skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
+기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
 유지 commands: `new-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
@@ -84,6 +86,7 @@ agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generat
 commands: `new-api.md`, `new-screen.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.flutter.json`
 skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
+기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
 유지 commands: `new-component.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
@@ -99,6 +102,7 @@ agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `nextjs-generato
 commands: `new-api.md`, `new-component.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `settings.kotlin.json`, `settings.nextjs.json`
 skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
+기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `flutter-generator`, `flutter-modifier`, `flutter-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
 유지 commands: `new-screen.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
