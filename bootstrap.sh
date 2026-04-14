@@ -4,14 +4,14 @@
 # 새 프로젝트 루트에서 실행하면 .claude 폴더를 설치합니다.
 #
 # 사용법:
-#   curl -fsSL https://raw.githubusercontent.com/nogamsung/claude/main/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/nogamsung/claude-code-starter/main/bootstrap.sh | bash
 #
 # 또는 클론 후:
-#   bash /path/to/claude/bootstrap.sh
+#   bash /path/to/claude-code-starter/bootstrap.sh
 
 set -e
 
-REPO_URL="https://github.com/nogamsung/claude.git"
+REPO_URL="https://github.com/nogamsung/claude-code-starter.git"
 TMP_DIR=$(mktemp -d)
 TARGET_DIR="$(pwd)"
 

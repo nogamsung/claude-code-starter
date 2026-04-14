@@ -35,7 +35,7 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 새 프로젝트 루트에서 실행합니다.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nogamsung/claude/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nogamsung/claude-code-starter/main/bootstrap.sh | bash
 ```
 
 **방법 B — 수동 복사**
