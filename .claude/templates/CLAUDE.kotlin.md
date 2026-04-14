@@ -4,7 +4,8 @@
 - **Language**: Kotlin (latest stable)
 - **Framework**: Spring Boot 3.x
 - **Build**: Gradle (Kotlin DSL — `build.gradle.kts`)
-- **ORM**: Spring Data JPA + Hibernate
+- **ORM**: Spring Data JPA + Hibernate + **QueryDSL** (필수 조합)
+- **동적 쿼리**: QueryDSL (모든 동적 쿼리에 사용) — 복잡한 집계/보고서 쿼리는 jOOQ 추가 가능
 - **Migration**: Flyway (절대 기존 migration 파일 수정 금지)
 - **Security**: Spring Security + JWT
 - **Docs**: SpringDoc OpenAPI
@@ -125,6 +126,55 @@ throw EntityNotFoundException("User not found: $id")
 - `@SpringBootApplication` 클래스에 비즈니스 코드 추가
 - 테스트 없이 새로운 public 메서드 추가
 - N+1 쿼리를 유발하는 즉시 로딩(`FetchType.EAGER`) 추가
+- QueryDSL 없이 `@Query` JPQL 또는 Native Query로 동적 쿼리 작성
+- 동적 조건이 있는 쿼리를 `JpaRepository` 메서드 이름 방식으로 억지 처리
+
+---
+
+## QueryDSL 사용 규칙 (MUST)
+
+### 의존성 (build.gradle.kts)
+```kotlin
+val queryDslVersion = "5.1.0"
+
+dependencies {
+    implementation("com.querydsl:querydsl-jpa:$queryDslVersion:jakarta")
+    kapt("com.querydsl:querydsl-apt:$queryDslVersion:jakarta")
+    // 복잡한 집계·보고서 쿼리가 필요한 경우 추가
+    // implementation("org.jooq:jooq")
+}
+```
+
+### Repository 구조
+```kotlin
+// ✅ 단순 CRUD — Spring Data JPA
+interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom
+
+// ✅ 동적 쿼리 — QueryDSL
+interface UserRepositoryCustom {
+    fun findByCondition(condition: UserSearchCondition): List<User>
+}
+
+class UserRepositoryImpl(private val queryFactory: JPAQueryFactory) : UserRepositoryCustom {
+    override fun findByCondition(condition: UserSearchCondition): List<User> {
+        val user = QUser.user
+        return queryFactory.selectFrom(user)
+            .where(
+                condition.name?.let { user.name.contains(it) },
+                condition.status?.let { user.status.eq(it) }
+            )
+            .fetch()
+    }
+}
+```
+
+### 쿼리 선택 기준
+| 케이스 | 사용 기술 |
+|--------|----------|
+| 단순 CRUD (findById, save 등) | Spring Data JPA |
+| 동적 조건 검색, 페이징 | QueryDSL |
+| 복잡한 집계, 통계, 보고서 | QueryDSL 우선, 필요 시 jOOQ |
+| 정적 JPQL (조건 없음) | `@Query` 허용 |
 
 ---
 
@@ -167,6 +217,11 @@ tasks.test {
 ---
 
 ## 학습된 규칙 (AI 실수 후 추가)
+
+### 2026-04-14 — QueryDSL 미사용으로 동적 쿼리 품질 저하
+- **문제**: Spring Boot 프로젝트에서 JPA만 사용하고 QueryDSL 없이 동적 쿼리를 `@Query` JPQL이나 메서드 이름으로 처리
+- **규칙**: Spring Boot 프로젝트는 **반드시 JPA + QueryDSL 조합**을 기본으로 사용. 복잡한 집계·통계·보고서 쿼리는 jOOQ를 추가로 사용 가능
+- **이유**: 동적 조건 쿼리를 타입 안전하게 작성하고, N+1·성능 문제를 컴파일 타임에 방지하기 위함
 
 <!-- /improve 커맨드로 새 규칙이 여기에 추가됩니다 -->
 

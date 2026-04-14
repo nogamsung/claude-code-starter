@@ -15,7 +15,7 @@ Kotlin Spring Boot 새 리소스를 처음부터 생성하는 에이전트.
 6. 생성된 파일 전체 경로 목록 출력
 
 ## 생성 대상 (리소스당 필수)
-Entity · Repository · Service · Controller · Response DTO · Create/Update Request DTO · Migration SQL
+Entity · Repository (JpaRepository + QueryDSL Impl) · Service · Controller · Response DTO · Create/Update Request DTO · SearchCondition DTO · Migration SQL
 
 ## 핵심 규칙
 - Constructor injection only — `@Autowired` 필드 주입 금지
@@ -23,3 +23,10 @@ Entity · Repository · Service · Controller · Response DTO · Create/Update R
 - DTO로 API 레이어와 도메인 분리 — 엔티티 직접 노출 금지
 - DTO는 `data class` 사용
 - 생성 코드는 수정 없이 컴파일 가능해야 함
+
+## Repository 생성 규칙 (필수)
+- **반드시** `JpaRepository` + `{Resource}RepositoryCustom` + `{Resource}RepositoryImpl` 3개 세트로 생성
+- 동적 조건이 1개라도 있으면 QueryDSL `JPAQueryFactory` 사용
+- `{Resource}RepositoryImpl`은 `JPAQueryFactory`를 생성자 주입으로 받음
+- 단순 CRUD (save, findById 등)는 `JpaRepository`에서 처리
+- 복잡한 집계·통계 쿼리가 필요하면 jOOQ 사용 여부를 사용자에게 확인

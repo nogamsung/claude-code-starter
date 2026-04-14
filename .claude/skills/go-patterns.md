@@ -56,7 +56,7 @@ type OrderRepository interface {
 }
 ```
 
-### GORM Repository Implementation
+### Repository Implementation (GORM + sqlc)
 ```go
 // internal/repository/order_repository.go
 package repository
@@ -67,17 +67,20 @@ import (
     "fmt"
 
     "gorm.io/gorm"
+    "github.com/yourorg/project/db/sqlc"
     "github.com/yourorg/project/internal/domain"
 )
 
 type orderRepository struct {
-    db *gorm.DB
+    db      *gorm.DB
+    queries *sqlcdb.Queries // sqlc 자동 생성
 }
 
-func NewOrderRepository(db *gorm.DB) domain.OrderRepository {
-    return &orderRepository{db: db}
+func NewOrderRepository(db *gorm.DB, queries *sqlcdb.Queries) domain.OrderRepository {
+    return &orderRepository{db: db, queries: queries}
 }
 
+// 단순 CRUD — GORM 사용
 func (r *orderRepository) FindByID(ctx context.Context, id uint) (*domain.Order, error) {
     var order domain.Order
     if err := r.db.WithContext(ctx).First(&order, id).Error; err != nil {
@@ -87,14 +90,6 @@ func (r *orderRepository) FindByID(ctx context.Context, id uint) (*domain.Order,
         return nil, fmt.Errorf("FindByID: %w", err)
     }
     return &order, nil
-}
-
-func (r *orderRepository) FindAllByUserID(ctx context.Context, userID uint) ([]*domain.Order, error) {
-    var orders []*domain.Order
-    if err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&orders).Error; err != nil {
-        return nil, fmt.Errorf("FindAllByUserID: %w", err)
-    }
-    return orders, nil
 }
 
 func (r *orderRepository) Create(ctx context.Context, order *domain.Order) error {
@@ -108,7 +103,72 @@ func (r *orderRepository) Update(ctx context.Context, order *domain.Order) error
 func (r *orderRepository) Delete(ctx context.Context, id uint) error {
     return r.db.WithContext(ctx).Delete(&domain.Order{}, id).Error
 }
+
+// 조건 검색·페이징 — sqlc 사용
+func (r *orderRepository) Search(ctx context.Context, params domain.OrderSearchParams) ([]*domain.Order, error) {
+    rows, err := r.queries.SearchOrders(ctx, sqlcdb.SearchOrdersParams{
+        UserID: toNullInt64(params.UserID),
+        Status: toNullString(params.Status),
+        Limit:  int32(params.Limit),
+        Offset: int32(params.Offset),
+    })
+    if err != nil {
+        return nil, fmt.Errorf("Search: %w", err)
+    }
+    orders := make([]*domain.Order, 0, len(rows))
+    for _, row := range rows {
+        orders = append(orders, toDomainOrder(row))
+    }
+    return orders, nil
+}
 ```
+
+### sqlc 쿼리 파일
+```sql
+-- db/query/order.sql
+
+-- name: GetOrderByID :one
+SELECT * FROM orders WHERE id = $1;
+
+-- name: ListOrdersByUserID :many
+SELECT * FROM orders
+WHERE user_id = $1
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: SearchOrders :many
+SELECT * FROM orders
+WHERE (user_id = sqlc.narg('user_id') OR sqlc.narg('user_id') IS NULL)
+  AND (status  = sqlc.narg('status')  OR sqlc.narg('status')  IS NULL)
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4;
+
+-- name: CreateOrder :one
+INSERT INTO orders (user_id, status, created_at, updated_at)
+VALUES ($1, $2, NOW(), NOW())
+RETURNING *;
+```
+
+### sqlc.yaml
+```yaml
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "db/query/"
+    schema: "migrations/"
+    gen:
+      go:
+        package: "sqlcdb"
+        out: "db/sqlc"
+        emit_json_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+```
+
+> **쿼리 선택 기준**
+> - 단순 CRUD (FindByID, Create, Update, Delete) → **GORM**
+> - 조건 검색, 페이징, 조인, 집계 → **sqlc**
+> - `db/sqlc/` 파일은 `sqlc generate`로만 갱신 — 수동 수정 금지
 
 ### UseCase
 ```go

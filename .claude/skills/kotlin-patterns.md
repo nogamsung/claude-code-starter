@@ -24,11 +24,55 @@ class Order(
 
 ### Repository
 ```kotlin
-interface OrderRepository : JpaRepository<Order, Long> {
-    fun findAllByUserId(userId: Long): List<Order>
+// 기본 CRUD + 정적 쿼리
+interface OrderRepository : JpaRepository<Order, Long>, OrderRepositoryCustom {
     fun findByIdAndUserId(id: Long, userId: Long): Order?
 }
+
+// 동적 쿼리 — QueryDSL (반드시 사용)
+interface OrderRepositoryCustom {
+    fun findByCondition(condition: OrderSearchCondition, pageable: Pageable): Page<Order>
+}
+
+class OrderRepositoryImpl(
+    private val queryFactory: JPAQueryFactory,
+) : OrderRepositoryCustom {
+    private val order = QOrder.order
+
+    override fun findByCondition(condition: OrderSearchCondition, pageable: Pageable): Page<Order> {
+        val content = queryFactory.selectFrom(order)
+            .where(
+                condition.userId?.let { order.user.id.eq(it) },
+                condition.status?.let { order.status.eq(it) },
+            )
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .orderBy(order.createdAt.desc())
+            .fetch()
+
+        val total = queryFactory.select(order.count())
+            .from(order)
+            .where(
+                condition.userId?.let { order.user.id.eq(it) },
+                condition.status?.let { order.status.eq(it) },
+            )
+            .fetchOne() ?: 0L
+
+        return PageImpl(content, pageable, total)
+    }
+}
+
+// Search Condition DTO
+data class OrderSearchCondition(
+    val userId: Long? = null,
+    val status: OrderStatus? = null,
+)
 ```
+
+> **QueryDSL 선택 기준**
+> - 동적 조건 (nullable 파라미터) → `QueryDSL` 필수
+> - 정적 단순 조건 → `JpaRepository` 메서드명 허용
+> - 복잡한 집계·통계 → QueryDSL 우선, 필요 시 jOOQ 추가
 
 ### Service
 ```kotlin

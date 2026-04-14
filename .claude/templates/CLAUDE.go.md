@@ -3,8 +3,10 @@
 ## Stack
 - **Language**: Go (latest stable)
 - **Framework**: Gin
-- **ORM**: GORM
+- **ORM**: GORM (단순 CRUD)
+- **쿼리 생성**: **sqlc** (필수 — 동적·복잡 쿼리는 sqlc로 타입 안전하게 생성)
 - **Migration**: golang-migrate
+- **Lint**: **golangci-lint** (필수 — 모든 PR/push 전 통과 의무)
 - **Validation**: Gin binding tags (`binding:"required"`)
 - **Testing**: testify + mockery
 - **Config**: godotenv / viper
@@ -39,12 +41,17 @@ cmd/
 internal/
 ├── domain/              # Entity, Repository interface, domain errors — 외부 의존성 없음
 ├── usecase/             # 비즈니스 로직 + UseCase DTO
-├── repository/          # GORM Repository 구현체
+├── repository/          # GORM + sqlc Repository 구현체
 ├── handler/             # Gin Handler + Response DTO
 └── middleware/          # Auth, Logger, Recovery 등
 migrations/              # golang-migrate SQL 파일 (up/down 쌍)
+db/
+├── query/               # sqlc SQL 쿼리 파일 (*.sql)
+└── sqlc/                # sqlc 자동 생성 코드 (수동 수정 금지)
 mocks/                   # mockery 자동 생성 mock
 testutil/                # 테스트 Fixture
+sqlc.yaml                # sqlc 설정
+.golangci.yml            # golangci-lint 설정
 ```
 
 ### 레이어 의존 방향
@@ -118,6 +125,121 @@ c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 - 패스워드, 토큰, PII를 로그에 출력
 - 테스트 없이 새로운 UseCase 메서드 추가
 - `context.Background()` 을 요청 핸들러에서 직접 사용 (`c.Request.Context()` 사용)
+- `db/sqlc/` 아래 자동 생성 파일 수동 수정 (항상 `sqlc generate`로 재생성)
+- sqlc 없이 raw SQL 문자열을 코드에 직접 작성
+- golangci-lint 경고를 `//nolint` 주석으로 무분별하게 억제
+
+---
+
+## sqlc 사용 규칙
+
+### 쿼리 선택 기준
+| 케이스 | 사용 기술 |
+|--------|----------|
+| 단순 CRUD (Insert, FindByID, Delete) | GORM |
+| 조건 검색, 페이징, 조인 쿼리 | sqlc |
+| 집계·통계·보고서 | sqlc |
+
+### sqlc.yaml 기본 설정
+```yaml
+version: "2"
+sql:
+  - engine: "postgresql"   # 또는 mysql
+    queries: "db/query/"
+    schema: "migrations/"
+    gen:
+      go:
+        package: "sqlcdb"
+        out: "db/sqlc"
+        emit_json_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+```
+
+### sqlc 쿼리 작성 예시
+```sql
+-- db/query/order.sql
+
+-- name: ListOrdersByUserID :many
+SELECT * FROM orders
+WHERE user_id = $1
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: GetOrderByID :one
+SELECT * FROM orders WHERE id = $1;
+
+-- name: SearchOrders :many
+SELECT * FROM orders
+WHERE (user_id = sqlc.narg('user_id') OR sqlc.narg('user_id') IS NULL)
+  AND (status  = sqlc.narg('status')  OR sqlc.narg('status')  IS NULL)
+ORDER BY created_at DESC;
+```
+
+### Repository에서 sqlc 사용
+```go
+// internal/repository/order_repository.go
+type orderRepository struct {
+    db      *gorm.DB
+    queries *sqlcdb.Queries  // sqlc 자동 생성
+}
+
+// 단순 CRUD — GORM
+func (r *orderRepository) Create(ctx context.Context, order *domain.Order) error {
+    return r.db.WithContext(ctx).Create(order).Error
+}
+
+// 조건 검색 — sqlc
+func (r *orderRepository) Search(ctx context.Context, params domain.OrderSearchParams) ([]*domain.Order, error) {
+    rows, err := r.queries.SearchOrders(ctx, sqlcdb.SearchOrdersParams{
+        UserID: pgtype.Int8{Int64: params.UserID, Valid: params.UserID != 0},
+        Status: pgtype.Text{String: params.Status, Valid: params.Status != ""},
+    })
+    // ...
+}
+```
+
+---
+
+## golangci-lint 규칙
+
+### .golangci.yml 기본 설정
+```yaml
+linters:
+  enable:
+    - errcheck       # 에러 무시 방지
+    - govet          # go vet 검사
+    - staticcheck    # 정적 분석
+    - gosimple       # 코드 단순화 제안
+    - unused         # 미사용 코드 탐지
+    - gofmt          # 포맷 검사
+    - goimports      # import 정렬
+    - revive         # 스타일 검사
+    - bodyclose      # HTTP response body 닫기 검사
+    - noctx          # context 없는 HTTP 요청 탐지
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+      - name: var-naming
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+```
+
+### lint 실행
+```bash
+# 로컬 실행
+golangci-lint run ./...
+
+# 특정 파일
+golangci-lint run internal/usecase/...
+```
+
+**git push 전 `golangci-lint run ./...` 통과 필수** (`.claude/hooks/pre-push.sh` 자동 검사)
 
 ---
 
@@ -141,6 +263,11 @@ go tool cover -func=coverage.out | grep total
 ---
 
 ## 학습된 규칙 (AI 실수 후 추가)
+
+### 2026-04-14 — sqlc·golangci-lint 미사용으로 쿼리 안전성·코드 품질 저하
+- **문제**: Go Gin 프로젝트에서 GORM만 사용하고 복잡한 쿼리를 raw SQL 문자열로 작성, lint 검사 없이 코드 생성
+- **규칙**: 조건 검색·페이징·조인 쿼리는 **반드시 sqlc**로 타입 안전하게 생성. 모든 코드는 **golangci-lint** 통과 필수
+- **이유**: raw SQL 문자열은 컴파일 타임 오류 검출 불가, lint 없이 작성된 코드는 errcheck 누락·미사용 변수 등 버그 유입 위험
 
 <!-- /improve 커맨드로 새 규칙이 여기에 추가됩니다 -->
 
