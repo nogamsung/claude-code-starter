@@ -81,6 +81,17 @@ cp .claude/templates/settings.{stack}.json ./.claude/settings.json
 
 이미 있으면: 기존 파일의 `hooks`와 `permissions` 섹션을 템플릿 내용으로 업데이트합니다.
 
+#### 4-3. Second Brain 설치 (기둥 5: 팀 지식 축적)
+
+`memory/MEMORY.md`가 없으면:
+```bash
+mkdir -p memory
+cp .claude/templates/memory.md ./memory/MEMORY.md
+```
+
+`memory/MEMORY.md`의 `[프로젝트명]`을 실제 프로젝트명으로 교체합니다.
+이미 있으면: 그대로 유지합니다.
+
 ---
 
 ### Step 5 — 완료 메시지
@@ -96,6 +107,7 @@ cp .claude/templates/settings.{stack}.json ./.claude/settings.json
 기둥 2 (CI/CD 게이트): .claude/settings.json hooks ✅ 활성화
 기둥 3 (도구 경계): .claude/settings.json permissions ✅ 활성화
 기둥 4 (피드백 루프): /improve 커맨드 ✅ 사용 가능
+기둥 5 (팀 지식 축적): memory/MEMORY.md ✅ 생성됨
 
 남은 agents: [목록]
 남은 commands: [목록]

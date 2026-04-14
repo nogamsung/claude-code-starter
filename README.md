@@ -83,6 +83,7 @@ cp -r /path/to/claude-code-starter/.claude /path/to/your-project/.claude
 | `/review [대상]` | 코드 리뷰 |
 | `/commit [힌트]` | Conventional Commits 형식으로 커밋 |
 | `/improve <설명>` | AI 실수를 CLAUDE.md 규칙으로 등록 |
+| `/memory [add\|search]` | 프로젝트 Second Brain 조회·추가·검색 |
 
 ### 스택별
 
