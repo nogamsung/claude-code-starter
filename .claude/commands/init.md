@@ -56,7 +56,7 @@ templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `setting
 skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 
 유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `github-actions-designer`
-유지 commands: `new-go-api.md`, `new-workflow.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 commands: `new-go-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
 유지 skills: `go-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
@@ -71,7 +71,7 @@ templates: `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.nextjs.json`, `set
 skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 
 유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
-유지 commands: `new-api.md`, `new-workflow.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 commands: `new-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
 유지 skills: `kotlin-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Kotlin 백엔드 전용으로는 불필요합니다.
@@ -86,7 +86,7 @@ templates: `CLAUDE.kotlin.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `set
 skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
 
 유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
-유지 commands: `new-component.md`, `new-workflow.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 commands: `new-component.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
 유지 skills: `nextjs-patterns.md`, `ui-design-impl.md`, `github-actions-patterns.md`
 
 > `ui-designer`는 Next.js에서 **핵심 에이전트**입니다.
@@ -101,7 +101,7 @@ templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `settings.kotlin.json`, `sett
 skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
 
 유지: `flutter-generator`, `flutter-modifier`, `flutter-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
-유지 commands: `new-screen.md`, `new-workflow.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 commands: `new-screen.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
 유지 skills: `flutter-patterns.md`, `ui-design-impl.md`, `github-actions-patterns.md`
 
 > `ui-designer`는 Flutter에서 **디자인 토큰 전담** 에이전트로 활용됩니다.
@@ -206,7 +206,39 @@ cp .claude/templates/memory.md ./memory/MEMORY.md
 
 ---
 
-### Step 5 — 완료 메시지
+### Step 5 — Git 브랜치 초기 설정
+
+**신규 프로젝트**인 경우에만 실행합니다. 기존 프로젝트는 생략합니다.
+
+#### 5-1. dev 브랜치 생성
+```bash
+git checkout -b dev
+git push -u origin dev
+```
+
+#### 5-2. GitHub 브랜치 보호 규칙 안내
+
+사용자에게 아래를 안내합니다:
+
+> GitHub 저장소 Settings → Branches → Add rule 에서 다음 보호 규칙을 설정하세요.
+>
+> **`main` 브랜치 보호:**
+> - ✅ Require a pull request before merging
+> - ✅ Require status checks to pass (CI 워크플로 선택)
+> - ✅ Restrict who can push to matching branches
+>
+> **`dev` 브랜치 보호:**
+> - ✅ Require a pull request before merging
+> - ✅ Require status checks to pass (CI 워크플로 선택)
+
+#### 5-3. 기본 작업 브랜치 안내
+
+> 앞으로 모든 기능 개발은 `/new-feature {번호}` 커맨드로 시작하세요.
+> 생성되는 브랜치: `dev/feature-{번호}` → PR base: `dev`
+
+---
+
+### Step 6 — 완료 메시지
 
 ```
 ✅ 프로젝트 하네스 구성 완료
@@ -222,12 +254,18 @@ cp .claude/templates/memory.md ./memory/MEMORY.md
 기둥 4 (피드백 루프):  /improve 커맨드 ✅ 사용 가능
 기둥 5 (팀 지식 축적): memory/MEMORY.md ✅ 생성됨
 
+[Git 브랜치]
+main ← dev ← dev/feature-{number}
+dev 브랜치: ✅ 생성됨
+
 남은 agents: [목록]
 남은 commands: [목록]
 
 이제 할 일:
 1. CLAUDE.md를 열고 프로젝트에 맞게 커스터마이징하세요
-2. /plan <기능> 으로 코드 작성을 시작하세요
-3. AI가 실수하면 /improve 로 규칙을 추가하세요
-4. memory/MEMORY.md 에 중요한 결정과 교훈을 계속 기록하세요
+2. GitHub에서 main·dev 브랜치 보호 규칙을 설정하세요
+3. /new-feature {번호} 로 첫 기능 브랜치를 만드세요
+4. /plan <기능> 으로 설계를 시작하세요
+5. AI가 실수하면 /improve 로 규칙을 추가하세요
+6. memory/MEMORY.md 에 중요한 결정과 교훈을 계속 기록하세요
 ```

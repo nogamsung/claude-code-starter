@@ -6,9 +6,9 @@
 ```yaml
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 ```
 
 ### Release — 버전 태그 push

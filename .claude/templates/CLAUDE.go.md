@@ -32,6 +32,34 @@
 
 ---
 
+## Git 브랜치 전략
+
+| 브랜치 | 역할 | 보호 |
+|--------|------|------|
+| `main` | 프로덕션 릴리스 | PR + CI 통과 필수 |
+| `dev` | 통합·스테이징 | PR + CI 통과 필수 |
+| `dev/feature-{number}` | 기능 개발 | - |
+| `dev/hotfix-{number}` | 긴급 수정 | - |
+
+```bash
+# 새 기능 시작
+git checkout dev && git pull origin dev
+git checkout -b dev/feature-42
+
+# 작업 후 PR 생성 (base: dev)
+gh pr create --base dev --title "feat: ..."
+
+# dev → main 릴리스 PR
+gh pr create --base main --title "release: v1.2.0"
+```
+
+**규칙**
+- feature 브랜치는 반드시 `dev`에서 분기 → `dev`로 PR
+- `main` 직접 push 금지
+- PR merge 후 feature 브랜치 즉시 삭제
+
+---
+
 ## 아키텍처 규칙
 
 ### 디렉토리 구조
