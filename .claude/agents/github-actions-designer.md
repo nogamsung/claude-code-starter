@@ -25,9 +25,19 @@ GitHub Actions 워크플로 설계 에이전트.
 | PR·push 검증 | `ci.yml` |
 | 배포 | `deploy.yml` |
 | 릴리스·버전 태깅 | `release.yml` |
-| 패키지 배포 | `publish.yml` |
+| Docker 이미지 배포 | `publish.yml` |
 | 정기 실행 | `scheduled.yml` |
 | 재사용 워크플로 | `.github/workflows/reusable-*.yml` |
+
+## Docker 배포 지원 스택
+| 스택 | Dockerfile | 레지스트리 | 비고 |
+|------|-----------|-----------|------|
+| Kotlin Spring Boot | 멀티스테이지 (JDK builder → JRE runtime) | `ghcr.io` | `bootJar` → JAR 복사 |
+| Go Gin | 멀티스테이지 (golang builder → alpine) | `ghcr.io` | `CGO_ENABLED=0` 정적 바이너리 |
+| Next.js | 멀티스테이지 (deps → builder → runner) | `ghcr.io` | `output: 'standalone'` 필수 |
+| Flutter | ❌ 미지원 | — | 모바일 앱은 Docker 배포 불필요 |
+
+> Dockerfile이 없으면 스택에 맞는 것을 생성 후 워크플로 작성.
 
 ## 핵심 규칙
 

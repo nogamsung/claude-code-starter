@@ -804,3 +804,318 @@ permissions:
     coverage-summary-path: coverage/coverage-summary.json
     title: 'Test Coverage'
 ```
+
+---
+
+## Stack별 Docker 배포 (GitHub Container Registry)
+
+> Flutter 제외. Kotlin Spring Boot / Go Gin / Next.js 대상.
+> 이미지는 `ghcr.io/{owner}/{repo}` 에 push.
+
+### Kotlin Spring Boot — Dockerfile
+```dockerfile
+# Dockerfile
+# ── Build ──────────────────────────────────────────────
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /app
+
+COPY gradlew .
+COPY gradle/ gradle/
+COPY build.gradle.kts settings.gradle.kts ./
+RUN ./gradlew dependencies --no-daemon   # 의존성 레이어 캐시
+
+COPY src/ src/
+RUN ./gradlew bootJar -x test --no-daemon
+
+# ── Runtime ────────────────────────────────────────────
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+RUN addgroup -S app && adduser -S app -G app
+COPY --from=builder /app/build/libs/*.jar app.jar
+USER app
+
+EXPOSE 8080
+ENTRYPOINT ["java", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75", \
+  "-jar", "app.jar"]
+```
+
+### Go Gin — Dockerfile
+```dockerfile
+# Dockerfile
+# ── Build ──────────────────────────────────────────────
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download   # 의존성 레이어 캐시
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-w -s" \
+    -o server ./cmd/main.go
+
+# ── Runtime ────────────────────────────────────────────
+FROM alpine:3.19
+WORKDIR /app
+
+RUN apk --no-cache add ca-certificates tzdata && \
+    addgroup -S app && adduser -S app -G app
+
+COPY --from=builder /app/server .
+USER app
+
+EXPOSE 8080
+ENTRYPOINT ["./server"]
+```
+
+### Next.js — Dockerfile
+```dockerfile
+# Dockerfile
+# next.config.js에 output: 'standalone' 필수
+# ── Dependencies ───────────────────────────────────────
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+# ── Builder ────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+# ── Runtime ────────────────────────────────────────────
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup -S app && adduser -S app -G app
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+USER app
+EXPOSE 3000
+ENTRYPOINT ["node", "server.js"]
+```
+
+```js
+// next.config.js — standalone 빌드 활성화 필수
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+}
+module.exports = nextConfig
+```
+
+---
+
+### 공통 Docker 배포 워크플로 구조
+```
+트리거: push tags v*.*.* (릴리스) 또는 push main (스테이징)
+  └─ build-and-push job
+       ├─ docker/metadata-action → 태그 자동 생성
+       │   semver: 1.2.3 / 1.2 / 1 / latest
+       │   sha:    sha-abc1234
+       ├─ docker/setup-buildx-action (멀티플랫폼)
+       ├─ docker/login-action → ghcr.io
+       └─ docker/build-push-action
+           cache-from/to: type=gha  (GitHub Actions 캐시)
+           platforms: linux/amd64,linux/arm64
+```
+
+### Kotlin Spring Boot — 배포 워크플로
+```yaml
+# .github/workflows/publish.yml
+name: Docker Publish — Spring Boot
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build JAR first (레이어 캐시 활용)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - run: chmod +x gradlew && ./gradlew bootJar -x test --no-daemon
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+```
+
+### Go Gin — 배포 워크플로
+```yaml
+# .github/workflows/publish.yml
+name: Docker Publish — Go Gin
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          # Go는 Dockerfile 내 go mod download가 캐시 레이어 역할
+```
+
+### Next.js — 배포 워크플로
+```yaml
+# .github/workflows/publish.yml
+name: Docker Publish — Next.js
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+```
+
+### dev 브랜치 push → 스테이징 이미지 자동 배포 (선택)
+```yaml
+# dev merge 시 :dev 태그로 스테이징 이미지 자동 업데이트
+on:
+  push:
+    branches: [dev]   # dev merge 시 트리거
+
+# metadata tags 교체:
+tags: |
+  type=raw,value=dev
+  type=sha,prefix=sha-
+```
+
+### 생성된 이미지 확인
+```bash
+# GitHub 저장소 → Packages 탭에서 확인
+# 또는 로컬에서:
+docker pull ghcr.io/{owner}/{repo}:{tag}
+docker run -p 8080:8080 ghcr.io/{owner}/{repo}:latest
+```
+
+### GHCR 이미지 공개 설정
+> 기본적으로 private. 공개하려면:
+> GitHub → 패키지 클릭 → Package settings → Change visibility → Public
