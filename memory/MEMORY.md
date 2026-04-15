@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-04-15: v1.3.0 — 멀티 모듈 지원 추가
+
+**카테고리:** 결정
+
+### 배경
+단일 모듈 구조(패키지 기반 레이어)만 지원하던 것에서 물리적 경계가 있는 멀티 모듈 구조 추가.
+Kotlin Gradle 멀티 모듈 / Next.js Turborepo / Go Workspace 3가지 variant 도입.
+
+### 설계 원칙
+- **에이전트 신규 생성 없음** — CLAUDE.md 템플릿이 구조를 설명하면 기존 generator/modifier/tester가 자동으로 해당 구조를 따름
+- **하위 호환** — 기존 단일 모듈 `/init kotlin|nextjs|go|flutter` 동작 변경 없음
+- **자동 감지** — `go.work` / `turbo.json` / `settings.gradle.kts` include 여부로 단일/멀티 모듈 자동 분기
+
+### 추가된 파일
+- 템플릿 6개: `CLAUDE.{kotlin,nextjs,go}-multi.md`, `settings.{kotlin,nextjs,go}-multi.json`
+- 커맨드 1개: `/new-module` (서브모듈/패키지/서비스 추가)
+- 커맨드 수정 3개: `/init`, `/new-api`, `/new-go-api` (멀티 모듈 분기 추가)
+- Skills 수정 3개: 각 스택 patterns 파일에 멀티 모듈 패턴 섹션 추가
+
+### 각 스택 멀티 모듈 구조
+- **Kotlin**: `:api`(presentation) → `:domain`(entity+service) ← `:infra`(repository)
+- **Next.js**: `apps/web` + `packages/{ui,lib,config}` (Turborepo)
+- **Go**: `services/{api,worker}` + `pkg/shared` (go.work)
+
+**관련 파일:** `.claude/templates/CLAUDE.*-multi.md`, `.claude/commands/new-module.md`
+
+---
+
 ## 2026-04-14: 프로젝트 초기 구성
 
 **카테고리:** 결정

@@ -560,3 +560,92 @@ func TestOrderHandler_GetOrder(t *testing.T) {
 - context.Background() 대신 테스트용 timeout context 고려
 - mock 없이 실제 DB에 연결하는 단위 테스트 작성 금지 (통합 테스트와 분리)
 - 에러 무시 (`_`) 후 assertion 하는 패턴
+
+---
+
+## Multi-Service Patterns (Go Workspace)
+
+### go.work
+```
+go 1.23
+
+use (
+    ./services/api
+    ./services/worker
+    ./pkg/shared
+)
+```
+
+### pkg/shared/go.mod
+```
+module github.com/{org}/{project}/pkg/shared
+
+go 1.23
+```
+
+### services/api/go.mod
+```
+module github.com/{org}/{project}/services/api
+
+go 1.23
+
+require (
+    github.com/{org}/{project}/pkg/shared v0.0.0
+    github.com/gin-gonic/gin v1.10.0
+    // ...
+)
+```
+
+### 공유 도메인 (pkg/shared/domain/)
+```go
+// pkg/shared/domain/user.go — 서비스 공통 Entity
+package domain
+
+type UserID uint
+
+type User struct {
+    ID    UserID
+    Email string
+    Name  string
+}
+
+// 서비스별 확장은 각 서비스 internal/domain/ 에서 embed
+```
+
+### 서비스에서 공유 모듈 사용
+```go
+// services/api/internal/domain/order.go
+import "github.com/{org}/{project}/pkg/shared/domain"
+
+type Order struct {
+    ID     uint
+    UserID domain.UserID  // ✅ 공유 타입 사용
+    Status string
+}
+```
+
+### 의존 규칙
+| 모듈 | 의존 가능 | 의존 불가 |
+|------|----------|----------|
+| `pkg/shared` | (없음 — 순수) | services/* |
+| `services/api` | `pkg/shared` | `services/worker` |
+| `services/worker` | `pkg/shared` | `services/api` |
+
+### Workspace 전체 빌드/테스트
+```bash
+# workspace 루트에서
+go work sync
+go test ./...              # 전체 테스트
+go build ./...             # 전체 빌드
+
+# 특정 서비스만
+cd services/api && go test ./...
+cd services/worker && go run cmd/main.go
+```
+
+### golangci-lint (workspace)
+```bash
+# 각 서비스 디렉토리에서 실행 (workspace root에서는 미지원)
+cd services/api && golangci-lint run ./...
+cd services/worker && golangci-lint run ./...
+```
