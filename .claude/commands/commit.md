@@ -42,11 +42,66 @@ Conventional Commits 규칙에 따라 커밋을 생성합니다.
 4. `$ARGUMENTS`에 힌트가 있으면 참고하여 메시지 보완
 5. 커밋 메시지를 사용자에게 보여주고 확인 요청
 6. 확인 후 `git commit` 실행
-7. **VERSION 파일이 변경된 경우** — 버전 태그를 생성하고 푸시
+7. **항상** — 버전 태그를 생성하고 푸시 (모든 커밋은 버전 릴리즈)
    ```bash
+   git push origin HEAD
    git tag v$(cat VERSION)
    git push origin v$(cat VERSION)
    ```
+
+---
+
+## 문서 업데이트 (Step 5 전에 반드시 실행)
+
+커밋 전 아래 문서를 **모든 커밋 타입에서 필수로** 업데이트합니다.
+**사용자에게 별도로 확인하지 않고** 조용히 업데이트 후 "문서를 업데이트했습니다." 한 줄만 출력합니다.
+
+> ⚠️ **필수 규칙**: 문서 업데이트 없이 커밋하지 않습니다. 변경사항이 아무리 작아도 CHANGELOG에 기록합니다.
+
+### 1. CHANGELOG.md 업데이트 (모든 타입 필수)
+
+`[Unreleased]` 섹션은 사용하지 않습니다. **모든 커밋은 즉시 버전으로 발행합니다.**
+
+**버전 결정 규칙:**
+- `feat` → minor 버전 올림 (1.4.0 → 1.5.0), VERSION 파일도 함께 수정
+- `fix` / `perf` → patch 버전 올림 (1.4.0 → 1.4.1), VERSION 파일도 함께 수정
+- `refactor` / `chore` / `docs` / `test` / `style` / `ci` / `build` → patch 버전 올림 (1.4.0 → 1.4.1), VERSION 파일도 함께 수정
+
+**CHANGELOG 항목 형식:**
+```markdown
+## [{새 버전}] - YYYY-MM-DD
+
+### Added   ← feat
+### Fixed   ← fix
+### Changed ← refactor, perf, chore, docs, test, style, ci, build
+### Removed ← 삭제된 기능이 있을 때
+```
+
+이미 오늘 날짜로 같은 버전 섹션이 있으면 해당 섹션에 항목을 추가합니다.
+
+### 2. README.md 업데이트
+
+변경된 파일에 따라 해당 README 섹션을 업데이트합니다:
+
+| 변경 대상 | 업데이트할 README 섹션 |
+|----------|----------------------|
+| `.claude/commands/` 신규 파일 | **커맨드** 표에 행 추가 |
+| `.claude/agents/` 신규 파일 | **Agents** 표에 행 추가 |
+| `.claude/skills/` 신규 파일 | **디렉토리 구조** 목록에 추가 |
+| `.claude/commands/` 신규 파일 | **디렉토리 구조** 목록에 추가 |
+| VERSION 변경 | 뱃지 버전 번호 (`version-X.X.X-blue`) 및 구조 섹션 버전 업데이트 |
+
+### 3. memory/MEMORY.md 업데이트
+
+type이 `feat`이고 새로운 커맨드·에이전트·스킬을 추가한 경우에만 기록합니다:
+
+```markdown
+## YYYY-MM-DD: {커밋 subject}
+
+**카테고리:** 결정
+
+{변경 내용 요약 — 무엇을 왜 추가했는지}
+```
 
 ## 커밋 메시지 작성 규칙
 - `subject`는 50자 이내, 현재형 동사로 시작 (한국어 가능)

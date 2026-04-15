@@ -1,5 +1,5 @@
 ---
-description: 작업 유형에 맞는 git worktree 생성 — dev/{type}-{name} 브랜치를 .worktrees/ 에 격리된 작업공간으로 준비
+description: 작업 유형에 맞는 git worktree 생성 — feature/{type}-{name} 브랜치를 .worktrees/ 에 격리된 작업공간으로 준비
 argument-hint: <타입-이름>  예: feature-login / fix-signup / hotfix-payment / refactor-auth  |  pr (PR 생성 모드)
 ---
 
@@ -7,11 +7,23 @@ argument-hint: <타입-이름>  예: feature-login / fix-signup / hotfix-payment
 
 **작업 내용**: $ARGUMENTS
 
+> ⚠️ **브랜치 네이밍 제약**
+> Git은 `dev` 브랜치와 `dev/feature-*` 브랜치를 **동시에 유지할 수 없습니다.**
+> (Git refs가 파일시스템 경로처럼 동작해 `dev`라는 파일과 `dev/` 디렉토리가 충돌)
+>
+> 따라서 이 프로젝트의 피처 브랜치는 `dev/` 접두사 대신 **`feature/`, `fix/` 등 독립 prefix**를 사용합니다:
+> - 통합 브랜치: `dev`
+> - 피처 브랜치: `feature/{name}`, `fix/{name}`, `hotfix/{name}` 등
+
 ---
 
 ## PR 생성 모드 (`$ARGUMENTS`가 `pr`인 경우)
 
-현재 브랜치에서 `dev`를 base로 PR을 생성합니다. → [PR 생성 섹션](#pr-생성)으로 이동
+베이스 브랜치를 자동 감지하여 PR을 생성합니다:
+- `dev` 브랜치 있음 → base: `dev`
+- `dev` 브랜치 없음 → base: `main`
+
+→ [PR 생성 섹션](#pr-생성)으로 이동
 
 ---
 
@@ -31,12 +43,24 @@ git commit -m "chore: .worktrees/ gitignore 추가"
 
 ---
 
-## Step 2 — dev 브랜치 최신화
+## Step 2 — 베이스 브랜치 결정 & 최신화
+
+`dev` 브랜치 존재 여부로 브랜치 전략을 자동 감지합니다:
 
 ```bash
-git checkout dev
-git pull origin dev
+# 베이스 브랜치 결정
+if git branch --list dev | grep -q dev; then
+  BASE_BRANCH="dev"
+else
+  BASE_BRANCH="main"
+fi
+
+git checkout $BASE_BRANCH
+git pull origin $BASE_BRANCH
 ```
+
+- `dev` 브랜치 있음 → **main + dev 전략**: base = `dev`
+- `dev` 브랜치 없음 → **main only 전략**: base = `main`
 
 ---
 
@@ -62,9 +86,9 @@ git pull origin dev
 ## Step 4 — Worktree 생성
 
 ```bash
-# 예: $ARGUMENTS = feature-login  →  dev/feature-login, .worktrees/feature-login
-# 예: $ARGUMENTS = fix-signup     →  dev/fix-signup,    .worktrees/fix-signup
-git worktree add .worktrees/{type}-{name} -b dev/{type}-{name}
+# 예: $ARGUMENTS = feature-login  →  feature/login,     .worktrees/feature-login
+# 예: $ARGUMENTS = fix-signup     →  fix/signup,        .worktrees/fix-signup
+git worktree add .worktrees/{type}-{name} -b {type}/{name}
 ```
 
 ---
@@ -96,32 +120,32 @@ if [ -f pubspec.yaml ]; then flutter pub get; fi
 ```
 Worktree 준비 완료
 
-브랜치:     dev/{type}-{name}
+브랜치:     {type}/{name}
 경로:       .worktrees/{type}-{name}/
-베이스:     dev
+베이스:     {BASE_BRANCH}   ← dev 브랜치 있으면 "dev", 없으면 "main"
 
 병렬 작업:
   다른 터미널에서 cd .worktrees/{type}-{name} 으로 이동하여 독립 작업 가능
   Claude Code: claude --dir .worktrees/{type}-{name}
 
 작업 완료 후:
-  /new-feature pr   → PR 생성 (base: dev)
+  /new-feature pr   → PR 생성 (base: {BASE_BRANCH})
   정리:
     git worktree remove .worktrees/{type}-{name}
-    git branch -d dev/{type}-{name}
+    git branch -d {type}/{name}
 ```
 
 ---
 
 ## PR 생성
 
-현재 worktree의 브랜치에서 `dev` base PR을 생성합니다.
+현재 worktree의 브랜치에서 base PR을 생성합니다. 베이스는 `dev` 브랜치 존재 여부로 자동 결정됩니다.
 
 ### 사전 확인
 ```bash
 BRANCH=$(git branch --show-current)
-# dev/{type}-{name} 형식인지 확인
-echo "브랜치: $BRANCH → PR base: dev"
+BASE_BRANCH=$(git branch --list dev | grep -q dev && echo "dev" || echo "main")
+echo "브랜치: $BRANCH → PR base: $BASE_BRANCH"
 ```
 
 ### push & PR 생성
@@ -129,7 +153,7 @@ echo "브랜치: $BRANCH → PR base: dev"
 git push -u origin $BRANCH
 
 gh pr create \
-  --base dev \
+  --base $BASE_BRANCH \
   --title "feat: {기능 요약}" \
   --body "$(cat <<'EOF'
 ## Summary
@@ -150,7 +174,7 @@ EOF
 ```bash
 # PR merge 확인 후 실행
 git worktree remove .worktrees/{type}-{name}
-git branch -d dev/{type}-{name}
+git branch -d {type}/{name}
 git remote prune origin
 ```
 
@@ -164,7 +188,7 @@ git worktree list
 
 ```
 /path/to/project                        abc1234 [dev]
-/path/to/.worktrees/feature-login       def5678 [dev/feature-login]
-/path/to/.worktrees/fix-signup          ghi9012 [dev/fix-signup]
-/path/to/.worktrees/refactor-auth       jkl3456 [dev/refactor-auth]
+/path/to/.worktrees/feature-login       def5678 [feature/login]
+/path/to/.worktrees/fix-signup          ghi9012 [fix/signup]
+/path/to/.worktrees/refactor-auth       jkl3456 [refactor/auth]
 ```

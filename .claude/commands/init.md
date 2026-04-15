@@ -62,12 +62,13 @@ templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `setting
 skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
-유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `github-actions-designer`
-유지 commands: `new-go-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `go-patterns.md`, `github-actions-patterns.md`
+유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `api-designer`, `github-actions-designer`
+유지 commands: `new-api.md`, `design-db.md`, `design-api.md`, `review-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `go-patterns.md`, `db-patterns.md`, `api-design-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
 > Go + Next.js/Flutter 풀스택 구성이라면 유지하세요.
+> `api-designer`, `design-db`, `design-api`, `review-api`는 **백엔드 전용**입니다.
 
 ---
 
@@ -78,20 +79,21 @@ templates: `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `settings.nextjs.json`, `set
 skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
-유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
-유지 commands: `new-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `kotlin-patterns.md`, `github-actions-patterns.md`
+유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `api-designer`, `ui-designer`, `github-actions-designer`
+유지 commands: `new-api.md`, `design-db.md`, `design-api.md`, `review-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `kotlin-patterns.md`, `db-patterns.md`, `api-design-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Kotlin 백엔드 전용으로는 불필요합니다.
 > 단, Kotlin + Next.js/Flutter 풀스택 구성이라면 유지하세요.
+> `api-designer`, `design-api`, `review-api`, `api-design-patterns`는 **백엔드 전용**입니다.
 
 ---
 
 #### `nextjs` 선택 시 — 제거 대상
-agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
-commands: `new-api.md`, `new-screen.md`
+agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`, `api-designer`
+commands: `new-api.md`, `new-screen.md`, `design-db.md`, `design-api.md`, `review-api.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.flutter.json`
-skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`, `db-patterns.md`, `api-design-patterns.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
@@ -100,14 +102,15 @@ skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
 
 > `ui-designer`는 Next.js에서 **핵심 에이전트**입니다.
 > DESIGN.md → Tailwind 토큰 → shadcn/ui 컴포넌트 일관성을 담당합니다.
+> `api-designer`, `design-api`, `review-api`, `api-design-patterns`는 백엔드 전용으로 제거합니다.
 
 ---
 
 #### `flutter` 선택 시 — 제거 대상
-agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`
-commands: `new-api.md`, `new-component.md`
+agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `api-designer`
+commands: `new-api.md`, `new-component.md`, `design-db.md`, `design-api.md`, `review-api.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `settings.kotlin.json`, `settings.nextjs.json`
-skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
+skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`, `db-patterns.md`, `api-design-patterns.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `flutter-generator`, `flutter-modifier`, `flutter-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
@@ -117,6 +120,7 @@ skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
 > `ui-designer`는 Flutter에서 **디자인 토큰 전담** 에이전트로 활용됩니다.
 > DESIGN.md → ColorScheme · TextTheme · 스페이싱 상수 → `lib/core/theme/` 파일 생성을 담당합니다.
 > CSS/Tailwind 스펙은 Flutter 모드에서 자동으로 무시됩니다.
+> `api-designer`, `design-api`, `review-api`, `api-design-patterns`는 백엔드 전용으로 제거합니다.
 
 ---
 
@@ -127,20 +131,21 @@ templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.nextjs-multi.md`, `CL
 skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
-유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
-유지 commands: `new-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `kotlin-patterns.md`, `github-actions-patterns.md`
+유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `api-designer`, `ui-designer`, `github-actions-designer`
+유지 commands: `new-api.md`, `design-db.md`, `design-api.md`, `review-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `kotlin-patterns.md`, `db-patterns.md`, `api-design-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Kotlin 백엔드 전용으로는 불필요합니다.
 > 단, Kotlin + Next.js/Flutter 풀스택 구성이라면 유지하세요.
+> `api-designer`, `design-api`, `review-api`, `api-design-patterns`는 **백엔드 전용**입니다.
 
 ---
 
 #### `nextjs-multi` 선택 시 — 제거 대상
-agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
-commands: `new-api.md`, `new-screen.md`
+agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`, `api-designer`
+commands: `new-api.md`, `new-screen.md`, `design-db.md`, `design-api.md`, `review-api.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.kotlin-multi.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `CLAUDE.go.md`, `CLAUDE.go-multi.md`, `settings.kotlin.json`, `settings.kotlin-multi.json`, `settings.nextjs.json`, `settings.flutter.json`, `settings.go.json`, `settings.go-multi.json`
-skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`, `db-patterns.md`, `api-design-patterns.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
@@ -149,22 +154,24 @@ skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
 
 > `ui-designer`는 Next.js Turborepo에서 **핵심 에이전트**입니다.
 > DESIGN.md → Tailwind 토큰 → shadcn/ui 컴포넌트 일관성을 담당합니다.
+> `api-designer`, `design-api`, `review-api`, `api-design-patterns`는 백엔드 전용으로 제거합니다.
 
 ---
 
 #### `go-multi` 선택 시 — 제거 대상
 agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`
-commands: `new-api.md`, `new-component.md`, `new-screen.md`
+commands: `new-component.md`, `new-screen.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.kotlin-multi.md`, `CLAUDE.nextjs.md`, `CLAUDE.nextjs-multi.md`, `CLAUDE.flutter.md`, `CLAUDE.go.md`, `settings.kotlin.json`, `settings.kotlin-multi.json`, `settings.nextjs.json`, `settings.nextjs-multi.json`, `settings.flutter.json`, `settings.go.json`
 skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
-유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `github-actions-designer`
-유지 commands: `new-go-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `go-patterns.md`, `github-actions-patterns.md`
+유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `api-designer`, `github-actions-designer`
+유지 commands: `new-api.md`, `design-db.md`, `design-api.md`, `review-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `go-patterns.md`, `db-patterns.md`, `api-design-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
 > Go + Next.js/Flutter 풀스택 구성이라면 유지하세요.
+> `api-designer`, `design-api`, `review-api`, `api-design-patterns`는 **백엔드 전용**입니다.
 
 ---
 
@@ -289,19 +296,43 @@ git commit -m "chore: .worktrees/ gitignore 추가" 2>/dev/null || true
 
 ---
 
-### Step 6 — Git 브랜치 초기 설정
+### Step 6 — Git 브랜치 전략 선택 & 초기 설정
 
 **신규 프로젝트**인 경우에만 실행합니다. 기존 프로젝트는 생략합니다.
 
-#### 5-1. dev 브랜치 생성
+#### 6-1. 브랜치 전략 선택
+
+사용자에게 아래를 물어봅니다:
+
+> 브랜치 전략을 선택하세요 (기본값: A):
+>
+> **A. main + dev** (권장, 기본값)
+> ```
+> main ← dev ← feature/* / fix/* / hotfix/* / ...
+> ```
+> - `dev`: 개발 통합 브랜치 (스테이징 환경)
+> - `main`: 프로덕션 브랜치
+> - PR은 `feature/*` → `dev`, 릴리즈는 `dev` → `main`
+>
+> **B. main only**
+> ```
+> main ← feature/* / fix/* / hotfix/* / ...
+> ```
+> - `main` 하나만 사용
+> - PR은 `feature/*` → `main` 바로 머지
+
+선택을 받은 뒤 아래 해당 섹션으로 진행합니다.
+
+---
+
+#### 6-2A. [A 선택] main + dev 설정
+
 ```bash
 git checkout -b dev
 git push -u origin dev
 ```
 
-#### 5-2. GitHub 브랜치 보호 규칙 안내
-
-사용자에게 아래를 안내합니다:
+GitHub 브랜치 보호 규칙 안내:
 
 > GitHub 저장소 Settings → Branches → Add rule 에서 다음 보호 규칙을 설정하세요.
 >
@@ -314,10 +345,31 @@ git push -u origin dev
 > - ✅ Require a pull request before merging
 > - ✅ Require status checks to pass (CI 워크플로 선택)
 
-#### 5-3. 기본 작업 브랜치 안내
-
+기본 작업 브랜치 안내:
 > 앞으로 모든 작업은 `/new-feature {타입-이름}` 커맨드로 시작하세요.
-> 생성되는 브랜치: `dev/{feature|fix|hotfix|refactor|chore}-{name}` → PR base: `dev`
+> 생성되는 브랜치: `feature/{name}`, `fix/{name}` 등 → PR base: `dev`
+
+---
+
+#### 6-2B. [B 선택] main only 설정
+
+`dev` 브랜치를 **생성하지 않습니다.** `main`만 사용합니다.
+
+GitHub 브랜치 보호 규칙 안내:
+
+> GitHub 저장소 Settings → Branches → Add rule 에서 다음 보호 규칙을 설정하세요.
+>
+> **`main` 브랜치 보호:**
+> - ✅ Require a pull request before merging
+> - ✅ Require status checks to pass (CI 워크플로 선택)
+> - ✅ Restrict who can push to matching branches
+
+기본 작업 브랜치 안내:
+> 앞으로 모든 작업은 `/new-feature {타입-이름}` 커맨드로 시작하세요.
+> 생성되는 브랜치: `feature/{name}`, `fix/{name}` 등 → PR base: `main`
+>
+> ℹ️ `/new-feature`는 `dev` 브랜치 존재 여부로 전략을 자동 감지합니다.
+> `dev`가 없으면 자동으로 `main`을 베이스로 사용합니다.
 
 ---
 
@@ -338,8 +390,12 @@ git push -u origin dev
 기둥 5 (팀 지식 축적): memory/MEMORY.md ✅ 생성됨
 
 [Git 브랜치 & Worktree]
-main ← dev ← dev/{feature|fix|hotfix|refactor|chore}-{name}
-dev 브랜치:  ✅ 생성됨
+[A: main + dev 선택 시]
+  main ← dev ← feature/* / fix/* / hotfix/* / ...
+  dev 브랜치:  ✅ 생성됨
+[B: main only 선택 시]
+  main ← feature/* / fix/* / hotfix/* / ...
+  dev 브랜치:  (사용 안 함)
 .worktrees/: ✅ gitignore 등록됨
 
 남은 agents: [목록]
@@ -347,7 +403,7 @@ dev 브랜치:  ✅ 생성됨
 
 이제 할 일:
 1. CLAUDE.md를 열고 프로젝트에 맞게 커스터마이징하세요
-2. GitHub에서 main·dev 브랜치 보호 규칙을 설정하세요
+2. GitHub에서 브랜치 보호 규칙을 설정하세요 (main·dev 또는 main만)
 3. /new-feature feature-{이름} 또는 fix-{이름} 으로 첫 브랜치를 만드세요
 4. /plan <기능> 으로 설계를 시작하세요
 5. AI가 실수하면 /improve 로 규칙을 추가하세요

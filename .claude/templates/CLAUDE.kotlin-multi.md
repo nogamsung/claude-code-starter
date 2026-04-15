@@ -22,6 +22,7 @@
 | 커맨드 | 용도 |
 |--------|------|
 | `/plan <기능>` | 코드 작성 전 설계 및 확인 |
+| `/design-db <도메인>` | MySQL 스키마 설계 → Flyway migration 자동 생성 |
 | `/new-api <Resource>` | REST API 전체 스캐폴딩 (멀티 모듈 경로 자동 적용) |
 | `/new-module <ModuleName>` | 새 Gradle 서브모듈 생성 |
 | `/test [파일]` | 테스트 자동 생성 |
@@ -51,32 +52,32 @@
 |--------|------|------|
 | `main` | 프로덕션 릴리스 | PR + CI 통과 필수 |
 | `dev` | 통합·스테이징 | PR + CI 통과 필수 |
-| `dev/feature-{name}` | 새 기능 | - |
-| `dev/fix-{name}` | 버그 수정 | - |
-| `dev/hotfix-{name}` | 긴급 수정 | - |
-| `dev/refactor-{name}` | 리팩토링 | - |
-| `dev/chore-{name}` | 설정·의존성 | - |
+| `feature/{name}` | 새 기능 | - |
+| `fix/{name}` | 버그 수정 | - |
+| `hotfix/{name}` | 긴급 수정 | - |
+| `refactor/{name}` | 리팩토링 | - |
+| `chore/{name}` | 설정·의존성 | - |
 
 ### Worktree 병렬 작업 흐름
 
 ```bash
 # 작업 시작 — worktree로 격리된 작업공간 생성
-/new-feature feature-login    # dev/feature-login + .worktrees/feature-login/
-/new-feature fix-signup       # dev/fix-signup + .worktrees/fix-signup/
-/new-feature refactor-auth    # dev/refactor-auth + .worktrees/refactor-auth/
+/new-feature feature-login    # feature/login + .worktrees/feature-login/
+/new-feature fix-signup       # fix/signup + .worktrees/fix-signup/
+/new-feature refactor-auth    # refactor/auth + .worktrees/refactor-auth/
 
 # 여러 작업 동시 진행 가능
 git worktree list
 # /project                             [dev]
-# /project/.worktrees/feature-login    [dev/feature-login]
-# /project/.worktrees/fix-signup       [dev/fix-signup]
+# /project/.worktrees/feature-login    [feature/login]
+# /project/.worktrees/fix-signup       [fix/signup]
 
 # 작업 후 PR 생성 (base: dev)
 /new-feature pr
 
 # PR merge 후 정리
 git worktree remove .worktrees/feature-login
-git branch -d dev/feature-login
+git branch -d feature/login
 
 # dev → main 릴리스 PR
 gh pr create --base main --title "release: v1.2.0"

@@ -6,6 +6,80 @@
 
 ---
 
+## 2026-04-15: v1.4.0 — /design-db DB 설계 자동화 추가
+
+**카테고리:** 결정
+
+### 배경
+새 기능 개발 시 DB 스키마를 먼저 설계하고 Migration SQL을 만드는 과정이 수동이어서 패턴 불일치 발생 위험이 있었음.
+
+### 추가된 기능
+- `/design-db <도메인 설명>` — MySQL 스키마 설계 → ERD 검토 → Migration SQL 자동 생성
+- `db-patterns.md` — MySQL 타입 선택, 공통 컬럼, 인덱스, Flyway/golang-migrate 규칙 레퍼런스
+
+### 설계 원칙
+- **설계 → 코드 순서 강제**: `/design-db` 완료 후 `/new-api` 실행 유도
+- **스택별 분기**: Kotlin은 Flyway(`V{N}__*.sql`), Go는 golang-migrate(`{000000}_*.up/down.sql`)
+- **nextjs/flutter 제외**: DB migration 커맨드는 백엔드 스택에서만 유지
+
+### 워크플로
+```
+/design-db → Migration SQL 생성 → /new-api → Entity/Repository 코드 생성
+```
+
+**관련 파일:** `.claude/commands/design-db.md`, `.claude/skills/db-patterns.md`
+
+---
+
+## 2026-04-15: v1.5.0 — REST API 설계 자동화 추가
+
+**카테고리:** 결정
+
+### 추가된 파일
+- `api-designer` agent: REST API 설계 전문 에이전트 (OpenAPI 3.0 YAML 초안, BearerAuth/Pagination/Error 패턴)
+- `api-design-patterns.md` skill: URL 구조·응답 형식·RFC 7807 에러·인증·스택별 어노테이션 패턴 레퍼런스
+- `/design-api` command: 5단계 인터랙티브 설계 → `/new-api`(Kotlin) / `/new-go-api`(Go) 연결
+- `/review-api` command: REST 컨벤션·보안·OpenAPI 문서 완성도 리뷰 (심각도 3단계)
+
+### 설계 원칙
+- **백엔드 전용**: `/init nextjs`, `/init flutter` 시 자동 제거 대상
+- **플로우 연결**: `/design-api` → 설계 확인 → `/new-api` or `/new-go-api` 구현으로 이어짐
+- **`/commit` 문서 자동화**: feat/fix 커밋 시 CHANGELOG·README·memory 자동 업데이트 단계 추가
+
+### 충돌 해결 기록
+`feature/api-design-settings` 브랜치가 `feature/db-design`(PR#2) merge 후 `dev`와 충돌.
+`init.md`의 스택별 유지/제거 목록이 양쪽에서 수정됨 → rebase 후 두 변경사항 병합으로 해결.
+
+**관련 파일:** `.claude/agents/api-designer.md`, `.claude/commands/design-api.md`, `.claude/commands/review-api.md`, `.claude/skills/api-design-patterns.md`, `.claude/commands/commit.md`
+
+---
+
+## 2026-04-15: Git 브랜치 네이밍 — dev/* 충돌 교훈
+
+**카테고리:** 교훈
+
+### 문제
+`dev` 브랜치(통합)와 `dev/feature-*` 브랜치(피처)를 동시에 운용하려 했으나 Git이 거부.
+
+### 원인
+Git refs는 파일시스템 경로처럼 동작함. `refs/heads/dev`(파일)와 `refs/heads/dev/feature-login`(디렉토리)은 같은 경로에 공존 불가.
+`fatal: cannot lock ref 'refs/heads/dev/feature-db-design': 'refs/heads/dev' exists`
+
+### 해결
+피처 브랜치 prefix를 `dev/` 에서 타입별 독립 prefix로 변경:
+- `feature/{name}` · `fix/{name}` · `hotfix/{name}` · `refactor/{name}` · `chore/{name}`
+
+통합 브랜치(`dev`)는 그대로 유지.
+
+### 수정된 파일
+- `new-feature.md` — 브랜치 생성 명령 및 예시 수정
+- `CLAUDE.*.md` 7개 — 브랜치 전략 테이블 수정
+- `README.md` — 브랜치 전략 다이어그램 수정
+
+**관련 파일:** `.claude/commands/new-feature.md`, `.claude/templates/CLAUDE.*.md`
+
+---
+
 ## 2026-04-15: v1.3.0 — 멀티 모듈 지원 추가
 
 **카테고리:** 결정
@@ -22,7 +96,7 @@ Kotlin Gradle 멀티 모듈 / Next.js Turborepo / Go Workspace 3가지 variant �
 ### 추가된 파일
 - 템플릿 6개: `CLAUDE.{kotlin,nextjs,go}-multi.md`, `settings.{kotlin,nextjs,go}-multi.json`
 - 커맨드 1개: `/new-module` (서브모듈/패키지/서비스 추가)
-- 커맨드 수정 3개: `/init`, `/new-api`, `/new-go-api` (멀티 모듈 분기 추가)
+- 커맨드 수정 2개: `/init`, `/new-api` (멀티 모듈 분기 추가)
 - Skills 수정 3개: 각 스택 patterns 파일에 멀티 모듈 패턴 섹션 추가
 
 ### 각 스택 멀티 모듈 구조

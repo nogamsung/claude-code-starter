@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.1-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -31,6 +31,8 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - `memory/MEMORY.md`에 팀 지식 자동 축적 — Second Brain
 - **Git Worktree 기반 병렬 작업** — 여러 기능을 독립된 작업공간에서 동시 개발
 - **멀티 모듈 지원** — Gradle 멀티 모듈 / Turborepo / Go Workspace 구조로 시작 가능
+- **DB 설계 자동화** — `/design-db`로 MySQL 스키마 설계 → Flyway/golang-migrate SQL 자동 생성
+- **API 설계 자동화** — `/design-api`로 REST API 설계 → OpenAPI 3.0 YAML → 코드 생성 연결
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
 
@@ -117,13 +119,19 @@ rm -rf claude-code-starter
 ## 브랜치 전략
 
 ```
-main  ←──── dev  ←──── dev/{feature|fix|hotfix|refactor|chore}-{name}
-(배포)      (통합)         (기능 개발)
+main  ←──── dev  ←──── feature/{name}
+(배포)      (통합)      fix/{name}
+                        hotfix/{name}
+                        refactor/{name}
+                        chore/{name}
 ```
 
 각 브랜치는 `.worktrees/{type}-{name}/` 에 격리된 작업공간으로 생성됩니다.
-타입: `feature` · `fix` · `hotfix` · `refactor` · `chore` · `docs` · `test` · `perf`  
+타입: `feature` · `fix` · `hotfix` · `refactor` · `chore` · `docs` · `test` · `perf`
 여러 터미널 / Claude Code 인스턴스에서 **병렬 작업**이 가능합니다.
+
+> ⚠️ **Git 브랜치 네이밍 제약:** `dev` 브랜치와 `dev/feature-*` 브랜치는 Git refs 구조상 동시에 존재할 수 없습니다.
+> 따라서 피처 브랜치는 `dev/` 접두사 대신 `feature/`, `fix/` 등 독립 prefix를 사용합니다.
 
 ---
 
@@ -148,8 +156,10 @@ main  ←──── dev  ←──── dev/{feature|fix|hotfix|refactor|chor
 
 | 커맨드 | 스택 | 설명 |
 |--------|------|------|
-| `/new-api <Resource>` | Kotlin | Controller / Service / QueryDSL Repository 스캐폴딩 |
-| `/new-go-api <Resource>` | Go | Handler / UseCase / sqlc Repository 스캐폴딩 |
+| `/design-db <도메인>` | Kotlin · Go | MySQL 스키마 설계 → Flyway/golang-migrate Migration SQL 자동 생성 |
+| `/design-api <Resource>` | Kotlin · Go | REST API 설계 → OpenAPI 3.0 YAML → `/new-api` 연결 |
+| `/review-api [대상]` | Kotlin · Go | REST 컨벤션·보안·OpenAPI 문서 완성도 리뷰 |
+| `/new-api <Resource>` | Kotlin · Go | REST API 스캐폴딩 — 스택 자동 감지 (Spring Boot / Go Gin) |
 | `/new-component <Name>` | Next.js | React 컴포넌트 생성 |
 | `/new-screen <Name>` | Flutter | 화면 및 Provider 생성 |
 
@@ -166,6 +176,7 @@ main  ←──── dev  ←──── dev/{feature|fix|hotfix|refactor|chor
 | `nextjs-{generator\|modifier\|tester}` | Next.js 코드 생성·수정·테스트 |
 | `flutter-{generator\|modifier\|tester}` | Flutter 코드 생성·수정·테스트 |
 | `go-{generator\|modifier\|tester}` | Go Gin 코드 생성·수정·테스트 |
+| `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML, 컨벤션, 인증·페이지네이션 패턴) — Kotlin · Go 전용 |
 
 ---
 
@@ -238,16 +249,18 @@ claude-code-starter/
 │   │   ├── new-workflow.md   # GitHub Actions 워크플로 생성
 │   │   ├── plan.md / test.md / review.md
 │   │   ├── commit.md / improve.md / memory.md
-│   │   ├── new-api.md        # Kotlin REST API 스캐폴딩 (단일·멀티 모듈 감지)
-│   │   ├── new-go-api.md     # Go REST API 스캐폴딩 (단일·워크스페이스 감지)
+│   │   ├── new-api.md        # REST API 스캐폴딩 — 스택 자동 감지 (Spring Boot / Go Gin)
 │   │   ├── new-module.md     # 멀티 모듈 서브모듈/패키지/서비스 추가
 │   │   ├── new-component.md  # Next.js 컴포넌트
-│   │   └── new-screen.md     # Flutter 화면
+│   │   ├── new-screen.md     # Flutter 화면
+│   │   ├── design-api.md     # REST API 설계 → OpenAPI YAML → 코드 생성 연결 (Kotlin·Go)
+│   │   └── review-api.md     # REST API 리뷰 — 컨벤션·보안·OpenAPI 문서 (Kotlin·Go)
 │   ├── skills/               # 코드 패턴 참조 (agents가 읽음)
 │   │   ├── kotlin-patterns.md
 │   │   ├── go-patterns.md
 │   │   ├── nextjs-patterns.md
 │   │   ├── flutter-patterns.md
+│   │   ├── api-design-patterns.md  # REST API 설계 패턴 레퍼런스 (Kotlin·Go)
 │   │   ├── github-actions-patterns.md
 │   │   └── ui-design-impl.md
 │   └── templates/            # 스택별 설치 템플릿
@@ -260,5 +273,5 @@ claude-code-starter/
 │   └── MEMORY.md             # 이 레포의 Second Brain
 ├── bootstrap.sh
 ├── CHANGELOG.md
-└── VERSION                   # 1.2.0
+└── VERSION                   # 1.4.0
 ```
