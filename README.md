@@ -157,10 +157,9 @@ main  ←──── dev  ←──── feature/{name}
 | 커맨드 | 스택 | 설명 |
 |--------|------|------|
 | `/design-db <도메인>` | Kotlin · Go | MySQL 스키마 설계 → Flyway/golang-migrate Migration SQL 자동 생성 |
-| `/design-api <Resource>` | Kotlin · Go | REST API 설계 → OpenAPI 3.0 YAML → `/new-api` · `/new-go-api` 연결 |
+| `/design-api <Resource>` | Kotlin · Go | REST API 설계 → OpenAPI 3.0 YAML → `/new-api` 연결 |
 | `/review-api [대상]` | Kotlin · Go | REST 컨벤션·보안·OpenAPI 문서 완성도 리뷰 |
-| `/new-api <Resource>` | Kotlin | Controller / Service / QueryDSL Repository 스캐폴딩 |
-| `/new-go-api <Resource>` | Go | Handler / UseCase / sqlc Repository 스캐폴딩 |
+| `/new-api <Resource>` | Kotlin · Go | REST API 스캐폴딩 — 스택 자동 감지 (Spring Boot / Go Gin) |
 | `/new-component <Name>` | Next.js | React 컴포넌트 생성 |
 | `/new-screen <Name>` | Flutter | 화면 및 Provider 생성 |
 
@@ -250,8 +249,7 @@ claude-code-starter/
 │   │   ├── new-workflow.md   # GitHub Actions 워크플로 생성
 │   │   ├── plan.md / test.md / review.md
 │   │   ├── commit.md / improve.md / memory.md
-│   │   ├── new-api.md        # Kotlin REST API 스캐폴딩 (단일·멀티 모듈 감지)
-│   │   ├── new-go-api.md     # Go REST API 스캐폴딩 (단일·워크스페이스 감지)
+│   │   ├── new-api.md        # REST API 스캐폴딩 — 스택 자동 감지 (Spring Boot / Go Gin)
 │   │   ├── new-module.md     # 멀티 모듈 서브모듈/패키지/서비스 추가
 │   │   ├── new-component.md  # Next.js 컴포넌트
 │   │   ├── new-screen.md     # Flutter 화면

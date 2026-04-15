@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/design-api` 커맨드** — 코드 작성 전 REST API를 설계하는 인터랙티브 워크플로우
   - 스택 자동 감지 (`build.gradle.kts` → Kotlin, `go.mod` → Go)
   - 도메인 파악 → 엔드포인트 목록 → Request/Response 스키마 → OpenAPI 3.0 YAML 초안 5단계
-  - 설계 완료 후 `/new-api`(Kotlin) 또는 `/new-go-api`(Go)로 자동 연결
+  - 설계 완료 후 `/new-api`로 자동 연결
   - 백엔드 전용 (`/init nextjs`, `flutter` 시 제거 대상)
 - **`/review-api` 커맨드** — 기존 REST API 코드 리뷰
   - RESTful 컨벤션 (URL 구조, HTTP 메서드, 상태코드) 체크
@@ -37,12 +37,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - RFC 7807 Problem Details 에러 응답 패턴
   - 인증 스킴별 OpenAPI securityScheme 정의
   - 스택별 어노테이션 패턴 (SpringDoc vs swag godoc)
-  - `/design-api` → `/new-api` / `/new-go-api` 연결 플로우 다이어그램
+  - `/design-api` → `/new-api` 연결 플로우 다이어그램
 
 ### Changed
 
 - `/commit` — 작업 완료 시 CHANGELOG·VERSION·memory 자동 업데이트 단계 추가 (문서 자동화)
 - `/init` — kotlin/go 스택은 api 관련 파일 유지, nextjs/flutter 스택은 제거 목록에 추가
+
+## [1.4.1] - 2026-04-15
+
+### Changed
+
+- **`/new-api` 통합** — `/new-go-api` 커맨드를 `/new-api`로 통합
+  - `go.mod` 존재 시 Go Gin 스캐폴딩 자동 실행
+  - `settings.gradle.kts` / `build.gradle.kts` 존재 시 Spring Boot 스캐폴딩 자동 실행
+  - 스택 감지 실패 시 사용자에게 선택 요청
+
+### Removed
+
+- **`/new-go-api` 커맨드** — `/new-api`로 통합되어 제거
 
 ---
 

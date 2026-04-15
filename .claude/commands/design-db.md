@@ -150,11 +150,11 @@ Migration SQL 파일이 생성되었습니다.
 Migration SQL 파일이 생성되었습니다.
 이제 아래 커맨드로 Domain struct와 Repository를 생성하세요:
 
-  /new-go-api {Resource}
+  /new-api {Resource}
 
-예: /new-go-api User
-    /new-go-api Order
-    /new-go-api Product
+예: /new-api User
+    /new-api Order
+    /new-api Product
 ```
 
 ---
