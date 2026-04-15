@@ -42,27 +42,30 @@ Conventional Commits 규칙에 따라 커밋을 생성합니다.
 4. `$ARGUMENTS`에 힌트가 있으면 참고하여 메시지 보완
 5. 커밋 메시지를 사용자에게 보여주고 확인 요청
 6. 확인 후 `git commit` 실행
-7. **VERSION 파일이 변경된 경우** — 버전 태그를 생성하고 푸시
+7. **항상** — 버전 태그를 생성하고 푸시 (모든 커밋은 버전 릴리즈)
    ```bash
+   git push origin HEAD
    git tag v$(cat VERSION)
    git push origin v$(cat VERSION)
    ```
 
 ---
 
-## 문서 자동 업데이트 (Step 5 전에 실행)
+## 문서 업데이트 (Step 5 전에 반드시 실행)
 
-커밋 전 아래 조건에 따라 관련 문서를 자동으로 업데이트합니다.
+커밋 전 아래 문서를 **모든 커밋 타입에서 필수로** 업데이트합니다.
 **사용자에게 별도로 확인하지 않고** 조용히 업데이트 후 "문서를 업데이트했습니다." 한 줄만 출력합니다.
 
-### 1. CHANGELOG.md 업데이트
+> ⚠️ **필수 규칙**: 문서 업데이트 없이 커밋하지 않습니다. 변경사항이 아무리 작아도 CHANGELOG에 기록합니다.
 
-type이 `feat` / `fix` / `perf` / `refactor`인 경우 자동으로 CHANGELOG에 항목을 추가합니다.
+### 1. CHANGELOG.md 업데이트 (모든 타입 필수)
+
+`[Unreleased]` 섹션은 사용하지 않습니다. **모든 커밋은 즉시 버전으로 발행합니다.**
 
 **버전 결정 규칙:**
 - `feat` → minor 버전 올림 (1.4.0 → 1.5.0), VERSION 파일도 함께 수정
 - `fix` / `perf` → patch 버전 올림 (1.4.0 → 1.4.1), VERSION 파일도 함께 수정
-- `refactor` / `chore` / `docs` → 버전 변경 없이 현재 버전 섹션에 추가
+- `refactor` / `chore` / `docs` / `test` / `style` / `ci` / `build` → patch 버전 올림 (1.4.0 → 1.4.1), VERSION 파일도 함께 수정
 
 **CHANGELOG 항목 형식:**
 ```markdown
@@ -70,11 +73,11 @@ type이 `feat` / `fix` / `perf` / `refactor`인 경우 자동으로 CHANGELOG에
 
 ### Added   ← feat
 ### Fixed   ← fix
-### Changed ← refactor, perf
+### Changed ← refactor, perf, chore, docs, test, style, ci, build
 ### Removed ← 삭제된 기능이 있을 때
 ```
 
-이미 오늘 날짜로 같은 버전 섹션이 있으면 새 섹션을 만들지 않고 해당 섹션에 항목을 추가합니다.
+이미 오늘 날짜로 같은 버전 섹션이 있으면 해당 섹션에 항목을 추가합니다.
 
 ### 2. README.md 업데이트
 

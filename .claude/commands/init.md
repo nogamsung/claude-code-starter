@@ -296,19 +296,43 @@ git commit -m "chore: .worktrees/ gitignore 추가" 2>/dev/null || true
 
 ---
 
-### Step 6 — Git 브랜치 초기 설정
+### Step 6 — Git 브랜치 전략 선택 & 초기 설정
 
 **신규 프로젝트**인 경우에만 실행합니다. 기존 프로젝트는 생략합니다.
 
-#### 5-1. dev 브랜치 생성
+#### 6-1. 브랜치 전략 선택
+
+사용자에게 아래를 물어봅니다:
+
+> 브랜치 전략을 선택하세요 (기본값: A):
+>
+> **A. main + dev** (권장, 기본값)
+> ```
+> main ← dev ← feature/* / fix/* / hotfix/* / ...
+> ```
+> - `dev`: 개발 통합 브랜치 (스테이징 환경)
+> - `main`: 프로덕션 브랜치
+> - PR은 `feature/*` → `dev`, 릴리즈는 `dev` → `main`
+>
+> **B. main only**
+> ```
+> main ← feature/* / fix/* / hotfix/* / ...
+> ```
+> - `main` 하나만 사용
+> - PR은 `feature/*` → `main` 바로 머지
+
+선택을 받은 뒤 아래 해당 섹션으로 진행합니다.
+
+---
+
+#### 6-2A. [A 선택] main + dev 설정
+
 ```bash
 git checkout -b dev
 git push -u origin dev
 ```
 
-#### 5-2. GitHub 브랜치 보호 규칙 안내
-
-사용자에게 아래를 안내합니다:
+GitHub 브랜치 보호 규칙 안내:
 
 > GitHub 저장소 Settings → Branches → Add rule 에서 다음 보호 규칙을 설정하세요.
 >
@@ -321,10 +345,31 @@ git push -u origin dev
 > - ✅ Require a pull request before merging
 > - ✅ Require status checks to pass (CI 워크플로 선택)
 
-#### 5-3. 기본 작업 브랜치 안내
-
+기본 작업 브랜치 안내:
 > 앞으로 모든 작업은 `/new-feature {타입-이름}` 커맨드로 시작하세요.
-> 생성되는 브랜치: `dev/{feature|fix|hotfix|refactor|chore}-{name}` → PR base: `dev`
+> 생성되는 브랜치: `feature/{name}`, `fix/{name}` 등 → PR base: `dev`
+
+---
+
+#### 6-2B. [B 선택] main only 설정
+
+`dev` 브랜치를 **생성하지 않습니다.** `main`만 사용합니다.
+
+GitHub 브랜치 보호 규칙 안내:
+
+> GitHub 저장소 Settings → Branches → Add rule 에서 다음 보호 규칙을 설정하세요.
+>
+> **`main` 브랜치 보호:**
+> - ✅ Require a pull request before merging
+> - ✅ Require status checks to pass (CI 워크플로 선택)
+> - ✅ Restrict who can push to matching branches
+
+기본 작업 브랜치 안내:
+> 앞으로 모든 작업은 `/new-feature {타입-이름}` 커맨드로 시작하세요.
+> 생성되는 브랜치: `feature/{name}`, `fix/{name}` 등 → PR base: `main`
+>
+> ℹ️ `/new-feature`는 `dev` 브랜치 존재 여부로 전략을 자동 감지합니다.
+> `dev`가 없으면 자동으로 `main`을 베이스로 사용합니다.
 
 ---
 
@@ -345,8 +390,12 @@ git push -u origin dev
 기둥 5 (팀 지식 축적): memory/MEMORY.md ✅ 생성됨
 
 [Git 브랜치 & Worktree]
-main ← dev ← dev/{feature|fix|hotfix|refactor|chore}-{name}
-dev 브랜치:  ✅ 생성됨
+[A: main + dev 선택 시]
+  main ← dev ← feature/* / fix/* / hotfix/* / ...
+  dev 브랜치:  ✅ 생성됨
+[B: main only 선택 시]
+  main ← feature/* / fix/* / hotfix/* / ...
+  dev 브랜치:  (사용 안 함)
 .worktrees/: ✅ gitignore 등록됨
 
 남은 agents: [목록]
@@ -354,7 +403,7 @@ dev 브랜치:  ✅ 생성됨
 
 이제 할 일:
 1. CLAUDE.md를 열고 프로젝트에 맞게 커스터마이징하세요
-2. GitHub에서 main·dev 브랜치 보호 규칙을 설정하세요
+2. GitHub에서 브랜치 보호 규칙을 설정하세요 (main·dev 또는 main만)
 3. /new-feature feature-{이름} 또는 fix-{이름} 으로 첫 브랜치를 만드세요
 4. /plan <기능> 으로 설계를 시작하세요
 5. AI가 실수하면 /improve 로 규칙을 추가하세요
