@@ -3,6 +3,9 @@ description: Spring Boot REST API 엔드포인트 스캐폴딩 생성 (Controlle
 argument-hint: <리소스명> (예: User, Product, Order)
 ---
 
+> 💡 **DB 스키마부터 설계하려면** `/design-db <도메인 설명>` 을 먼저 실행하세요.
+> Migration SQL을 생성한 후 이 커맨드로 Entity/Repository 코드를 생성하면 일관성이 보장됩니다.
+
 다음 지시사항에 따라 Spring Boot REST API를 생성해주세요.
 
 **리소스명**: $ARGUMENTS (없으면 사용자에게 물어보세요)

@@ -63,8 +63,8 @@ skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-d
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `github-actions-designer`
-유지 commands: `new-go-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `go-patterns.md`, `github-actions-patterns.md`
+유지 commands: `new-go-api.md`, `design-db.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `go-patterns.md`, `db-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
 > Go + Next.js/Flutter 풀스택 구성이라면 유지하세요.
@@ -79,8 +79,8 @@ skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-desig
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
-유지 commands: `new-api.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `kotlin-patterns.md`, `github-actions-patterns.md`
+유지 commands: `new-api.md`, `design-db.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `kotlin-patterns.md`, `db-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Kotlin 백엔드 전용으로는 불필요합니다.
 > 단, Kotlin + Next.js/Flutter 풀스택 구성이라면 유지하세요.
@@ -89,9 +89,9 @@ skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-desig
 
 #### `nextjs` 선택 시 — 제거 대상
 agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
-commands: `new-api.md`, `new-screen.md`
+commands: `new-api.md`, `new-go-api.md`, `new-screen.md`, `design-db.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.flutter.md`, `settings.kotlin.json`, `settings.flutter.json`
-skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`, `db-patterns.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
@@ -105,9 +105,9 @@ skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
 
 #### `flutter` 선택 시 — 제거 대상
 agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`
-commands: `new-api.md`, `new-component.md`
+commands: `new-api.md`, `new-go-api.md`, `new-component.md`, `design-db.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `settings.kotlin.json`, `settings.nextjs.json`
-skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
+skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`, `db-patterns.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `flutter-generator`, `flutter-modifier`, `flutter-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
@@ -128,8 +128,8 @@ skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-desig
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
-유지 commands: `new-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `kotlin-patterns.md`, `github-actions-patterns.md`
+유지 commands: `new-api.md`, `design-db.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `kotlin-patterns.md`, `db-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Kotlin 백엔드 전용으로는 불필요합니다.
 > 단, Kotlin + Next.js/Flutter 풀스택 구성이라면 유지하세요.
@@ -138,9 +138,9 @@ skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-desig
 
 #### `nextjs-multi` 선택 시 — 제거 대상
 agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
-commands: `new-api.md`, `new-screen.md`
+commands: `new-api.md`, `new-go-api.md`, `new-screen.md`, `design-db.md`
 templates: `CLAUDE.kotlin.md`, `CLAUDE.kotlin-multi.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `CLAUDE.go.md`, `CLAUDE.go-multi.md`, `settings.kotlin.json`, `settings.kotlin-multi.json`, `settings.nextjs.json`, `settings.flutter.json`, `settings.go.json`, `settings.go-multi.json`
-skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`, `db-patterns.md`
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
@@ -160,8 +160,8 @@ skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-d
 기타: `.github/assets/` (스타터 대표 이미지 폴더)
 
 유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `github-actions-designer`
-유지 commands: `new-go-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
-유지 skills: `go-patterns.md`, `github-actions-patterns.md`
+유지 commands: `new-go-api.md`, `design-db.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `go-patterns.md`, `db-patterns.md`, `github-actions-patterns.md`
 
 > `ui-designer`와 `ui-design-impl.md`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
 > Go + Next.js/Flutter 풀스택 구성이라면 유지하세요.
