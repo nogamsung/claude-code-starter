@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-04-15: Git 브랜치 네이밍 — dev/* 충돌 교훈
+
+**카테고리:** 교훈
+
+### 문제
+`dev` 브랜치(통합)와 `dev/feature-*` 브랜치(피처)를 동시에 운용하려 했으나 Git이 거부.
+
+### 원인
+Git refs는 파일시스템 경로처럼 동작함. `refs/heads/dev`(파일)와 `refs/heads/dev/feature-login`(디렉토리)은 같은 경로에 공존 불가.
+`fatal: cannot lock ref 'refs/heads/dev/feature-db-design': 'refs/heads/dev' exists`
+
+### 해결
+피처 브랜치 prefix를 `dev/` 에서 타입별 독립 prefix로 변경:
+- `feature/{name}` · `fix/{name}` · `hotfix/{name}` · `refactor/{name}` · `chore/{name}`
+
+통합 브랜치(`dev`)는 그대로 유지.
+
+### 수정된 파일
+- `new-feature.md` — 브랜치 생성 명령 및 예시 수정
+- `CLAUDE.*.md` 7개 — 브랜치 전략 테이블 수정
+- `README.md` — 브랜치 전략 다이어그램 수정
+
+**관련 파일:** `.claude/commands/new-feature.md`, `.claude/templates/CLAUDE.*.md`
+
+---
+
 ## 2026-04-15: v1.3.0 — 멀티 모듈 지원 추가
 
 **카테고리:** 결정

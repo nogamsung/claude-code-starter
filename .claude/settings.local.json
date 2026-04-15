@@ -3,7 +3,12 @@
     "allow": [
       "WebFetch(domain:github.com)",
       "Bash(git checkout *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(gh pr *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git stash *)",
+      "Bash(git worktree *)"
     ]
   }
 }

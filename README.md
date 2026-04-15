@@ -117,13 +117,19 @@ rm -rf claude-code-starter
 ## 브랜치 전략
 
 ```
-main  ←──── dev  ←──── dev/{feature|fix|hotfix|refactor|chore}-{name}
-(배포)      (통합)         (기능 개발)
+main  ←──── dev  ←──── feature/{name}
+(배포)      (통합)      fix/{name}
+                        hotfix/{name}
+                        refactor/{name}
+                        chore/{name}
 ```
 
 각 브랜치는 `.worktrees/{type}-{name}/` 에 격리된 작업공간으로 생성됩니다.
-타입: `feature` · `fix` · `hotfix` · `refactor` · `chore` · `docs` · `test` · `perf`  
+타입: `feature` · `fix` · `hotfix` · `refactor` · `chore` · `docs` · `test` · `perf`
 여러 터미널 / Claude Code 인스턴스에서 **병렬 작업**이 가능합니다.
+
+> ⚠️ **Git 브랜치 네이밍 제약:** `dev` 브랜치와 `dev/feature-*` 브랜치는 Git refs 구조상 동시에 존재할 수 없습니다.
+> 따라서 피처 브랜치는 `dev/` 접두사 대신 `feature/`, `fix/` 등 독립 prefix를 사용합니다.
 
 ---
 
