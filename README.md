@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src=".github/assets/logo.jpg" alt="Claude Code Starter" width="180" />
-
 # Claude Code Starter
 
 **새 프로젝트에 Claude Code 하네스를 10초 만에 구성하는 설정 모음**
