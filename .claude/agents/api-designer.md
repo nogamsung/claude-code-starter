@@ -1,5 +1,6 @@
 ---
 name: api-designer
+model: claude-opus-4-6
 description: REST API 설계 전문 에이전트. 코드 작성 전 엔드포인트·스키마·인증 방식을 설계하고 OpenAPI 스펙 초안을 생성. /design-api 커맨드에서 호출. Kotlin Spring Boot 및 Go Gin 백엔드 전용.
 tools: Read, Glob, Grep
 ---
