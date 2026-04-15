@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.3] - 2026-04-15
+
+### Changed
+
+- `/commit` — main 직접 커밋 금지, 항상 feature 브랜치에서 PR을 통해 머지
+- `/new-feature pr` — PR 머지 후 정리 단계에 `git pull main` + 태그 생성 + 태그 푸시 추가
+
+---
+
 ## [1.5.2] - 2026-04-15
 
 ### Changed
@@ -237,6 +246,7 @@ claude-code-starter/
 
 | Version | Date       | Summary               |
 |---------|------------|-----------------------|
+| 1.5.3   | 2026-04-15 | PR 통한 main 머지 강제, PR 머지 후 태그 자동화 |
 | 1.5.2   | 2026-04-15 | /commit 브랜치별 git 자동화 (main: push+태그, feature: push만) |
 | 1.5.1   | 2026-04-15 | 문서 필수화, 브랜치 전략 자동 감지, /init 브랜치 옵션 추가 |
 | 1.5.0   | 2026-04-15 | /design-api, /review-api 커맨드, api-designer 에이전트 추가 |

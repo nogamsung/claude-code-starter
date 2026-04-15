@@ -170,13 +170,24 @@ EOF
 )"
 ```
 
-### PR merge 후 정리
+### PR merge 후 정리 (사용자가 GitHub에서 머지한 뒤 실행)
+
 ```bash
-# PR merge 확인 후 실행
+# 1. main 최신화
+git checkout main
+git pull origin main
+
+# 2. 버전 태그 생성 & 푸시 (VERSION 파일 기준)
+git tag v$(cat VERSION)
+git push origin v$(cat VERSION)
+
+# 3. worktree & 브랜치 정리
 git worktree remove .worktrees/{type}-{name}
 git branch -d {type}/{name}
 git remote prune origin
 ```
+
+> 태그는 항상 PR 머지 후 `main`에서 생성합니다. feature 브랜치에서는 태그를 만들지 않습니다.
 
 ---
 

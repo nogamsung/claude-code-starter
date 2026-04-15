@@ -38,26 +38,17 @@ Conventional Commits 규칙에 따라 커밋을 생성합니다.
 
 1. `git status`로 변경된 파일 확인
 2. `git diff --staged` 또는 `git diff`로 변경 내용 확인
-3. 현재 브랜치 확인: `git branch --show-current`
-4. 변경사항을 분석하여 적절한 커밋 메시지 초안 작성
-5. `$ARGUMENTS`에 힌트가 있으면 참고하여 메시지 보완
-6. 커밋 메시지를 사용자에게 보여주고 확인 요청
-7. 확인 후 `git commit` 실행
-8. **커밋 후 자동 실행** — 브랜치에 따라 분기:
-
-   **`main` 브랜치인 경우 (릴리즈 플로우):**
-   ```bash
-   git push origin main
-   git tag v$(cat VERSION)
-   git push origin v$(cat VERSION)
-   ```
-   → push → 태그 생성 → 태그 푸시까지 자동으로 완료
-
-   **feature / fix / hotfix / 기타 브랜치인 경우:**
+3. 변경사항을 분석하여 적절한 커밋 메시지 초안 작성
+4. `$ARGUMENTS`에 힌트가 있으면 참고하여 메시지 보완
+5. 커밋 메시지를 사용자에게 보여주고 확인 요청
+6. 확인 후 `git commit` 실행
+7. **커밋 후 자동 실행** — 현재 브랜치 push:
    ```bash
    git push origin HEAD
    ```
-   → 브랜치만 푸시 (태그 없음 — PR 머지 후 main에서 태그 생성)
+
+> ⚠️ `main`에 직접 커밋하지 않습니다. 항상 feature 브랜치에서 작업 후 PR을 통해 머지합니다.
+> 버전 태그는 PR이 머지된 뒤 `/new-feature pr` 흐름의 "머지 후 정리" 단계에서 생성됩니다.
 
 ---
 
