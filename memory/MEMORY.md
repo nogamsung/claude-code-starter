@@ -31,6 +31,29 @@
 
 ---
 
+## 2026-04-15: v1.5.0 — REST API 설계 자동화 추가
+
+**카테고리:** 결정
+
+### 추가된 파일
+- `api-designer` agent: REST API 설계 전문 에이전트 (OpenAPI 3.0 YAML 초안, BearerAuth/Pagination/Error 패턴)
+- `api-design-patterns.md` skill: URL 구조·응답 형식·RFC 7807 에러·인증·스택별 어노테이션 패턴 레퍼런스
+- `/design-api` command: 5단계 인터랙티브 설계 → `/new-api`(Kotlin) / `/new-go-api`(Go) 연결
+- `/review-api` command: REST 컨벤션·보안·OpenAPI 문서 완성도 리뷰 (심각도 3단계)
+
+### 설계 원칙
+- **백엔드 전용**: `/init nextjs`, `/init flutter` 시 자동 제거 대상
+- **플로우 연결**: `/design-api` → 설계 확인 → `/new-api` or `/new-go-api` 구현으로 이어짐
+- **`/commit` 문서 자동화**: feat/fix 커밋 시 CHANGELOG·README·memory 자동 업데이트 단계 추가
+
+### 충돌 해결 기록
+`feature/api-design-settings` 브랜치가 `feature/db-design`(PR#2) merge 후 `dev`와 충돌.
+`init.md`의 스택별 유지/제거 목록이 양쪽에서 수정됨 → rebase 후 두 변경사항 병합으로 해결.
+
+**관련 파일:** `.claude/agents/api-designer.md`, `.claude/commands/design-api.md`, `.claude/commands/review-api.md`, `.claude/skills/api-design-patterns.md`, `.claude/commands/commit.md`
+
+---
+
 ## 2026-04-15: Git 브랜치 네이밍 — dev/* 충돌 교훈
 
 **카테고리:** 교훈

@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -32,6 +32,7 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - **Git Worktree 기반 병렬 작업** — 여러 기능을 독립된 작업공간에서 동시 개발
 - **멀티 모듈 지원** — Gradle 멀티 모듈 / Turborepo / Go Workspace 구조로 시작 가능
 - **DB 설계 자동화** — `/design-db`로 MySQL 스키마 설계 → Flyway/golang-migrate SQL 자동 생성
+- **API 설계 자동화** — `/design-api`로 REST API 설계 → OpenAPI 3.0 YAML → 코드 생성 연결
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
 
@@ -156,6 +157,8 @@ main  ←──── dev  ←──── feature/{name}
 | 커맨드 | 스택 | 설명 |
 |--------|------|------|
 | `/design-db <도메인>` | Kotlin · Go | MySQL 스키마 설계 → Flyway/golang-migrate Migration SQL 자동 생성 |
+| `/design-api <Resource>` | Kotlin · Go | REST API 설계 → OpenAPI 3.0 YAML → `/new-api` · `/new-go-api` 연결 |
+| `/review-api [대상]` | Kotlin · Go | REST 컨벤션·보안·OpenAPI 문서 완성도 리뷰 |
 | `/new-api <Resource>` | Kotlin | Controller / Service / QueryDSL Repository 스캐폴딩 |
 | `/new-go-api <Resource>` | Go | Handler / UseCase / sqlc Repository 스캐폴딩 |
 | `/new-component <Name>` | Next.js | React 컴포넌트 생성 |
@@ -174,6 +177,7 @@ main  ←──── dev  ←──── feature/{name}
 | `nextjs-{generator\|modifier\|tester}` | Next.js 코드 생성·수정·테스트 |
 | `flutter-{generator\|modifier\|tester}` | Flutter 코드 생성·수정·테스트 |
 | `go-{generator\|modifier\|tester}` | Go Gin 코드 생성·수정·테스트 |
+| `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML, 컨벤션, 인증·페이지네이션 패턴) — Kotlin · Go 전용 |
 
 ---
 
@@ -250,12 +254,15 @@ claude-code-starter/
 │   │   ├── new-go-api.md     # Go REST API 스캐폴딩 (단일·워크스페이스 감지)
 │   │   ├── new-module.md     # 멀티 모듈 서브모듈/패키지/서비스 추가
 │   │   ├── new-component.md  # Next.js 컴포넌트
-│   │   └── new-screen.md     # Flutter 화면
+│   │   ├── new-screen.md     # Flutter 화면
+│   │   ├── design-api.md     # REST API 설계 → OpenAPI YAML → 코드 생성 연결 (Kotlin·Go)
+│   │   └── review-api.md     # REST API 리뷰 — 컨벤션·보안·OpenAPI 문서 (Kotlin·Go)
 │   ├── skills/               # 코드 패턴 참조 (agents가 읽음)
 │   │   ├── kotlin-patterns.md
 │   │   ├── go-patterns.md
 │   │   ├── nextjs-patterns.md
 │   │   ├── flutter-patterns.md
+│   │   ├── api-design-patterns.md  # REST API 설계 패턴 레퍼런스 (Kotlin·Go)
 │   │   ├── github-actions-patterns.md
 │   │   └── ui-design-impl.md
 │   └── templates/            # 스택별 설치 템플릿
@@ -268,5 +275,5 @@ claude-code-starter/
 │   └── MEMORY.md             # 이 레포의 Second Brain
 ├── bootstrap.sh
 ├── CHANGELOG.md
-└── VERSION                   # 1.2.0
+└── VERSION                   # 1.5.0
 ```
