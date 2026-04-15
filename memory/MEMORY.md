@@ -18,13 +18,13 @@
 - `db-patterns.md` — MySQL 타입 선택, 공통 컬럼, 인덱스, Flyway/golang-migrate 규칙 레퍼런스
 
 ### 설계 원칙
-- **설계 → 코드 순서 강제**: `/design-db` 완료 후 `/new-api` 또는 `/new-go-api` 실행 유도
+- **설계 → 코드 순서 강제**: `/design-db` 완료 후 `/new-api` 실행 유도
 - **스택별 분기**: Kotlin은 Flyway(`V{N}__*.sql`), Go는 golang-migrate(`{000000}_*.up/down.sql`)
 - **nextjs/flutter 제외**: DB migration 커맨드는 백엔드 스택에서만 유지
 
 ### 워크플로
 ```
-/design-db → Migration SQL 생성 → /new-api or /new-go-api → Entity/Repository 코드 생성
+/design-db → Migration SQL 생성 → /new-api → Entity/Repository 코드 생성
 ```
 
 **관련 파일:** `.claude/commands/design-db.md`, `.claude/skills/db-patterns.md`
@@ -96,7 +96,7 @@ Kotlin Gradle 멀티 모듈 / Next.js Turborepo / Go Workspace 3가지 variant �
 ### 추가된 파일
 - 템플릿 6개: `CLAUDE.{kotlin,nextjs,go}-multi.md`, `settings.{kotlin,nextjs,go}-multi.json`
 - 커맨드 1개: `/new-module` (서브모듈/패키지/서비스 추가)
-- 커맨드 수정 3개: `/init`, `/new-api`, `/new-go-api` (멀티 모듈 분기 추가)
+- 커맨드 수정 2개: `/init`, `/new-api` (멀티 모듈 분기 추가)
 - Skills 수정 3개: 각 스택 patterns 파일에 멀티 모듈 패턴 섹션 추가
 
 ### 각 스택 멀티 모듈 구조
