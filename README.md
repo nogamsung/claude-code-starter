@@ -9,7 +9,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -32,6 +32,7 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - AI가 실수할 때마다 `/improve`로 규칙을 누적해 점점 정교해지는 피드백 루프
 - `memory/MEMORY.md`에 팀 지식 자동 축적 — Second Brain
 - **Git Worktree 기반 병렬 작업** — 여러 기능을 독립된 작업공간에서 동시 개발
+- **멀티 모듈 지원** — Gradle 멀티 모듈 / Turborepo / Go Workspace 구조로 시작 가능
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
 
@@ -58,11 +59,14 @@ rm -rf claude-code-starter
 ### 2. Claude Code에서 스택 초기화
 
 ```
-/init           # 자동 감지 (package.json / build.gradle.kts / pubspec.yaml / go.mod)
-/init kotlin    # Kotlin Spring Boot 백엔드
-/init nextjs    # Next.js 프론트엔드
-/init flutter   # Flutter 모바일
-/init go        # Go Gin 백엔드
+/init                # 자동 감지 (package.json / build.gradle.kts / pubspec.yaml / go.mod / go.work / turbo.json)
+/init kotlin         # Kotlin Spring Boot 백엔드 (단일 모듈)
+/init kotlin-multi   # Kotlin Spring Boot (Gradle 멀티 모듈: api/domain/infra)
+/init nextjs         # Next.js 프론트엔드 (단일 앱)
+/init nextjs-multi   # Next.js (Turborepo: apps/web + packages/ui,lib,config)
+/init flutter        # Flutter 모바일
+/init go             # Go Gin 백엔드 (단일 서비스)
+/init go-multi       # Go (Workspace: services/api,worker + pkg/shared)
 ```
 
 <details>
@@ -131,8 +135,9 @@ main  ←──── dev  ←──── dev/{feature|fix|hotfix|refactor|chor
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/init [stack]` | 스택 감지 및 하네스 구성 |
+| `/init [stack]` | 스택 감지 및 하네스 구성 (단일·멀티 모듈 모두 지원) |
 | `/new-feature [{type}-{name}\|pr]` | Worktree 기반 작업 브랜치 생성 / PR 생성 (feature·fix·hotfix·refactor·chore 등) |
+| `/new-module <name>` | 멀티 모듈 프로젝트에 서브모듈/패키지/서비스 추가 |
 | `/plan <기능>` | 코드 작성 전 설계 검토 및 합의 |
 | `/test [파일]` | 테스트 코드 자동 생성 |
 | `/review [대상]` | 코드 리뷰 |
@@ -235,8 +240,9 @@ claude-code-starter/
 │   │   ├── new-workflow.md   # GitHub Actions 워크플로 생성
 │   │   ├── plan.md / test.md / review.md
 │   │   ├── commit.md / improve.md / memory.md
-│   │   ├── new-api.md        # Kotlin REST API 스캐폴딩
-│   │   ├── new-go-api.md     # Go REST API 스캐폴딩
+│   │   ├── new-api.md        # Kotlin REST API 스캐폴딩 (단일·멀티 모듈 감지)
+│   │   ├── new-go-api.md     # Go REST API 스캐폴딩 (단일·워크스페이스 감지)
+│   │   ├── new-module.md     # 멀티 모듈 서브모듈/패키지/서비스 추가
 │   │   ├── new-component.md  # Next.js 컴포넌트
 │   │   └── new-screen.md     # Flutter 화면
 │   ├── skills/               # 코드 패턴 참조 (agents가 읽음)
@@ -248,7 +254,9 @@ claude-code-starter/
 │   │   └── ui-design-impl.md
 │   └── templates/            # 스택별 설치 템플릿
 │       ├── CLAUDE.{kotlin,go,nextjs,flutter}.md
+│       ├── CLAUDE.{kotlin,go,nextjs}-multi.md  # 멀티 모듈 variant
 │       ├── settings.{kotlin,go,nextjs,flutter}.json
+│       ├── settings.{kotlin,go,nextjs}-multi.json
 │       └── memory.md
 ├── memory/
 │   └── MEMORY.md             # 이 레포의 Second Brain

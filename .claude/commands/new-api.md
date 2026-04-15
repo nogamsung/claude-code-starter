@@ -7,6 +7,23 @@ argument-hint: <리소스명> (예: User, Product, Order)
 
 **리소스명**: $ARGUMENTS (없으면 사용자에게 물어보세요)
 
+## 프로젝트 구조 감지
+
+먼저 프로젝트가 단일 모듈인지 멀티 모듈인지 확인합니다:
+- `settings.gradle.kts`에 `include(`가 있으면 → 멀티 모듈
+- 없으면 → 단일 모듈 (기존 동작)
+
+### 멀티 모듈일 때 파일 위치
+
+| 파일 | 모듈 |
+|------|------|
+| Entity, Value Object | `:domain` 모듈 → `domain/src/main/kotlin/.../domain/` |
+| Service | `:domain` 모듈 → `domain/src/main/kotlin/.../application/` |
+| Repository (interface) | `:domain` 모듈 → `domain/src/main/kotlin/.../domain/` |
+| Repository (impl, QueryDSL) | `:infra` 모듈 → `infra/src/main/kotlin/.../infrastructure/` |
+| Controller, DTO | `:api` 모듈 → `api/src/main/kotlin/.../presentation/` |
+| 테스트 | 각 모듈의 `src/test/kotlin/` |
+
 ## 생성할 파일
 
 현재 프로젝트의 패키지 구조를 먼저 파악한 후, 아래 파일들을 생성하세요:

@@ -343,3 +343,86 @@ export const handlers = [
 - trivial 정적 마크업 외 스냅샷 테스트
 - 테스트 대상 컴포넌트 자체를 mock
 - 서드파티 라이브러리 동작 테스트 (예: React Hook Form 자체 validation)
+
+---
+
+## Multi-Package Patterns (Turborepo)
+
+### turbo.json
+```json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "dist/**"]
+    },
+    "lint": { "dependsOn": ["^lint"] },
+    "test": { "dependsOn": ["^build"] },
+    "dev": { "cache": false, "persistent": true }
+  }
+}
+```
+
+### 루트 package.json
+```json
+{
+  "name": "project-root",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  }
+}
+```
+
+### packages/ui/package.json
+```json
+{
+  "name": "@project/ui",
+  "version": "0.0.1",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint src/",
+    "test": "jest"
+  },
+  "peerDependencies": {
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@project/config": "*"
+  }
+}
+```
+
+### apps/web에서 공유 패키지 사용
+```tsx
+// apps/web/package.json dependencies에 "@project/ui": "*" 추가 후
+import { Button, Card } from "@project/ui"
+import { type User } from "@project/lib/types"
+import { apiClient } from "@project/lib/api"
+```
+
+### 패키지 의존 규칙
+| 패키지 | 의존 가능 | 의존 불가 |
+|--------|----------|----------|
+| `packages/config` | (없음) | apps/*, 다른 packages |
+| `packages/lib` | `packages/config` | apps/*, `packages/ui` |
+| `packages/ui` | `packages/config`, `packages/lib` | apps/* |
+| `apps/web` | 모든 packages | 다른 apps |
+
+### 특정 앱/패키지만 실행
+```bash
+turbo run dev --filter=web           # apps/web만
+turbo run test --filter=@project/ui  # ui 패키지만
+turbo run build --filter=web...      # web + 의존 패키지 모두
+```

@@ -16,8 +16,11 @@ argument-hint: [kotlin | go | nextjs | flutter] (생략 시 자동 감지)
 #### 1-1. `$ARGUMENTS` 확인
 
 - `kotlin` → Kotlin Spring Boot 백엔드 프로젝트
+- `kotlin-multi` → Kotlin Spring Boot (Gradle 멀티 모듈)
 - `go` → Go Gin 백엔드 프로젝트
+- `go-multi` → Go (Go Workspace 멀티 서비스)
 - `nextjs` → Next.js 프론트엔드 프로젝트
+- `nextjs-multi` → Next.js (Turborepo 멀티 패키지)
 - `flutter` → Flutter 모바일 프로젝트
 
 #### 1-2. `$ARGUMENTS`가 없으면 — 자동 감지
@@ -26,8 +29,11 @@ argument-hint: [kotlin | go | nextjs | flutter] (생략 시 자동 감지)
 
 | 파일 | 감지 스택 |
 |------|----------|
+| `settings.gradle.kts`에 `include(` 포함 | `kotlin-multi` |
 | `build.gradle.kts` 또는 `pom.xml` | `kotlin` |
+| `go.work` 존재 | `go-multi` |
 | `go.mod` | `go` |
+| `turbo.json` 존재 | `nextjs-multi` |
 | `package.json` (`next` 의존성 포함) | `nextjs` |
 | `pubspec.yaml` | `flutter` |
 
@@ -114,6 +120,54 @@ skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
 
 ---
 
+#### `kotlin-multi` 선택 시 — 제거 대상
+agents: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
+commands: `new-component.md`, `new-screen.md`
+templates: `CLAUDE.kotlin.md`, `CLAUDE.nextjs.md`, `CLAUDE.nextjs-multi.md`, `CLAUDE.flutter.md`, `CLAUDE.go.md`, `CLAUDE.go-multi.md`, `settings.kotlin.json`, `settings.nextjs.json`, `settings.nextjs-multi.json`, `settings.flutter.json`, `settings.go.json`, `settings.go-multi.json`
+skills: `go-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
+기타: `.github/assets/` (스타터 대표 이미지 폴더)
+
+유지: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
+유지 commands: `new-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `kotlin-patterns.md`, `github-actions-patterns.md`
+
+> `ui-designer`와 `ui-design-impl.md`는 Kotlin 백엔드 전용으로는 불필요합니다.
+> 단, Kotlin + Next.js/Flutter 풀스택 구성이라면 유지하세요.
+
+---
+
+#### `nextjs-multi` 선택 시 — 제거 대상
+agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`
+commands: `new-api.md`, `new-screen.md`
+templates: `CLAUDE.kotlin.md`, `CLAUDE.kotlin-multi.md`, `CLAUDE.nextjs.md`, `CLAUDE.flutter.md`, `CLAUDE.go.md`, `CLAUDE.go-multi.md`, `settings.kotlin.json`, `settings.kotlin-multi.json`, `settings.nextjs.json`, `settings.flutter.json`, `settings.go.json`, `settings.go-multi.json`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `go-patterns.md`
+기타: `.github/assets/` (스타터 대표 이미지 폴더)
+
+유지: `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`, `code-reviewer`, `ui-designer`, `github-actions-designer`
+유지 commands: `new-component.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `nextjs-patterns.md`, `ui-design-impl.md`, `github-actions-patterns.md`
+
+> `ui-designer`는 Next.js Turborepo에서 **핵심 에이전트**입니다.
+> DESIGN.md → Tailwind 토큰 → shadcn/ui 컴포넌트 일관성을 담당합니다.
+
+---
+
+#### `go-multi` 선택 시 — 제거 대상
+agents: `kotlin-generator`, `kotlin-modifier`, `kotlin-tester`, `flutter-generator`, `flutter-modifier`, `flutter-tester`, `nextjs-generator`, `nextjs-modifier`, `nextjs-tester`
+commands: `new-api.md`, `new-component.md`, `new-screen.md`
+templates: `CLAUDE.kotlin.md`, `CLAUDE.kotlin-multi.md`, `CLAUDE.nextjs.md`, `CLAUDE.nextjs-multi.md`, `CLAUDE.flutter.md`, `CLAUDE.go.md`, `settings.kotlin.json`, `settings.kotlin-multi.json`, `settings.nextjs.json`, `settings.nextjs-multi.json`, `settings.flutter.json`, `settings.go.json`
+skills: `kotlin-patterns.md`, `flutter-patterns.md`, `nextjs-patterns.md`, `ui-design-impl.md`
+기타: `.github/assets/` (스타터 대표 이미지 폴더)
+
+유지: `go-generator`, `go-modifier`, `go-tester`, `code-reviewer`, `github-actions-designer`
+유지 commands: `new-go-api.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `plan.md`, `test.md`, `review.md`, `improve.md`, `commit.md`, `memory.md`
+유지 skills: `go-patterns.md`, `github-actions-patterns.md`
+
+> `ui-designer`와 `ui-design-impl.md`는 Go 백엔드 전용 프로젝트에서는 불필요합니다.
+> Go + Next.js/Flutter 풀스택 구성이라면 유지하세요.
+
+---
+
 ### Step 3 — 사용자 확인 후 삭제 실행
 
 사용자가 확인하면 해당 파일들을 `rm` 명령어로 삭제하고 결과를 확인합니다.
@@ -126,7 +180,12 @@ skills: `kotlin-patterns.md`, `nextjs-patterns.md`, `go-patterns.md`
 
 **신규 프로젝트** (CLAUDE.md 없음):
 ```bash
+# 단일 모듈
 cp .claude/templates/CLAUDE.{stack}.md ./CLAUDE.md
+
+# 멀티 모듈 (kotlin-multi, nextjs-multi, go-multi)
+cp .claude/templates/CLAUDE.{stack}.md ./CLAUDE.md
+# 예: cp .claude/templates/CLAUDE.kotlin-multi.md ./CLAUDE.md
 ```
 
 **기존 프로젝트** (CLAUDE.md 이미 있음):
@@ -155,7 +214,12 @@ mkdir -p .claude/hooks
 
 **신규 프로젝트** (`.claude/settings.json` 없음):
 ```bash
+# 단일 모듈
 cp .claude/templates/settings.{stack}.json ./.claude/settings.json
+
+# 멀티 모듈 (kotlin-multi, nextjs-multi, go-multi)
+cp .claude/templates/settings.{stack}.json ./.claude/settings.json
+# 예: cp .claude/templates/settings.kotlin-multi.json ./.claude/settings.json
 ```
 
 **기존 프로젝트** (`.claude/settings.json` 이미 있음):
@@ -288,4 +352,7 @@ dev 브랜치:  ✅ 생성됨
 4. /plan <기능> 으로 설계를 시작하세요
 5. AI가 실수하면 /improve 로 규칙을 추가하세요
 6. memory/MEMORY.md 에 중요한 결정과 교훈을 계속 기록하세요
+
+[멀티 모듈 스택 (kotlin-multi / nextjs-multi / go-multi) 추가 할 일]
+7. /new-module <모듈명> 으로 새 서브모듈/패키지/서비스를 추가하세요
 ```

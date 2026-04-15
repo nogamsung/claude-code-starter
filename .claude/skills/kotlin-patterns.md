@@ -341,3 +341,101 @@ class OrderRepositoryTest {
 - 여러 동작을 하나의 거대한 테스트에 묶기
 - 테스트 대상 클래스 자체를 mock
 - 특정 값이 중요한데 `any()` 사용
+
+---
+
+## Multi-Module Patterns (Gradle)
+
+### settings.gradle.kts
+```kotlin
+rootProject.name = "project-name"
+
+include(":api", ":domain", ":infra")
+// 필요 시 추가
+// include(":core")   // 공통 유틸, 예외, 상수
+// include(":batch")  // Spring Batch 모듈
+```
+
+### 루트 build.gradle.kts
+```kotlin
+plugins {
+    kotlin("jvm") version "2.0.0" apply false
+    kotlin("plugin.spring") version "2.0.0" apply false
+    kotlin("plugin.jpa") version "2.0.0" apply false
+    id("org.springframework.boot") version "3.3.0" apply false
+    id("io.spring.dependency-management") version "1.1.5" apply false
+}
+
+subprojects {
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "io.spring.dependency-management")
+
+    repositories { mavenCentral() }
+
+    dependencies {
+        implementation("org.jetbrains.kotlin:kotlin-reflect")
+        testImplementation("org.springframework.boot:spring-boot-starter-test")
+        testImplementation("io.mockk:mockk:1.13.10")
+    }
+}
+```
+
+### :domain 모듈 build.gradle.kts
+```kotlin
+// domain 모듈 — 외부 의존성 최소화
+plugins {
+    kotlin("plugin.jpa")
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("com.querydsl:querydsl-jpa:5.1.0:jakarta")
+    kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
+}
+```
+
+### :infra 모듈 build.gradle.kts
+```kotlin
+dependencies {
+    implementation(project(":domain"))
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    // 외부 연동 (Redis, S3, Kafka 등) 의존성
+}
+```
+
+### :api 모듈 build.gradle.kts
+```kotlin
+plugins {
+    kotlin("plugin.spring")
+    id("org.springframework.boot")
+}
+
+dependencies {
+    implementation(project(":domain"))
+    implementation(project(":infra"))
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+}
+```
+
+### 모듈간 의존 규칙
+| 모듈 | 의존 가능 | 의존 불가 |
+|------|----------|----------|
+| `:domain` | (없음 — 순수) | `:api`, `:infra` |
+| `:infra` | `:domain` | `:api` |
+| `:api` | `:domain`, `:infra` | (없음) |
+
+### 멀티 모듈 테스트 실행
+```bash
+# 전체 테스트 + 커버리지
+./gradlew test jacocoTestReport
+
+# 특정 모듈만
+./gradlew :domain:test
+./gradlew :infra:test
+./gradlew :api:test
+
+# 빌드
+./gradlew :api:bootJar
+```
