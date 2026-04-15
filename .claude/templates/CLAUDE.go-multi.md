@@ -25,6 +25,7 @@
 | 커맨드 | 용도 |
 |--------|------|
 | `/plan <기능>` | 코드 작성 전 설계 및 확인 |
+| `/design-db <도메인>` | MySQL 스키마 설계 → golang-migrate migration 자동 생성 |
 | `/new-go-api <Resource>` | REST API 전체 스캐폴딩 (멀티 서비스 경로 자동 적용) |
 | `/new-module <ServiceName>` | 새 Go 서비스 생성 |
 | `/test [파일]` | 테스트 자동 생성 |

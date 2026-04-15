@@ -12,6 +12,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-04-15
+
+### Added
+
+- **`/design-db` 커맨드** — MySQL 스키마 설계 → Migration SQL 자동 생성
+  - 스택 자동 감지 (`build.gradle.kts` → Flyway, `go.mod` → golang-migrate)
+  - 도메인 설명 → ERD 텍스트 출력 → 검토 확인 → Migration SQL 파일 생성 5단계 자동화
+  - 공통 컬럼(`id`, `created_at`, `updated_at`), FK 인덱스, `ENGINE=InnoDB utf8mb4` 자동 포함
+  - 기존 migration 파일 번호 감지 후 다음 번호로 자동 생성
+  - 생성 완료 후 `/new-api` / `/new-go-api` 연계 안내
+- **`db-patterns.md` 스킬** — MySQL 설계 패턴 레퍼런스
+  - 데이터 타입 선택 기준 (`DECIMAL` for 금액, `DATETIME(6)` for timestamps, `BIGINT UNSIGNED` for PK)
+  - 공통 컬럼 패턴, 인덱스 전략, Soft Delete 패턴, FK 제약 옵션 가이드
+  - Flyway 네이밍 컨벤션 (`V{N}__{description}.sql`)
+  - golang-migrate 네이밍 컨벤션 (`{000000}_{description}.up/down.sql`)
+
+### Changed
+
+- `/new-api`, `/new-go-api` — DB 설계 선행 권장 안내(`/design-db`) 추가
+- `CLAUDE.kotlin.md`, `CLAUDE.kotlin-multi.md`, `CLAUDE.go.md`, `CLAUDE.go-multi.md` — Commands 표에 `/design-db` 추가
+- `/init` — kotlin/go 스택은 `design-db.md` 유지, nextjs/flutter 스택은 제거 목록에 추가
+
+### Fixed
+
+- **브랜치 네이밍 Git refs 충돌 수정** — `dev` 브랜치와 `dev/feature-*` 브랜치 동시 존재 불가 문제
+  - 피처 브랜치 prefix를 `dev/` → `feature/`, `fix/`, `hotfix/` 등 독립 prefix로 변경
+  - `new-feature.md`, `CLAUDE.*.md` 7개, `README.md` 일괄 수정
+
+---
+
 ## [1.3.0] - 2026-04-15
 
 ### Added
@@ -142,6 +172,7 @@ claude-code-starter/
 
 | Version | Date       | Summary               |
 |---------|------------|-----------------------|
+| 1.4.0   | 2026-04-15 | /design-db 커맨드 추가, 브랜치 전략 수정 |
 | 1.3.0   | 2026-04-15 | 멀티 모듈 지원 (Kotlin Gradle / Next.js Turborepo / Go Workspace) |
 | 1.2.0   | 2026-04-14 | Worktree 병렬 작업, Docker GHCR 배포, Swagger, 브랜치 전략, GitHub Actions |
 | 1.1.0   | 2026-04-14 | Go Gin 스택 추가, Skills 시스템 도입 |
