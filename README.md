@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -31,6 +31,7 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - `memory/MEMORY.md`에 팀 지식 자동 축적 — Second Brain
 - **Git Worktree 기반 병렬 작업** — 여러 기능을 독립된 작업공간에서 동시 개발
 - **멀티 모듈 지원** — Gradle 멀티 모듈 / Turborepo / Go Workspace 구조로 시작 가능
+- **DB 설계 자동화** — `/design-db`로 MySQL 스키마 설계 → Flyway/golang-migrate SQL 자동 생성
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
 
@@ -154,6 +155,7 @@ main  ←──── dev  ←──── feature/{name}
 
 | 커맨드 | 스택 | 설명 |
 |--------|------|------|
+| `/design-db <도메인>` | Kotlin · Go | MySQL 스키마 설계 → Flyway/golang-migrate Migration SQL 자동 생성 |
 | `/new-api <Resource>` | Kotlin | Controller / Service / QueryDSL Repository 스캐폴딩 |
 | `/new-go-api <Resource>` | Go | Handler / UseCase / sqlc Repository 스캐폴딩 |
 | `/new-component <Name>` | Next.js | React 컴포넌트 생성 |
