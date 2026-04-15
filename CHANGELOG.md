@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.2] - 2026-04-15
+
+### Changed
+
+- `/commit` — 브랜치별 git 자동화 분기: `main`은 push+태그+태그푸시, feature는 push만
+
+---
+
 ## [1.5.1] - 2026-04-15
 
 ### Changed
@@ -229,6 +237,7 @@ claude-code-starter/
 
 | Version | Date       | Summary               |
 |---------|------------|-----------------------|
+| 1.5.2   | 2026-04-15 | /commit 브랜치별 git 자동화 (main: push+태그, feature: push만) |
 | 1.5.1   | 2026-04-15 | 문서 필수화, 브랜치 전략 자동 감지, /init 브랜치 옵션 추가 |
 | 1.5.0   | 2026-04-15 | /design-api, /review-api 커맨드, api-designer 에이전트 추가 |
 | 1.4.0   | 2026-04-15 | /design-db 커맨드 추가, 브랜치 전략 수정 |

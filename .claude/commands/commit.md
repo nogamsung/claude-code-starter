@@ -38,31 +38,41 @@ Conventional Commits 규칙에 따라 커밋을 생성합니다.
 
 1. `git status`로 변경된 파일 확인
 2. `git diff --staged` 또는 `git diff`로 변경 내용 확인
-3. 변경사항을 분석하여 적절한 커밋 메시지 초안 작성
-4. `$ARGUMENTS`에 힌트가 있으면 참고하여 메시지 보완
-5. 커밋 메시지를 사용자에게 보여주고 확인 요청
-6. 확인 후 `git commit` 실행
-7. **항상** — 버전 태그를 생성하고 푸시 (모든 커밋은 버전 릴리즈)
+3. 현재 브랜치 확인: `git branch --show-current`
+4. 변경사항을 분석하여 적절한 커밋 메시지 초안 작성
+5. `$ARGUMENTS`에 힌트가 있으면 참고하여 메시지 보완
+6. 커밋 메시지를 사용자에게 보여주고 확인 요청
+7. 확인 후 `git commit` 실행
+8. **커밋 후 자동 실행** — 브랜치에 따라 분기:
+
+   **`main` 브랜치인 경우 (릴리즈 플로우):**
    ```bash
-   git push origin HEAD
+   git push origin main
    git tag v$(cat VERSION)
    git push origin v$(cat VERSION)
    ```
+   → push → 태그 생성 → 태그 푸시까지 자동으로 완료
+
+   **feature / fix / hotfix / 기타 브랜치인 경우:**
+   ```bash
+   git push origin HEAD
+   ```
+   → 브랜치만 푸시 (태그 없음 — PR 머지 후 main에서 태그 생성)
 
 ---
 
-## 문서 업데이트 (Step 5 전에 반드시 실행)
+## 문서 업데이트 (Step 6 전에 반드시 실행)
 
-커밋 전 아래 문서를 **모든 커밋 타입에서 필수로** 업데이트합니다.
+커밋 전 아래 문서를 **필수로** 업데이트합니다.
 **사용자에게 별도로 확인하지 않고** 조용히 업데이트 후 "문서를 업데이트했습니다." 한 줄만 출력합니다.
 
-> ⚠️ **필수 규칙**: 문서 업데이트 없이 커밋하지 않습니다. 변경사항이 아무리 작아도 CHANGELOG에 기록합니다.
+> ⚠️ **필수 규칙**: 문서 업데이트 없이 커밋하지 않습니다. CHANGELOG는 항상 기록합니다.
 
-### 1. CHANGELOG.md 업데이트 (모든 타입 필수)
+### 1. CHANGELOG.md + VERSION 업데이트
 
 `[Unreleased]` 섹션은 사용하지 않습니다. **모든 커밋은 즉시 버전으로 발행합니다.**
 
-**버전 결정 규칙:**
+**버전 결정 규칙 (브랜치 무관하게 동일 적용):**
 - `feat` → minor 버전 올림 (1.4.0 → 1.5.0), VERSION 파일도 함께 수정
 - `fix` / `perf` → patch 버전 올림 (1.4.0 → 1.4.1), VERSION 파일도 함께 수정
 - `refactor` / `chore` / `docs` / `test` / `style` / `ci` / `build` → patch 버전 올림 (1.4.0 → 1.4.1), VERSION 파일도 함께 수정
