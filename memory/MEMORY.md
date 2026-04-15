@@ -6,6 +6,31 @@
 
 ---
 
+## 2026-04-15: v1.4.0 — /design-db DB 설계 자동화 추가
+
+**카테고리:** 결정
+
+### 배경
+새 기능 개발 시 DB 스키마를 먼저 설계하고 Migration SQL을 만드는 과정이 수동이어서 패턴 불일치 발생 위험이 있었음.
+
+### 추가된 기능
+- `/design-db <도메인 설명>` — MySQL 스키마 설계 → ERD 검토 → Migration SQL 자동 생성
+- `db-patterns.md` — MySQL 타입 선택, 공통 컬럼, 인덱스, Flyway/golang-migrate 규칙 레퍼런스
+
+### 설계 원칙
+- **설계 → 코드 순서 강제**: `/design-db` 완료 후 `/new-api` 또는 `/new-go-api` 실행 유도
+- **스택별 분기**: Kotlin은 Flyway(`V{N}__*.sql`), Go는 golang-migrate(`{000000}_*.up/down.sql`)
+- **nextjs/flutter 제외**: DB migration 커맨드는 백엔드 스택에서만 유지
+
+### 워크플로
+```
+/design-db → Migration SQL 생성 → /new-api or /new-go-api → Entity/Repository 코드 생성
+```
+
+**관련 파일:** `.claude/commands/design-db.md`, `.claude/skills/db-patterns.md`
+
+---
+
 ## 2026-04-15: Git 브랜치 네이밍 — dev/* 충돌 교훈
 
 **카테고리:** 교훈
