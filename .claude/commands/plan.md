@@ -11,7 +11,27 @@ argument-hint: [api <Resource> | db <도메인>] <설명>  또는  <기능 설�
 
 ## 진입 모드 결정
 
-`$ARGUMENTS` 첫 토큰으로 분기:
+### Step 0 — 모노레포 역할 prefix 체크
+
+`.claude/stacks.json` 이 존재하고 `mode: "monorepo"` 이면, 첫 토큰이 역할명(`backend` / `frontend` / `mobile`)이면 **해당 스택의 경로·타입을 컨텍스트로 설정**한 뒤 prefix 를 소비하고 나머지 인자로 진행.
+
+```bash
+# 예: /plan backend api User
+STACK_PATH=$(jq -r '.stacks[] | select(.role == "backend") | .path' .claude/stacks.json)
+STACK_TYPE=$(jq -r '.stacks[] | select(.role == "backend") | .type' .claude/stacks.json)
+# → 이후 파일 경로 / 스택 감지는 $STACK_PATH 를 루트로 간주
+```
+
+prefix 생략 시:
+- 활성 스택이 **1개면** 자동 선택
+- **2개 이상**이면 사용자에게 확인:
+  > "어느 스택에 대한 계획인가요? (backend / frontend / mobile)"
+
+단일 스택 모드에서는 Step 0 을 건너뜁니다.
+
+### Step 1 — 모드 분기
+
+`$ARGUMENTS` 의 (prefix 소비 후) 첫 토큰으로 분기:
 
 | 첫 토큰 | 모드 | 설명 |
 |--------|------|------|
@@ -20,8 +40,8 @@ argument-hint: [api <Resource> | db <도메인>] <설명>  또는  <기능 설�
 | 그 외 / 없음 | [범용 계획 모드](#범용-계획-모드) | 소크라테스식 인터뷰 + 구현 계획 |
 
 **자동 전환**: 범용 계획 모드에서 요청을 분석했을 때
-- "새 리소스 CRUD" 류 → API 설계가 선행되어야 하면 사용자에게 `/plan api <Resource>` 제안
-- "새 테이블/스키마" 류 → DB 설계가 선행되어야 하면 `/plan db <도메인>` 제안
+- "새 리소스 CRUD" 류 → API 설계가 선행되어야 하면 사용자에게 `/plan api <Resource>` 제안 (모노레포면 `/plan backend api <Resource>`)
+- "새 테이블/스키마" 류 → DB 설계가 선행되어야 하면 `/plan db <도메인>` 제안 (모노레포면 `/plan backend db <도메인>`)
 
 ---
 

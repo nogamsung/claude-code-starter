@@ -21,6 +21,7 @@
 ## Commands
 | 커맨드 | 용도 |
 |--------|------|
+| `/planner <기능>` | 기획서(PRD) + 구현 프롬프트 작성 (단일 스택은 단일 프롬프트 산출) |
 | `/plan <기능>` | 코드 작성 전 설계 및 확인 |
 | `ui-designer` 에이전트에게 요청 | DESIGN.md → ThemeData · ColorScheme · TextTheme 생성 |
 | `/new <Name>` | Screen + 전체 레이어 생성 (명시: `/new screen`) |

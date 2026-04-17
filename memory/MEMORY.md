@@ -6,6 +6,55 @@
 
 ---
 
+## 2026-04-17: v1.7.0 — 모노레포 모드 + 기획자 agent
+
+**카테고리:** 결정
+
+### 배경
+기존에는 `/init` 이 **한 스택만** 선택하고 나머지 agent/template 를 삭제하는 구조였음. 그러나 실제로는 `backend/` + `frontend/` + `mobile/` 을 한 저장소에서 운영하는 조직이 많고, 매 저장소마다 다른 하네스를 유지하면 일관성이 깨졌음. 또한 기능 기획 → 구현 사이에 "각 스택에 어떤 지시를 내릴지" 를 매번 수동으로 작성하는 부담이 있었음.
+
+### 핵심 결정
+
+1. **모노레포 자동 감지 + 단일 스택 호환** — 루트에서 `backend|api|server/`, `frontend|web|client/`, `mobile|app/` 디렉토리를 스캔해 2개 이상이면 `monorepo` 모드, 1개/0개면 기존 단일 스택 로직으로 폴백. 파괴적 변경 없음.
+2. **`.claude/stacks.json` 을 단일 진실의 원천으로** — `/new`, `/plan`, `/planner`, `pre-push.sh`, PostToolUse/Stop hooks 가 모두 이 파일을 읽어 분기. 없으면 기존 동작.
+3. **CLAUDE.md 중첩 배치** — 루트는 얇은 인덱스, 각 역할 디렉토리에 `{path}/CLAUDE.md` 배치. Claude Code 의 상위 CLAUDE.md 누적 로드 특성을 활용해 컨텍스트 오염 최소화.
+4. **역할 prefix** — `/new backend api User`, `/plan frontend component Button` 식으로 대상 스택을 명시. 경로는 `stacks.json` 에서 lookup 하므로 별칭 디렉토리명 (`api`, `web`, `app`) 지원.
+5. **기획자 agent 분리** — PRD 작성과 역할별 프롬프트 분배를 **코드 작성과 분리된 agent** 에 맡김. `planner` agent 는 Read/Write/Grep/Glob 만 가지고 `docs/specs/` 산출.
+6. **Agent Teams 는 옵션** — 한 번의 호출로 backend·frontend·mobile generator 를 **병렬** 실행 가능하지만, 반드시 옵션으로. 기본은 `ask` 모드.
+
+### 구조
+
+```
+.claude/
+  stacks.json               # 매니페스트 (모노레포일 때만)
+  agents/planner.md         # 기획자 agent (opus)
+  commands/planner.md       # /planner 슬래시 커맨드
+  templates/
+    CLAUDE.monorepo.md      # 루트 인덱스 템플릿
+    settings.monorepo.json  # 병합 settings (경로 가드 hooks)
+    prd.md                  # PRD 템플릿
+    role-prompt.md          # 역할별 구현 프롬프트 템플릿
+
+docs/specs/{feature}.md     # PRD (팀 공유)
+docs/specs/{feature}/
+  backend.md                # backend 구현 프롬프트
+  frontend.md               # frontend 구현 프롬프트
+  mobile.md                 # mobile 구현 프롬프트
+```
+
+### 교훈
+
+- **hook 은 루트 1개**라는 Claude Code 제약을 받아들이고 hook 내부에서 경로로 분기하는 방식이 깔끔 — 하위 디렉토리 `.claude/` 중첩은 복잡성만 키움
+- **병렬 agent 호출**은 파일 경로가 역할별로 분리될 때만 안전 — 단일 스택에선 Teams 의미 없음 (자동 폴백)
+- **별칭 디렉토리명 허용**은 유연성 ↑ 이지만 **역할 prefix 는 표준 이름 고정** (`backend`/`frontend`/`mobile`) — UX 일관성 우선
+
+### 다음 호기 고려 항목
+- `.claude/settings.json` 에 `planner.defaultExecution` 추가 (ask / teams / output-only 기본값)
+- `docs/specs/` GitHub Actions 로 lint (PRD 섹션 누락 체크)
+- PR 템플릿 연동 — `/pr` 이 관련 PRD 를 자동 링크
+
+---
+
 ## 2026-04-17: v1.6.0 — 커맨드 전면 재편 + 워크플로 단순화
 
 **카테고리:** 결정

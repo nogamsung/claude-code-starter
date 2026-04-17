@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.6.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.7.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -34,6 +34,8 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - **멀티 모듈 지원** — Gradle 멀티 모듈 / Turborepo / Go Workspace
 - **DB 설계 자동화** — `/plan db` 로 MySQL 스키마 → Flyway/golang-migrate SQL
 - **API 설계 자동화** — `/plan api` 로 REST API 설계 → OpenAPI 3.0 YAML → 코드 생성
+- **모노레포 모드** — `backend/` + `frontend/` + `mobile/` 공존 자동 감지 → 역할별 CLAUDE.md + 경로 가드 hooks
+- **기획자 에이전트** — `/planner` 로 요청 → PRD + 역할별 구현 프롬프트 자동 생성. Agent Teams 로 병렬 구현도 옵션
 - **`/commit` → `/pr` → `/merge` 자동 체인** — 각 단계에서 다음 단계를 제안(수락 시 연결 실행). 완전 자동이 아닌 "연속 확인" 체인
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
@@ -152,7 +154,7 @@ main  ←──── dev  ←──── feature/{name}
 
 ---
 
-## 커맨드 (11개)
+## 커맨드 (12개)
 
 ### 디스패처 (서브명령)
 
@@ -160,9 +162,14 @@ main  ←──── dev  ←──── feature/{name}
 |--------|------|------|
 | `/new` | `<Name>` | **자동 감지** — 스택(go/kotlin→api, nextjs→component, flutter→screen) 또는 이름 패턴(`feature-*`→worktree, `ci\|release\|publish`→workflow)으로 분기 |
 | | `<sub> <Name>` (override) | `api` / `component` / `screen` / `module` / `workflow` / `worktree` 명시 지정 |
+| | `<role> <sub> <Name>` (모노레포) | 역할 prefix — `backend` / `frontend` / `mobile` 로 대상 스택 경로 지정 |
 | `/plan` | `<기능 설명>` | 범용 구현 계획 (소크라테스식 인터뷰 + 계획 합의) |
 | | `api <Resource>` | REST API 설계 → OpenAPI 3.0 YAML |
 | | `db <도메인>` | MySQL 스키마 → Migration SQL |
+| | `<role> ...` (모노레포) | 역할 prefix — `/plan backend api User`, `/plan backend db order` |
+| `/planner` | `<기능>` | PRD + 역할별 구현 프롬프트 생성 (모노레포는 3세트, 단일은 1세트) |
+| | `<기능> --teams` | 생성 직후 활성 스택 agent 를 병렬 호출해 즉시 구현 |
+| | `<기능> --output-only` | 파일만 생성, 수동으로 `/new ...` 실행 |
 | `/review` | (없음) / `<파일>` / `staged` / `diff` | 범용 코드 리뷰 |
 | | `api` | REST 컨벤션·보안·OpenAPI 리뷰 |
 
@@ -193,6 +200,7 @@ main  ←──── dev  ←──── feature/{name}
 | `flutter-{generator\|modifier\|tester}` | Flutter 코드 생성·수정·테스트 |
 | `go-{generator\|modifier\|tester}` | Go Gin 코드 생성·수정·테스트 |
 | `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML) — Kotlin · Go 전용 |
+| `planner` | 기획자 — 요청 → PRD + 역할별 구현 프롬프트 작성 (코드는 작성하지 않음). `/planner` 커맨드가 호출 |
 
 ---
 
@@ -287,15 +295,17 @@ claude-code-starter/
 │   │   ├── code-reviewer.md
 │   │   ├── ui-designer.md
 │   │   ├── api-designer.md
+│   │   ├── planner.md        # 기획자 (PRD + 역할 프롬프트)
 │   │   ├── github-actions-designer.md
 │   │   ├── kotlin-{generator,modifier,tester}.md
 │   │   ├── nextjs-{generator,modifier,tester}.md
 │   │   ├── flutter-{generator,modifier,tester}.md
 │   │   └── go-{generator,modifier,tester}.md
-│   ├── commands/             # 슬래시 커맨드 (11개)
-│   │   ├── init.md           # 스택 초기화
-│   │   ├── new.md            # 디스패처: api/component/screen/module/workflow/worktree (자동 감지)
-│   │   ├── plan.md           # 디스패처: 범용 / api / db 설계
+│   ├── commands/             # 슬래시 커맨드 (12개)
+│   │   ├── init.md           # 스택 초기화 + 모노레포 자동 감지
+│   │   ├── new.md            # 디스패처: api/component/screen/module/workflow/worktree (+ 역할 prefix)
+│   │   ├── plan.md           # 디스패처: 범용 / api / db 설계 (+ 역할 prefix)
+│   │   ├── planner.md        # 기획자 호출: PRD + 역할별 프롬프트 + Agent Teams 옵션
 │   │   ├── review.md         # 범용 + api 모드
 │   │   ├── test.md           # 테스트 생성
 │   │   ├── commit.md         # Conventional Commits + /pr 자동 제안
@@ -316,8 +326,12 @@ claude-code-starter/
 │   ├── templates/            # 스택별 설치 템플릿
 │   │   ├── CLAUDE.{kotlin,go,nextjs,flutter}.md
 │   │   ├── CLAUDE.{kotlin,go,nextjs}-multi.md
+│   │   ├── CLAUDE.monorepo.md      # 루트 인덱스 (모노레포 모드)
 │   │   ├── settings.{kotlin,go,nextjs,flutter}.json
 │   │   ├── settings.{kotlin,go,nextjs}-multi.json
+│   │   ├── settings.monorepo.json  # 병합 settings (경로 가드 hooks)
+│   │   ├── prd.md                  # PRD 템플릿 (/planner 용)
+│   │   ├── role-prompt.md          # 역할별 구현 프롬프트 템플릿
 │   │   └── memory.md
 │   ├── .starter-version      # 설치된 스타터 버전 (팀 공유)
 │   └── hooks/                # pre-push 커버리지 게이트
@@ -325,5 +339,5 @@ claude-code-starter/
 │   └── MEMORY.md             # 이 레포의 Second Brain
 ├── bootstrap.sh              # 설치·업데이트 스크립트
 ├── CHANGELOG.md
-└── VERSION                   # 1.6.0
+└── VERSION                   # 1.7.0
 ```
