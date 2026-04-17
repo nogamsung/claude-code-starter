@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.8.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.9.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -170,6 +170,9 @@ main  ←──── dev  ←──── feature/{name}
 | `/planner` | `<기능>` | PRD + 역할별 구현 프롬프트 생성 (모노레포는 3세트, 단일은 1세트) |
 | | `<기능> --teams` | 생성 직후 활성 스택 agent 를 병렬 호출해 즉시 구현 |
 | | `<기능> --output-only` | 파일만 생성, 수동으로 `/new ...` 실행 |
+| | `<기능> --marketing` | + 마케팅 전략 (`docs/specs/{feature}/marketing.md` + `docs/gtm/` 스냅샷) |
+| | `<기능> --sales` | + 세일즈 전략 (`docs/specs/{feature}/sales.md` + `docs/gtm/` 스냅샷) |
+| | `<기능> --gtm` | + 마케팅 + 세일즈 둘 다 (날짜/버전별 히스토리로 적립) |
 | `/review` | (없음) / `<파일>` / `staged` / `diff` | 범용 코드 리뷰 |
 | | `api` | REST 컨벤션·보안·OpenAPI 리뷰 |
 
@@ -202,6 +205,7 @@ main  ←──── dev  ←──── feature/{name}
 | `go-{generator\|modifier\|tester}` | Go Gin 코드 생성·수정·테스트 |
 | `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML) — Kotlin · Go 전용 |
 | `planner` | 기획자 — 요청 → PRD + 역할별 구현 프롬프트 작성 (코드는 작성하지 않음). `/planner` 커맨드가 호출 |
+| `gtm-planner` | Go-To-Market 전담 — PRD 기반으로 `marketing.md` + `sales.md` 초안, `docs/gtm/` 스냅샷 · 히스토리 적립. `/planner --marketing\|--sales\|--gtm` 플래그가 호출 |
 
 ---
 
@@ -297,6 +301,7 @@ claude-code-starter/
 │   │   ├── ui-designer.md
 │   │   ├── api-designer.md
 │   │   ├── planner.md        # 기획자 (PRD + 역할 프롬프트)
+│   │   ├── gtm-planner.md    # GTM 전담 (marketing.md + sales.md + 스냅샷)
 │   │   ├── github-actions-designer.md
 │   │   ├── kotlin-{generator,modifier,tester}.md
 │   │   ├── nextjs-{generator,modifier,tester}.md
@@ -334,12 +339,28 @@ claude-code-starter/
 │   │   ├── settings.monorepo.json  # 병합 settings (경로 가드 hooks)
 │   │   ├── prd.md                  # PRD 템플릿 (/planner 용)
 │   │   ├── role-prompt.md          # 역할별 구현 프롬프트 템플릿
+│   │   ├── marketing-plan.md       # 마케팅 전략 템플릿 (/planner --marketing|--gtm)
+│   │   ├── sales-plan.md           # 세일즈 전략 템플릿 (/planner --sales|--gtm)
+│   │   ├── gtm-history.md          # docs/gtm/history.md 초기 템플릿
 │   │   └── memory.md
 │   ├── .starter-version      # 설치된 스타터 버전 (팀 공유)
 │   └── hooks/                # pre-push 커버리지 게이트
 ├── memory/
 │   └── MEMORY.md             # 이 레포의 Second Brain
+├── docs/                     # 기능 스펙 + GTM (필요 시 자동 생성)
+│   ├── specs/
+│   │   ├── {feature}.md               # PRD
+│   │   └── {feature}/
+│   │       ├── {role}.md              # 역할별 구현 프롬프트 (backend/frontend/mobile)
+│   │       ├── marketing.md           # 살아있는 마케팅 전략 (/planner --marketing|--gtm)
+│   │       └── sales.md               # 살아있는 세일즈 전략 (/planner --sales|--gtm)
+│   └── gtm/
+│       ├── history.md                 # 날짜/버전 인덱스
+│       └── {YYYY-MM-DD}-{feature}/    # 스냅샷 (릴리스 시 freeze)
+│           ├── marketing.md
+│           ├── sales.md
+│           └── meta.yaml              # feature/status/released_version
 ├── bootstrap.sh              # 설치·업데이트 스크립트
 ├── CHANGELOG.md
-└── VERSION                   # 1.8.0
+└── VERSION                   # 1.9.0
 ```

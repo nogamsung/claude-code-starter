@@ -12,6 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.0] - 2026-04-17
+
+### Added
+
+**`/planner --marketing|--sales|--gtm` GTM 옵션** — 기능 기획 시 마케팅·세일즈 전략도 함께 생성.
+
+- 새 `gtm-planner` agent (opus, Read/Write/Grep/Glob/Bash/Skill)
+  - PRD 를 읽어 `marketing-skills:*` 스킬 체이닝으로 전략 초안 작성
+  - 마케팅: `launch-strategy` → `content-strategy` → `copywriting` → `page-cro`
+  - 세일즈: `sales-enablement` → `competitor-alternatives` → `pricing-strategy`
+  - `marketing-skills` 미설치 시 템플릿 뼈대만 채우는 fallback 모드
+- `/planner` 플래그 확장: `--marketing`, `--sales`, `--gtm` (= 둘 다)
+  - 실행 모드 플래그(`--teams`/`--output-only`)와 조합 가능
+- 산출물 2단 구조:
+  - `docs/specs/{feature}/{marketing,sales}.md` — **살아있는 문서** (편집 가능)
+  - `docs/gtm/{YYYY-MM-DD}-{feature}/` — **스냅샷** (릴리스 시 freeze)
+    - `marketing.md`, `sales.md`, `meta.yaml` (feature/status/released_version)
+- `docs/gtm/history.md` — 인덱스 (전체 시간순 + 버전별 조회)
+- `/merge` 확장: 머지 후 해당 기능 스냅샷이 있으면 `released_version` 자동 기록 + 살아있는 문서로 스냅샷 재복사 + `history.md` 의 draft → released 전환
+- 신규 템플릿: `marketing-plan.md`, `sales-plan.md`, `gtm-history.md`
+
+---
+
 ## [1.8.0] - 2026-04-17
 
 ### Added
