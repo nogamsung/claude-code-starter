@@ -12,6 +12,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2026-04-17
+
+### ⚠️ Breaking Changes
+
+**커맨드 16개 → 11개로 재편 + 워크플로 단순화.** 기존 커맨드 이름은 더 이상 작동하지 않습니다.
+`/starter update` 또는 `bootstrap.sh` 재실행으로 최신 커맨드를 받으세요.
+
+| 이전 커맨드 | 새 커맨드 |
+|------------|----------|
+| `/new-api <Resource>` | `/new api <Resource>` |
+| `/new-component <Name>` | `/new component <Name>` |
+| `/new-screen <Name>` | `/new screen <Name>` |
+| `/new-module <Name>` | `/new module <Name>` |
+| `/new-workflow <Purpose>` | `/new workflow <Purpose>` |
+| `/new-feature <type-name>` | `/new worktree <type-name>` |
+| `/new-feature pr` | `/pr` + `/merge` (PR 생성과 머지 정리 분리) |
+| `/design-api <Resource>` | `/plan api <Resource>` |
+| `/design-db <도메인>` | `/plan db <도메인>` |
+| `/review-api [대상]` | `/review api [대상]` |
+| `/improve <설명>` | `/rule <설명>` |
+| `/memory show` / `/memory` (조회) | 세션 시작 시 자동 로드 (호출 불필요) |
+
+### Added
+
+- **`/starter [check\|update]` 커맨드** — 스타터 버전 확인 / 재설치 (신규 install + update 통합 진입점)
+- **`/pr` 커맨드** — 현재 브랜치 PR 생성. 완료 후 `/merge` 자동 제안. 기존 `/new-feature pr` 에서 분리
+- **`/merge [auto]` 커맨드** — `gh pr merge` 로 GitHub 머지 실행 + main 최신화 + 버전 태그 + worktree 정리. `auto` 모드는 체크 통과 시 자동 머지 큐잉
+- **`/commit` → `/pr` → `/merge` 자동 체인** — 각 단계가 다음을 제안하여 피처 브랜치에서 커밋부터 머지·정리까지 한 흐름으로 진행 (각 단계 확인 필요)
+- **`/new` 디스패처 + 자동 감지** — api / component / screen / module / workflow / worktree 6개 서브명령 통합 + 스택·이름 패턴 기반 **서브명령 생략 가능** (`/new User` → Go/Kotlin은 api, Next.js는 component, Flutter는 screen 자동 분기 / `/new feature-login` → worktree / `/new publish kotlin` → workflow). 명시 서브명령은 override용으로 유지.
+- **`/plan` 디스패처 확장** — 기존 범용 계획 + `api` / `db` 서브명령 흡수 (구 `/design-api`, `/design-db`)
+- **`/review` api 모드** — 기존 `/review-api` 를 `/review` 내부 서브모드로 흡수
+- **`/commit` 후 자동 PR 제안** — 피처 브랜치 감지 시 `/pr` 실행 여부 자동 제안
+- **`memory/MEMORY.md` 자동 로드** — CLAUDE.md 템플릿에 세션 시작 시 자동 참조 지시 추가
+- **`.claude/.starter-version`** — 설치된 스타터 버전 추적 파일 (팀 공유 대상)
+
+### Changed
+
+- `/rule` (구 `/improve`) — 네이밍을 "규칙 등록" 결과물 중심으로 개명
+- `/memory` — `show` 모드 제거, 인수 없이 호출 시 도움말만 출력 (자동 로드로 대체됨)
+- `bootstrap.sh` — 기존 `.claude/` 자동 감지, install/update 모드 분기, 확인 프롬프트 제거 (무조건 백업 없이 전체 교체), `.starter-version` 자동 기록
+- `/init` — 스택별 제거 대상 목록 단일 표로 축소 (기존 7개 반복 섹션 → 표 1개). 커맨드는 전부 유지 (디스패처가 내부 분기)
+- 전체 커맨드 내부 구조를 `상단 1줄 요약 → Step N → 출력 예시 → 주의사항` 포맷으로 통일, 중복·과한 설명 축소
+
+### Removed
+
+- 옛 커맨드 파일 11개: `new-api.md`, `new-component.md`, `new-screen.md`, `new-module.md`, `new-workflow.md`, `new-feature.md`, `design-api.md`, `design-db.md`, `design.md`, `review-api.md`, `improve.md`
+
+---
+
 ## [1.5.3] - 2026-04-15
 
 ### Changed

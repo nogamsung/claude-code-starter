@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.5.3-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -25,22 +25,26 @@
 
 Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, 에이전트, 템플릿**을 미리 세팅한 스타터입니다.
 
-- `/init` 한 번으로 스택에 맞는 하네스 구성 (스택 자동 감지 지원)
+- `/init` 한 번으로 스택에 맞는 하네스 구성 (스택 자동 감지)
 - 스택별 전문 subagent로 생성·수정·테스트 역할 분리
-- AI가 실수할 때마다 `/improve`로 규칙을 누적해 점점 정교해지는 피드백 루프
-- `memory/MEMORY.md`에 팀 지식 자동 축적 — Second Brain
-- **Git Worktree 기반 병렬 작업** — 여러 기능을 독립된 작업공간에서 동시 개발
-- **멀티 모듈 지원** — Gradle 멀티 모듈 / Turborepo / Go Workspace 구조로 시작 가능
-- **DB 설계 자동화** — `/design-db`로 MySQL 스키마 설계 → Flyway/golang-migrate SQL 자동 생성
-- **API 설계 자동화** — `/design-api`로 REST API 설계 → OpenAPI 3.0 YAML → 코드 생성 연결
+- **디스패처 커맨드** — `/new`, `/plan`, `/review` 세 개로 모든 생성·계획·리뷰 작업 통합
+- AI가 실수할 때마다 `/rule` 로 규칙을 누적해 점점 정교해지는 피드백 루프
+- `memory/MEMORY.md` 세션 시작 시 자동 로드 — 과거 결정·교훈이 항상 컨텍스트에 포함
+- **Git Worktree 기반 병렬 작업** — `/new worktree` 로 여러 기능 동시 개발
+- **멀티 모듈 지원** — Gradle 멀티 모듈 / Turborepo / Go Workspace
+- **DB 설계 자동화** — `/plan db` 로 MySQL 스키마 → Flyway/golang-migrate SQL
+- **API 설계 자동화** — `/plan api` 로 REST API 설계 → OpenAPI 3.0 YAML → 코드 생성
+- **`/commit` → `/pr` → `/merge` 자동 체인** — 각 단계에서 다음 단계를 제안(수락 시 연결 실행). 완전 자동이 아닌 "연속 확인" 체인
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
+
+> **v1.6.0 Breaking Change** — 커맨드 16개 → 11개로 재편. [마이그레이션 가이드](#v160-마이그레이션) 참고.
 
 ---
 
 ## 빠른 시작
 
-### 1. 새 프로젝트에 `.claude` 폴더 설치
+### 1. `.claude` 폴더 설치 (신규 프로젝트 / 기존 프로젝트 공통)
 
 **방법 A — 부트스트랩 스크립트 (권장)**
 
@@ -48,24 +52,37 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 curl -fsSL https://raw.githubusercontent.com/nogamsung/claude-code-starter/main/bootstrap.sh | bash
 ```
 
+- `.claude/` 폴더가 **없으면** install 모드 — 새로 설치
+- `.claude/` 폴더가 **있으면** update 모드 — 백업 없이 전체 교체
+
+> ⚠️ **기존 프로젝트 주의**: update 모드는 `.claude/` 내부의 수정한 agent / 추가한 command / hooks / `settings.local.json` 을 모두 교체합니다. `memory/` 폴더는 건드리지 않습니다.
+
 **방법 B — 수동 복사**
 
 ```bash
 git clone --depth=1 https://github.com/nogamsung/claude-code-starter.git
+rm -rf /path/to/your-project/.claude
 cp -r claude-code-starter/.claude /path/to/your-project/
 rm -rf claude-code-starter
+```
+
+**방법 C — Claude Code 안에서 업데이트** (이미 설치된 프로젝트)
+
+```
+/starter check     # 최신 버전 여부 확인
+/starter update    # 최신으로 재설치
 ```
 
 ### 2. Claude Code에서 스택 초기화
 
 ```
-/init                # 자동 감지 (package.json / build.gradle.kts / pubspec.yaml / go.mod / go.work / turbo.json)
-/init kotlin         # Kotlin Spring Boot 백엔드 (단일 모듈)
-/init kotlin-multi   # Kotlin Spring Boot (Gradle 멀티 모듈: api/domain/infra)
-/init nextjs         # Next.js 프론트엔드 (단일 앱)
+/init                # 자동 감지
+/init kotlin         # Kotlin Spring Boot (단일 모듈)
+/init kotlin-multi   # Kotlin (Gradle 멀티 모듈: api/domain/infra)
+/init nextjs         # Next.js (단일 앱)
 /init nextjs-multi   # Next.js (Turborepo: apps/web + packages/ui,lib,config)
 /init flutter        # Flutter 모바일
-/init go             # Go Gin 백엔드 (단일 서비스)
+/init go             # Go Gin (단일 서비스)
 /init go-multi       # Go (Workspace: services/api,worker + pkg/shared)
 ```
 
@@ -73,10 +90,10 @@ rm -rf claude-code-starter
 <summary><code>/init</code>이 하는 일</summary>
 
 1. 스택 자동 감지 (인수 생략 시)
-2. 선택한 스택과 무관한 agent/command/template 파일 제거
-3. `CLAUDE.md` 설치 — 아키텍처 규칙, 코딩 컨벤션
+2. 선택 스택과 무관한 agent/template/skill 제거 (커맨드는 전부 유지 — 디스패처가 분기)
+3. `CLAUDE.md` 설치 — 아키텍처 규칙, 컨벤션
 4. `.claude/settings.json` 설치 — 스택별 허용 명령어 + 자동 lint/test 훅
-5. `memory/MEMORY.md` 초기화 — 프로젝트 정보 인터뷰 후 자동 기록
+5. `memory/MEMORY.md` 초기화 — 프로젝트 정보 인터뷰 후 기록
 6. `dev` 브랜치 생성 + `.worktrees/` gitignore 등록
 
 </details>
@@ -84,12 +101,13 @@ rm -rf claude-code-starter
 ### 3. 기능 개발 시작
 
 ```bash
-/new-feature feature-login    # .worktrees/feature-login/ 에 격리된 작업공간 생성
-/new-feature fix-signup       # .worktrees/fix-signup/ 에 격리된 작업공간 생성
-/new-feature refactor-auth    # .worktrees/refactor-auth/ 에 격리된 작업공간 생성
-                              # 의존성 자동 설치 후 바로 작업 가능
+/new feature-login             # 자동 감지: type prefix → worktree 생성
+/new fix-signup                # 자동 감지: type prefix → worktree 생성
+/new User                      # 자동 감지: 스택별 (Go/Kotlin→api, Next.js→component, Flutter→screen)
+                               # 의존성 자동 설치 후 바로 작업 가능
 
-/new-feature pr        # 작업 완료 후 dev 브랜치로 PR 생성
+/pr                            # 작업 완료 후 PR 생성 (→ /merge 자동 제안)
+/merge                         # GitHub 머지 + main 최신화 + 태그 + worktree 정리
 ```
 
 ---
@@ -97,21 +115,21 @@ rm -rf claude-code-starter
 ## 워크플로
 
 ```
-/new-feature feature-login  # 1. worktree 생성 (dev/feature-login 브랜치)
-/plan <기능 설명>       # 2. 코드 전 설계 합의
-                        # 3. Claude가 적절한 agent로 구현
-/test <파일>            # 4. 테스트 코드 자동 생성
-/review staged          # 5. 코드 리뷰
-/commit                 # 6. Conventional Commits 형식으로 커밋
-/new-feature pr         # 7. dev 브랜치로 PR 생성
+/new feature-login             # 1. worktree 생성 (type prefix 자동 감지)
+/plan <기능 설명>              # 2. 코드 전 설계 합의 (DB/API 설계 자동 감지)
+                               # 3. Claude가 적절한 agent로 구현
+/commit                        # 4. 커밋 → 피처 브랜치면 /pr 자동 제안
+/pr                            # 5. (제안 수락) PR 생성 → /merge 자동 제안
+/merge                         # 6. (제안 수락) 머지 실행 + 태그 + 정리
 
-# AI가 실수하면:
-/improve <실수 설명>    # → CLAUDE.md 규칙으로 등록 (반복 방지)
-                        #   + memory/MEMORY.md에 자동 기록
-
-# 팀 지식 관리:
-/memory                 # → Second Brain 전체 조회
-/memory add <내용>      # → 결정·교훈 수동 기록
+# 명시 호출이 필요한 경우만:
+/new User                      # 스캐폴딩 (스택 자동 감지: api/component/screen)
+/test <파일>                   # 테스트 자동 생성
+/review staged                 # 독립 리뷰
+/plan api Order                # API 설계 명시
+/plan db "..."                 # DB 설계 명시
+/rule <실수 설명>              # AI 실수를 CLAUDE.md 규칙 등록
+/memory add <내용>             # 결정·교훈 수동 기록 (조회는 자동 로드됨)
 ```
 
 ---
@@ -128,40 +146,38 @@ main  ←──── dev  ←──── feature/{name}
 
 각 브랜치는 `.worktrees/{type}-{name}/` 에 격리된 작업공간으로 생성됩니다.
 타입: `feature` · `fix` · `hotfix` · `refactor` · `chore` · `docs` · `test` · `perf`
-여러 터미널 / Claude Code 인스턴스에서 **병렬 작업**이 가능합니다.
+여러 터미널 / Claude Code 인스턴스에서 **병렬 작업** 가능.
 
-> ⚠️ **Git 브랜치 네이밍 제약:** `dev` 브랜치와 `dev/feature-*` 브랜치는 Git refs 구조상 동시에 존재할 수 없습니다.
-> 따라서 피처 브랜치는 `dev/` 접두사 대신 `feature/`, `fix/` 등 독립 prefix를 사용합니다.
+> ⚠️ **Git 브랜치 네이밍 제약**: `dev`와 `dev/feature-*` 는 refs 구조상 공존 불가. 피처 브랜치는 `dev/` 대신 `feature/`, `fix/` 등 독립 prefix를 사용합니다.
 
 ---
 
-## 커맨드
+## 커맨드 (11개)
 
-### 공통
+### 디스패처 (서브명령)
+
+| 커맨드 | 인자 | 설명 |
+|--------|------|------|
+| `/new` | `<Name>` | **자동 감지** — 스택(go/kotlin→api, nextjs→component, flutter→screen) 또는 이름 패턴(`feature-*`→worktree, `ci\|release\|publish`→workflow)으로 분기 |
+| | `<sub> <Name>` (override) | `api` / `component` / `screen` / `module` / `workflow` / `worktree` 명시 지정 |
+| `/plan` | `<기능 설명>` | 범용 구현 계획 (소크라테스식 인터뷰 + 계획 합의) |
+| | `api <Resource>` | REST API 설계 → OpenAPI 3.0 YAML |
+| | `db <도메인>` | MySQL 스키마 → Migration SQL |
+| `/review` | (없음) / `<파일>` / `staged` / `diff` | 범용 코드 리뷰 |
+| | `api` | REST 컨벤션·보안·OpenAPI 리뷰 |
+
+### 단일 커맨드
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/init [stack]` | 스택 감지 및 하네스 구성 (단일·멀티 모듈 모두 지원) |
-| `/new-feature [{type}-{name}\|pr]` | Worktree 기반 작업 브랜치 생성 / PR 생성 (feature·fix·hotfix·refactor·chore 등) |
-| `/new-module <name>` | 멀티 모듈 프로젝트에 서브모듈/패키지/서비스 추가 |
-| `/plan <기능>` | 코드 작성 전 설계 검토 및 합의 |
+| `/init [stack]` | 스택 감지 및 하네스 구성 |
 | `/test [파일]` | 테스트 코드 자동 생성 |
-| `/review [대상]` | 코드 리뷰 |
-| `/commit [힌트]` | Conventional Commits 형식으로 커밋 |
-| `/improve <설명>` | AI 실수를 CLAUDE.md 규칙으로 등록 |
-| `/memory [add\|search]` | Second Brain 조회·추가·검색 |
-| `/new-workflow [목적] [스택]` | GitHub Actions 워크플로 생성 |
-
-### 스택별
-
-| 커맨드 | 스택 | 설명 |
-|--------|------|------|
-| `/design-db <도메인>` | Kotlin · Go | MySQL 스키마 설계 → Flyway/golang-migrate Migration SQL 자동 생성 |
-| `/design-api <Resource>` | Kotlin · Go | REST API 설계 → OpenAPI 3.0 YAML → `/new-api` 연결 |
-| `/review-api [대상]` | Kotlin · Go | REST 컨벤션·보안·OpenAPI 문서 완성도 리뷰 |
-| `/new-api <Resource>` | Kotlin · Go | REST API 스캐폴딩 — 스택 자동 감지 (Spring Boot / Go Gin) |
-| `/new-component <Name>` | Next.js | React 컴포넌트 생성 |
-| `/new-screen <Name>` | Flutter | 화면 및 Provider 생성 |
+| `/commit [힌트]` | Conventional Commits 커밋 + `/pr` 자동 제안 (피처 브랜치) |
+| `/pr` | PR 생성 + `/merge` 자동 제안 |
+| `/merge [auto]` | GitHub 머지 실행 + main 최신화 + 버전 태그 + worktree 정리 |
+| `/rule <설명>` | AI 실수를 CLAUDE.md 규칙으로 등록 |
+| `/memory [add\|search]` | Second Brain 기억 추가·검색 (전체 조회는 자동 로드) |
+| `/starter [check\|update]` | 스타터 버전 확인 / 재설치 |
 
 ---
 
@@ -169,14 +185,14 @@ main  ←──── dev  ←──── feature/{name}
 
 | Agent | 역할 |
 |-------|------|
-| `code-reviewer` | 정확성 · 보안 · 성능 · 유지보수성 관점 코드 리뷰 (전 스택) |
+| `code-reviewer` | 정확성 · 보안 · 성능 · 유지보수성 리뷰 (전 스택) |
 | `ui-designer` | DESIGN.md 기반 디자인 시스템 (Next.js: Tailwind 토큰, Flutter: ThemeData) |
 | `github-actions-designer` | CI/CD · 릴리스 · Docker 배포 워크플로 설계 |
 | `kotlin-{generator\|modifier\|tester}` | Kotlin Spring Boot 코드 생성·수정·테스트 |
 | `nextjs-{generator\|modifier\|tester}` | Next.js 코드 생성·수정·테스트 |
 | `flutter-{generator\|modifier\|tester}` | Flutter 코드 생성·수정·테스트 |
 | `go-{generator\|modifier\|tester}` | Go Gin 코드 생성·수정·테스트 |
-| `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML, 컨벤션, 인증·페이지네이션 패턴) — Kotlin · Go 전용 |
+| `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML) — Kotlin · Go 전용 |
 
 ---
 
@@ -198,7 +214,7 @@ main  ←──── dev  ←──── feature/{name}
 | 플러그인 | 설명 |
 |---------|------|
 | `github` | GitHub 레포 · PR · 이슈 관리 |
-| `context7` | 최신 공식 문서를 컨텍스트로 자동 주입 |
+| `context7` | 최신 공식 문서 컨텍스트 자동 주입 |
 | `feature-dev` | 탐색→설계→구현→리뷰 7단계 체계적 개발 |
 | `code-review` | 병렬 4-agent PR 자동 리뷰 |
 | `security-guidance` | 위험 명령어 실행 전 보안 경고 |
@@ -228,6 +244,38 @@ main  ←──── dev  ←──── feature/{name}
 
 ---
 
+## v1.6.0 마이그레이션
+
+v1.6.0은 커맨드 16개를 10개로 통합했습니다. 기존 커맨드 이름은 **더 이상 작동하지 않습니다**. `/starter update` 로 재설치하거나 `bootstrap.sh` 를 다시 실행하세요.
+
+### 구 → 신 매핑
+
+| 이전 커맨드 (v1.5.x) | 새 커맨드 (v1.6.0) |
+|----------------------|---------------------|
+| `/new-api <Resource>` | `/new api <Resource>` |
+| `/new-component <Name>` | `/new component <Name>` |
+| `/new-screen <Name>` | `/new screen <Name>` |
+| `/new-module <Name>` | `/new module <Name>` |
+| `/new-workflow <Purpose>` | `/new workflow <Purpose>` |
+| `/new-feature <type-name>` | `/new worktree <type-name>` |
+| `/new-feature pr` | `/pr` + `/merge` (PR 생성과 머지 정리가 분리됨) |
+| `/design-api <Resource>` | `/plan api <Resource>` |
+| `/design-db <도메인>` | `/plan db <도메인>` |
+| `/review-api [대상]` | `/review api [대상]` |
+| `/improve <설명>` | `/rule <설명>` |
+
+### 유지되는 커맨드
+
+`/init`, `/plan`, `/test`, `/commit`, `/memory`, `/review [파일\|staged\|diff]` 는 이름 변경 없음.
+
+### 신규 커맨드
+
+- `/starter [check\|update]` — 스타터 버전 확인·재설치
+- `/pr` — 현재 브랜치에서 PR 생성 + `/merge` 자동 제안 (구 `/new-feature pr` 분리)
+- `/merge [auto]` — GitHub 머지 실행 + main 최신화 + 태그 + worktree 정리 (구 `/pr cleanup` 에서 승격)
+
+---
+
 ## 디렉토리 구조
 
 ```
@@ -238,40 +286,44 @@ claude-code-starter/
 │   ├── agents/               # 전문 subagent 정의
 │   │   ├── code-reviewer.md
 │   │   ├── ui-designer.md
+│   │   ├── api-designer.md
 │   │   ├── github-actions-designer.md
 │   │   ├── kotlin-{generator,modifier,tester}.md
 │   │   ├── nextjs-{generator,modifier,tester}.md
 │   │   ├── flutter-{generator,modifier,tester}.md
 │   │   └── go-{generator,modifier,tester}.md
-│   ├── commands/             # 슬래시 커맨드
+│   ├── commands/             # 슬래시 커맨드 (11개)
 │   │   ├── init.md           # 스택 초기화
-│   │   ├── new-feature.md    # Worktree 기반 기능 브랜치
-│   │   ├── new-workflow.md   # GitHub Actions 워크플로 생성
-│   │   ├── plan.md / test.md / review.md
-│   │   ├── commit.md / improve.md / memory.md
-│   │   ├── new-api.md        # REST API 스캐폴딩 — 스택 자동 감지 (Spring Boot / Go Gin)
-│   │   ├── new-module.md     # 멀티 모듈 서브모듈/패키지/서비스 추가
-│   │   ├── new-component.md  # Next.js 컴포넌트
-│   │   ├── new-screen.md     # Flutter 화면
-│   │   ├── design-api.md     # REST API 설계 → OpenAPI YAML → 코드 생성 연결 (Kotlin·Go)
-│   │   └── review-api.md     # REST API 리뷰 — 컨벤션·보안·OpenAPI 문서 (Kotlin·Go)
+│   │   ├── new.md            # 디스패처: api/component/screen/module/workflow/worktree (자동 감지)
+│   │   ├── plan.md           # 디스패처: 범용 / api / db 설계
+│   │   ├── review.md         # 범용 + api 모드
+│   │   ├── test.md           # 테스트 생성
+│   │   ├── commit.md         # Conventional Commits + /pr 자동 제안
+│   │   ├── pr.md             # PR 생성 + /merge 자동 제안
+│   │   ├── merge.md          # GitHub 머지 + 태그 + worktree 정리
+│   │   ├── rule.md           # 규칙 등록 (구 improve)
+│   │   ├── memory.md         # Second Brain (add/search)
+│   │   └── starter.md        # 스타터 설치·업데이트
 │   ├── skills/               # 코드 패턴 참조 (agents가 읽음)
 │   │   ├── kotlin-patterns.md
 │   │   ├── go-patterns.md
 │   │   ├── nextjs-patterns.md
 │   │   ├── flutter-patterns.md
-│   │   ├── api-design-patterns.md  # REST API 설계 패턴 레퍼런스 (Kotlin·Go)
+│   │   ├── api-design-patterns.md
+│   │   ├── db-patterns.md
 │   │   ├── github-actions-patterns.md
 │   │   └── ui-design-impl.md
-│   └── templates/            # 스택별 설치 템플릿
-│       ├── CLAUDE.{kotlin,go,nextjs,flutter}.md
-│       ├── CLAUDE.{kotlin,go,nextjs}-multi.md  # 멀티 모듈 variant
-│       ├── settings.{kotlin,go,nextjs,flutter}.json
-│       ├── settings.{kotlin,go,nextjs}-multi.json
-│       └── memory.md
+│   ├── templates/            # 스택별 설치 템플릿
+│   │   ├── CLAUDE.{kotlin,go,nextjs,flutter}.md
+│   │   ├── CLAUDE.{kotlin,go,nextjs}-multi.md
+│   │   ├── settings.{kotlin,go,nextjs,flutter}.json
+│   │   ├── settings.{kotlin,go,nextjs}-multi.json
+│   │   └── memory.md
+│   ├── .starter-version      # 설치된 스타터 버전 (팀 공유)
+│   └── hooks/                # pre-push 커버리지 게이트
 ├── memory/
 │   └── MEMORY.md             # 이 레포의 Second Brain
-├── bootstrap.sh
+├── bootstrap.sh              # 설치·업데이트 스크립트
 ├── CHANGELOG.md
-└── VERSION                   # 1.4.0
+└── VERSION                   # 1.6.0
 ```

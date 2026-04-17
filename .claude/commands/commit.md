@@ -47,8 +47,32 @@ Conventional Commits 규칙에 따라 커밋을 생성합니다.
    git push origin HEAD
    ```
 
-> ⚠️ `main`에 직접 커밋하지 않습니다. 항상 feature 브랜치에서 작업 후 PR을 통해 머지합니다.
-> 버전 태그는 PR이 머지된 뒤 `/new-feature pr` 흐름의 "머지 후 정리" 단계에서 생성됩니다.
+8. **피처 브랜치 감지 시 `/pr` → `/merge` 체인 제안**
+   ```bash
+   BRANCH=$(git branch --show-current)
+   case "$BRANCH" in
+     feature/*|fix/*|hotfix/*|refactor/*|chore/*|docs/*|test/*|perf/*)
+       echo "💡 피처 브랜치입니다. 다음 단계를 진행할까요?"
+       echo "   y  — /pr 실행 → (PR 생성 후) /merge 까지 이어서 실행"
+       echo "   p  — /pr 만 실행 (머지는 나중에 수동)"
+       echo "   N  — 지금은 종료 (기본값)"
+       ;;
+   esac
+   ```
+
+   - `y` → `/pr` 실행 → 이어서 `/merge` 의 `y/a/N` 프롬프트로 체인 진행
+   - `p` → `/pr` 만 실행 (그 안에서 `/merge` 자동 제안 받음)
+   - `N` 또는 응답 없음 → 커맨드 종료
+   - `main`/`dev` 브랜치이면 제안하지 않음
+
+> ⚠️ `main`에 직접 커밋하지 않습니다. 항상 피처 브랜치에서 작업 후 PR을 통해 머지합니다.
+> 버전 태그는 `/merge` 의 "머지 후 정리" 단계에서 생성됩니다.
+
+**전체 체인 요약**:
+```
+/commit → (피처 브랜치) → /pr 제안 → [y] → /pr 실행 → /merge 제안 → [y/a] → /merge 실행
+```
+각 단계는 **사용자 확인**이 필요합니다 — 완전 자동이 아니라 연속 확인 체인.
 
 ---
 
