@@ -6,6 +6,46 @@
 
 ---
 
+## 2026-04-17: v1.9.0 — /planner GTM 옵션 + gtm-planner agent
+
+**카테고리:** 결정
+
+### 배경
+v1.8.0 의 `/marketing` 은 카피·SEO 같은 **task 단위** 라우터였고, 기능 단위 GTM 문서(포지셔닝·런치 체크리스트·세일즈 덱)를 체계적으로 생산·보관할 수단이 없었음. 기획(/planner PRD) ↔ 마케팅/세일즈 전략 ↔ 실제 릴리스 버전을 **한 축으로** 연결하는 구조가 필요했음.
+
+### 핵심 결정
+
+1. **플래그 확장, 서브명령 없음** — `/planner <기능> --marketing|--sales|--gtm`. 기존 `--teams`/`--output-only` 패턴과 일관.
+2. **전담 agent 분리** — `planner` (PRD 전담) / `gtm-planner` (GTM 전담). 코드 작성은 둘 다 금지. 도구 차이 — gtm-planner 만 `Skill` 보유해 `marketing-skills:*` 체이닝 가능.
+3. **2단 산출물 구조** — `docs/specs/{feature}/{marketing,sales}.md` 은 **살아있는 문서**, `docs/gtm/{YYYY-MM-DD}-{feature}/` 은 **스냅샷**. 중복처럼 보이지만 의도적 — 편집 vs 기록을 분리.
+4. **날짜 + 버전 두 축 히스토리** — 디렉토리는 날짜 기반 (초안 시점), `meta.yaml` 의 `released_version` 은 버전 기반 (`/merge` 에서 자동 기록). `history.md` 는 두 관점 모두로 조회 가능.
+5. **재기획 시 새 디렉토리** — 동일 feature 재GTM 하면 기존 스냅샷 보존하고 새 날짜 디렉토리 추가. 히스토리성.
+6. **`/marketing` 과 역할 분리** — `/marketing` = task 단위 스킬 라우터, `/planner --gtm` = 기능 단위 종합 문서. 상호 보완, 대체 아님.
+
+### 구조
+
+```
+.claude/
+  agents/gtm-planner.md                 # 신규 agent (opus, Skill 포함)
+  commands/planner.md                   # --marketing/--sales/--gtm 플래그 추가
+  commands/merge.md                     # 3-2b 단계 추가 — GTM 스냅샷 릴리스
+  templates/marketing-plan.md           # 살아있는/스냅샷 템플릿
+  templates/sales-plan.md
+  templates/gtm-history.md
+
+docs/
+  specs/{feature}/marketing.md          # 살아있는
+  specs/{feature}/sales.md
+  gtm/history.md                        # 인덱스
+  gtm/{date}-{feature}/                 # 스냅샷
+```
+
+### 열린 이슈
+- `/merge` 의 브랜치명 → feature 이름 추출이 `feature/*` / `fix/*` 등 표준 prefix 를 가정. 비표준 브랜치명이면 매칭 실패
+- history.md 편집 로직이 python3 의존 — 다른 환경에선 meta.yaml 만 갱신됨
+
+---
+
 ## 2026-04-17: v1.8.0 — /marketing 커맨드 + marketing-skills 플러그인
 
 **카테고리:** 결정
