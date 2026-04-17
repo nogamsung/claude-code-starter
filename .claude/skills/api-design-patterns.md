@@ -1,7 +1,7 @@
 # API Design Patterns
 
 백엔드 REST API 설계 시 참조하는 패턴 라이브러리입니다.
-Kotlin Spring Boot (`/new-api`)와 Go Gin (`/new-go-api`) 양쪽에서 공통으로 사용합니다.
+Kotlin Spring Boot (`/new api`)와 Go Gin (`/new api`) 양쪽에서 공통으로 사용합니다.
 
 ---
 
@@ -196,15 +196,15 @@ func (h *OrderHandler) GetOrders(c *gin.Context) { ... }
 
 ---
 
-## 8. /design-api → /new-api / /new-go-api 연결 플로우
+## 8. /plan api → /new api / /new api 연결 플로우
 
 ```
-/design-api {리소스명}
+/plan api {리소스명}
   ↓ 엔드포인트 목록 설계
   ↓ Request/Response 스키마 설계
   ↓ OpenAPI YAML 초안 출력
   ↓ 사용자 확인
   ↓
-  ├── Kotlin 프로젝트  →  /new-api {리소스명}
-  └── Go 프로젝트      →  /new-go-api {리소스명}
+  ├── Kotlin 프로젝트  →  /new api {리소스명}
+  └── Go 프로젝트      →  /new api {리소스명}
 ```

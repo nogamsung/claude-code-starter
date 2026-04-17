@@ -6,6 +6,45 @@
 
 ---
 
+## 2026-04-17: v1.6.0 — 커맨드 전면 재편 + 워크플로 단순화
+
+**카테고리:** 결정
+
+### 배경
+커맨드 16개가 평평(flat)하게 흩어져 있어 근육 기억 부담이 크고, `new-*`, `design-*`, `review-*` 접두사가 혼재해 의미가 겹쳤음. 또한 커밋→PR→머지→정리 과정이 수작업이라 피처 완료 후 정리 단계가 누락되는 경우가 있었음.
+
+### 변경 사항
+
+**커맨드 통합 (16 → 11)**
+- `new-*` 6개 → `/new` 디스패처 (+ 자동 감지: 이름 패턴·스택으로 서브 생략 가능)
+- `design-*` 2개 → `/plan` 으로 흡수 (`/plan api`, `/plan db`)
+- `/review-api` → `/review` api 모드로 흡수
+- `/improve` → `/rule` 로 개명 (결과물 중심 네이밍)
+- `/pr` 신설 (기존 `/new-feature pr` 분리)
+- `/merge` 신설 (`gh pr merge` + main 최신화 + 태그 + worktree 정리)
+- `/starter` 신설 (install/update 통합 진입점)
+
+**자동 체인 (각 단계 확인)**
+- `/commit` → 피처 브랜치면 `/pr` 제안 → 수락 시 `/pr` → `/merge` 제안 → 수락 시 `/merge`
+- 완전 자동이 아닌 "연속 확인" 체인 (각 단계에서 y/N 또는 옵션 선택)
+
+**컨텍스트 자동 로드**
+- `memory/MEMORY.md` 를 세션 시작 시 자동 참조하도록 CLAUDE.md 템플릿 전체에 지시 추가
+- `/memory show` 모드 제거 (자동 로드로 대체)
+
+**bootstrap.sh install/update 통합**
+- 기존 `.claude/` 감지 시 백업 없이 전체 교체
+- `.claude/.starter-version` 에 버전 기록 (팀 공유용)
+
+### 핵심 원칙
+- 디스패처 커맨드는 스택·이름 패턴으로 자동 감지 → 사용자가 타이핑 최소화
+- 명시 서브명령은 override 용도로만 사용 (자동 감지가 틀릴 때)
+- 체인 제안은 "다음 단계를 물어봄" — 강제하지 않음
+
+**관련 파일:** `.claude/commands/*.md` (11개), `.claude/templates/CLAUDE.*.md`, `bootstrap.sh`, `README.md`, `CHANGELOG.md`
+
+---
+
 ## 2026-04-15: v1.4.0 — /design-db DB 설계 자동화 추가
 
 **카테고리:** 결정

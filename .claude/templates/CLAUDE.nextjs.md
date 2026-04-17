@@ -23,11 +23,13 @@
 |--------|------|
 | `/plan <기능>` | 코드 작성 전 설계 및 확인 |
 | `ui-designer` 에이전트에게 요청 | DESIGN.md 설정 · 디자인 토큰 적용 · 디자인 리뷰 |
-| `/new-component <Name> [--page\|--feature\|--ui]` | 컴포넌트 생성 |
+| `/new <Name> [--page\|--feature\|--ui]` | 컴포넌트 생성 (명시: `/new component`) |
 | `/test [파일]` | 테스트 자동 생성 |
 | `/review [staged\|diff\|파일]` | 코드 리뷰 |
-| `/improve <실수 설명>` | 새 규칙을 이 파일에 추가 |
+| `/rule <실수 설명>` | 새 규칙을 이 파일에 추가 |
 | `/commit [힌트]` | Conventional Commits 커밋 |
+| `/pr` | PR 생성 + /merge 자동 제안 |
+| `/merge [auto]` | GitHub 머지 실행 + 태그 + worktree 정리 |
 | `/memory [add\|search]` | Second Brain 조회·추가·검색 |
 
 ## 플러그인 커맨드 (설치된 플러그인)
@@ -63,9 +65,9 @@
 
 ```bash
 # 작업 시작 — worktree로 격리된 작업공간 생성
-/new-feature feature-login    # feature/login + .worktrees/feature-login/
-/new-feature fix-signup       # fix/signup + .worktrees/fix-signup/
-/new-feature refactor-auth    # refactor/auth + .worktrees/refactor-auth/
+/new feature-login    # feature/login + .worktrees/feature-login/
+/new fix-signup       # fix/signup + .worktrees/fix-signup/
+/new refactor-auth    # refactor/auth + .worktrees/refactor-auth/
 
 # 여러 작업 동시 진행 가능
 git worktree list
@@ -74,7 +76,7 @@ git worktree list
 # /project/.worktrees/fix-signup       [fix/signup]
 
 # 작업 후 PR 생성 (base: dev)
-/new-feature pr
+/pr
 
 # PR merge 후 정리
 git worktree remove .worktrees/feature-login
@@ -231,7 +233,13 @@ coverageReporters: ['json-summary', 'text', 'lcov'],
 
 ## 학습된 규칙 (AI 실수 후 추가)
 
-<!-- /improve 커맨드로 새 규칙이 여기에 추가됩니다 -->
+<!-- /rule 커맨드로 새 규칙이 여기에 추가됩니다 -->
+
+---
+
+## 세션 시작 시 자동 참조
+
+> 🧠 **새 작업을 시작하기 전에 `memory/MEMORY.md` 를 반드시 먼저 읽으세요.** 과거 결정·교훈을 맥락에 포함하여 같은 실수를 반복하지 않도록 합니다.
 
 ---
 
@@ -242,7 +250,7 @@ coverageReporters: ['json-summary', 'text', 'lcov'],
 
 **자동 기록 트리거:**
 - `/plan` 승인 → 구현할 기능과 선택한 설계 방식 기록
-- `/improve` 실행 → 어떤 실수였는지, 추가된 규칙 요약 기록
+- `/rule` 실행 → 어떤 실수였는지, 추가된 규칙 요약 기록
 - 복잡한 버그 해결 → 원인, 해결 방법, 재발 방지 포인트 기록
 - 외부 라이브러리/API 도입 결정 → 선택 이유, 대안 기록
 - 아키텍처 또는 폴더 구조 변경 → 변경 전/후, 이유 기록
