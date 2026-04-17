@@ -24,6 +24,7 @@
 ## Commands
 | 커맨드 | 용도 |
 |--------|------|
+| `/planner <기능>` | 기획서(PRD) + 구현 프롬프트 작성 (단일 스택은 단일 프롬프트 산출) |
 | `/plan <기능>` | 코드 작성 전 설계 및 확인 |
 | `/plan api <Resource>` | REST API 설계 → OpenAPI 3.0 YAML |
 | `/plan db <도메인>` | MySQL 스키마 설계 → golang-migrate migration 자동 생성 |

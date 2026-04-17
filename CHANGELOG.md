@@ -12,6 +12,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2026-04-17
+
+### Added
+
+**모노레포 모드** — 한 저장소에서 backend + frontend + mobile 공존 지원.
+
+- `/init` 이 루트의 `backend/`·`frontend/`·`mobile/` (별칭 `api`/`server`/`web`/`client`/`app`) 디렉토리를 스캔해 모노레포 자동 감지
+- `.claude/stacks.json` — 활성 스택 매니페스트 (단일 진실의 원천)
+- 루트 `CLAUDE.md` 는 인덱스, 각 스택 디렉토리에 역할별 `CLAUDE.md` 자동 배치
+- `.claude/settings.json` 은 union permissions + 경로 가드 hooks (PostToolUse 가 편집 파일 경로로 스택 lookup)
+- `.claude/hooks/pre-push.sh` 가 활성 스택 전체 순차 커버리지 검증 (한 스택 실패 시 전체 차단)
+- Go 스택 커버리지 검증 추가 (`go test -coverprofile`)
+- 역할 prefix 지원 — `/new backend api User`, `/new frontend component Button`, `/new mobile screen Login`
+- `/plan` 도 동일한 역할 prefix 파싱 (`/plan backend api User`)
+- 중첩 멀티모듈 지원 — `backend/` 내부가 `kotlin-multi`/`go-multi` 가능, `frontend/` 가 `nextjs-multi` (Turborepo) 가능
+
+**`/planner` 커맨드 + `planner` agent** — 기획자 에이전트 추가.
+
+- `/planner <기능>` — 사용자 요청을 받아 PRD + 역할별 구현 프롬프트 생성
+- `planner` agent — Read/Write/Grep/Glob/Bash 로 코드베이스 맥락 스캔 후 PRD 작성 (코드는 작성하지 않음)
+- `.claude/templates/prd.md` — 엔지니어용 한국어 PRD 템플릿 (12 섹션)
+- `.claude/templates/role-prompt.md` — 역할별 구현 프롬프트 템플릿 (체크리스트 + 계약 + 실행 지시)
+- **Agent Teams 옵션** — 생성된 프롬프트를 병렬 agent 호출로 즉시 실행 가능
+  - `--teams` 플래그 → 바로 병렬 실행
+  - `--output-only` 플래그 → 파일만 생성, 수동 실행
+  - 플래그 없음 → 매번 사용자에게 선택 질문
+  - 안전장치: teams 실행 전 한 번 더 확인
+
+### Changed
+
+- `pre-push.sh` 를 함수화하고 `.claude/stacks.json` 분기 추가 — 단일 스택 모드는 기존 동작 그대로
+- 각 스택 `CLAUDE.md` 템플릿에 `/planner` 커맨드 행 추가
+- `/init` 단일 스택 모드의 유지 대상에 `planner` agent + `prd`/`role-prompt` 템플릿 포함
+
+### 마이그레이션 안내
+
+- **단일 스택 사용자**: `.claude/stacks.json` 이 없으면 모든 훅·커맨드가 기존 동작으로 폴백 — 파괴적 영향 없음
+- **모노레포 신규 설치**: `/starter update` → `/init` 재실행 시 자동 감지
+- 기존 `/plan`, `/new` 사용법 그대로 유지
+
+---
+
 ## [1.6.0] - 2026-04-17
 
 ### ⚠️ Breaking Changes

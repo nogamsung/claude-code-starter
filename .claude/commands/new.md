@@ -9,7 +9,33 @@ argument-hint: <Name> (자동 감지) 또는 <sub> <Name> [옵션] (명시 지�
 
 ---
 
-## 서브명령 결정 (자동 감지 → override 순서)
+## 서브명령 결정 (역할 prefix → 자동 감지 → override 순서)
+
+### Step 0 — 모노레포 역할 prefix 체크
+
+`.claude/stacks.json` 이 존재하고 `mode: "monorepo"` 이면, 첫 토큰이 역할명이면 **그 역할 디렉토리로 cd 해서 실행**합니다.
+
+| 첫 토큰 | 의미 |
+|---------|------|
+| `backend` | `.claude/stacks.json` 에서 `role: "backend"` 의 `path` 로 이동 |
+| `frontend` | `role: "frontend"` 의 `path` 로 이동 |
+| `mobile` | `role: "mobile"` 의 `path` 로 이동 |
+
+실행 방식:
+
+```bash
+STACK_PATH=$(jq -r '.stacks[] | select(.role == "backend") | .path' .claude/stacks.json)
+cd "$STACK_PATH"   # 이후 작업은 이 디렉토리를 루트로 간주
+```
+
+prefix 를 소비하고 나머지 인자로 Step 1 부터 진행합니다 (예: `/new backend api User` → `api User` 로 재평가).
+
+prefix 없이 호출되고 모노레포이면:
+- 활성 스택이 **1개면** 자동 선택 (예: backend 만 있음 → 자동으로 backend 경로)
+- **2개 이상**이면 사용자에게 확인:
+  > "어느 스택에서 실행할까요? (backend / frontend / mobile)"
+
+단일 스택 모드(`.claude/stacks.json` 없음)에서는 Step 0 을 건너뜁니다.
 
 ### Step 1 — 명시 서브명령 우선 체크
 
@@ -65,7 +91,7 @@ argument-hint: <Name> (자동 감지) 또는 <sub> <Name> [옵션] (명시 지�
 ## 사용 예시
 
 ```
-# 자동 감지 (권장)
+# 단일 스택 — 자동 감지 (권장)
 /new User                     # Kotlin/Go → api / Next.js → component / Flutter → screen
 /new UserCard --feature       # Next.js → component (--feature 플래그)
 /new feature-login            # worktree (type prefix 인식)
@@ -73,10 +99,21 @@ argument-hint: <Name> (자동 감지) 또는 <sub> <Name> [옵션] (명시 지�
 /new publish kotlin           # workflow (publish 키워드 인식)
 /new ci nextjs                # workflow
 
-# 명시 지정 (override)
+# 단일 스택 — 명시 지정 (override)
 /new api User                 # 자동 감지가 틀릴 때 강제 지정
 /new module notification      # 멀티 모듈에서 소문자 이름을 모듈로 강제
 /new workflow ci              # workflow 명시
+
+# 모노레포 — 역할 prefix 로 대상 스택 명시
+/new backend api User            # backend 경로에서 api 스캐폴딩
+/new frontend component Button   # frontend 경로에서 컴포넌트
+/new mobile screen Login         # mobile 경로에서 Flutter 화면
+/new backend module notification # backend 멀티 모듈 서브모듈 추가
+/new backend User                # 역할 명시 후 자동 감지 (backend → api)
+
+# 모노레포 공용 (역할 불필요)
+/new feature-login               # worktree — 루트에서 실행
+/new workflow ci                 # workflow — 루트에서 실행
 ```
 
 ---
