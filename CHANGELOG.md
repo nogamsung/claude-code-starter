@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.1] - 2026-04-17
+
+### Changed
+
+**GitHub Actions 자동 태깅 워크플로 추가** — `/merge` 없이 GitHub 웹에서 머지해도 태그가 자동 생성되도록.
+
+- `.github/workflows/auto-tag.yml` 신규
+  - 트리거: `main` 브랜치의 `VERSION` 파일 변경
+  - 동작: VERSION 읽기 → `v${VERSION}` 태그 존재 확인 → 없으면 태그 생성·푸시 + GitHub Release 작성
+  - Release 본문은 `CHANGELOG.md` 의 해당 버전 섹션에서 자동 추출 (awk 로 `## [X.Y.Z]` ~ 다음 `## [` 또는 `---` 사이)
+- 기존 `/merge` 의 태그 로직은 유지 — 로컬 머지 시 즉시 태그 원하는 경우 fallback
+- **누락 태그 회고 생성**: v1.6.0 (커밋 72dca2c), v1.8.0 (커밋 5c6ae22), v1.9.0 (커밋 aa521a3) — 이 PR 머지 후 수동 푸시
+
+---
+
 ## [1.9.0] - 2026-04-17
 
 ### Added
