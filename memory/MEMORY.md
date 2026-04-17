@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-04-17: v1.8.0 — /marketing 커맨드 + marketing-skills 플러그인
+
+**카테고리:** 결정
+
+### 배경
+코드 생성 중심의 기존 커맨드 셋(/new, /plan, /planner 등) 외에, 마케팅·카피·SEO·CRO 같은 **비개발 워크플로**를 Claude Code 안에서 일관되게 처리할 수 있는 진입점이 없었음. `marketing-skills` 플러그인이 35개의 전문 스킬을 제공하지만, 어떤 스킬을 언제 호출해야 하는지 매번 기억해야 하는 부담이 있었음.
+
+### 핵심 결정
+
+1. **라우터 커맨드로 구현** — `/marketing` 은 코드를 작성하지 않는 순수 라우터. 35개 스킬을 6개 카테고리(strategy/seo/cro/channel/retention/context)로 압축해 인지 부하 축소.
+2. **3-layer 진입 방식** — (a) 메뉴 (인수 없음) → (b) 서브명령 (`/marketing seo audit`) → (c) 자연어 (`/marketing 회원가입 전환율이 낮아`). 자연어 모드는 한·영 키워드 점수 매칭으로 **최고점 1개 자동 실행** (동점 시 표 등장 순서상 위쪽 우선).
+3. **카테고리 6개로 고정** — 35개를 flat 하게 나열하면 선택 비용이 높아, 사용 빈도·의미 단위로 6개로 묶음.
+4. **`product-marketing-context` 는 자연 호출** — 전용 서브명령을 두지 않고, 최초 실행 시 한 번만 설정을 권유. 강제하지 않음.
+5. **스택 무관** — monorepo 역할 prefix(backend/frontend/mobile) 체크 없이 그대로 실행.
+
+### 구조
+
+```
+.claude/commands/marketing.md    # 라우터 커맨드 (3-layer 진입)
+.claude/settings.json            # marketing-skills@marketingskills 플러그인 활성화
+```
+
+### 열린 이슈
+- 자연어 라우팅 점수 정확도는 사용 로그로 보정 필요 (현재는 표 등장 순서 우선)
+- `.agents/product-marketing-context.md` 가 없는 최초 사용자의 UX — 현재는 안내만 하고 강제하지 않음
+
+---
+
 ## 2026-04-17: v1.7.0 — 모노레포 모드 + 기획자 agent
 
 **카테고리:** 결정

@@ -12,6 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] - 2026-04-17
+
+### Added
+
+**`/marketing` 커맨드** — marketing-skills 플러그인 라우터.
+
+- `/marketing` — 6개 카테고리(strategy/seo/cro/channel/retention/context) 메뉴 출력
+- `/marketing <category> <task>` — 명시적 서브명령 (예: `/marketing seo audit`, `/marketing channel email`)
+- `/marketing <자연어>` — 한·영 키워드 점수 매칭으로 최고점 스킬 1개 자동 실행
+- `.agents/product-marketing-context.md` 존재 시 후속 스킬 호출에 컨텍스트 자동 주입
+- 스택 무관 — monorepo 역할 prefix 체크 없음
+- 35개 `marketing-skills:*` 스킬 커버 (copywriting, seo-audit, page-cro, email-sequence, paid-ads, churn-prevention, ab-test-setup 등)
+- `.claude/settings.json` 에 `marketing-skills@marketingskills` 플러그인 활성화
+
+---
+
 ## [1.7.0] - 2026-04-17
 
 ### Added
