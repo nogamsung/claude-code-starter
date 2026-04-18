@@ -67,12 +67,13 @@ prefix 없이 호출되고 모노레포이면:
 | 감지 파일 | 기본 서브 | 이름 해석 |
 |-----------|----------|----------|
 | `go.mod` 또는 `build.gradle.kts` / `pom.xml` | **api** | PascalCase → 리소스명 |
+| `pyproject.toml` (`fastapi` 의존성) | **api** | PascalCase → 리소스명 |
 | `package.json` (`next` 의존성) | **component** | PascalCase → 컴포넌트명 |
 | `pubspec.yaml` | **screen** | PascalCase → 화면명 |
 
 ### Step 4 — 멀티 모듈 모호성 해소
 
-프로젝트가 멀티 모듈(`settings.gradle.kts include(` / `go.work` / `turbo.json`)이고, 이름이 **소문자 단일 단어**(예: `notification`, `payment`)이면 사용자에게 확인:
+프로젝트가 멀티 모듈(`settings.gradle.kts include(` / `go.work` / `pyproject.toml` + `[tool.uv.workspace]` / `turbo.json`)이고, 이름이 **소문자 단일 단어**(예: `notification`, `payment`)이면 사용자에게 확인:
 
 > "`<name>` 을 멀티 모듈 서브모듈로 생성할까요? 아니면 API 리소스로 생성할까요? (module / api)"
 
@@ -130,6 +131,7 @@ prefix 없이 호출되고 모노레포이면:
 |-----------|------|------|
 | `go.mod` | Go Gin | [Go Gin](#api--go-gin) |
 | `settings.gradle.kts` / `build.gradle.kts` / `build.gradle` | Spring Boot | [Spring Boot](#api--spring-boot) |
+| `pyproject.toml` (`fastapi` 의존성) | Python FastAPI | [Python FastAPI](#api--python-fastapi) |
 | 위 파일 없음 | — | 사용자에게 스택 선택 요청 |
 
 ### api — Go Gin
@@ -205,6 +207,35 @@ prefix 없이 호출되고 모노레포이면:
    - `test/.../presentation/{Resource}ControllerTest.kt` — `@WebMvcTest`
 
 **주의사항 (Spring Boot)**: 기존 패턴(패키지, 예외, 응답 형태) 먼저 파악. `GlobalExceptionHandler` 있으면 맞춰 예외 던지기. Kotlin 관용 표현 사용. QueryDSL 3세트, SpringDoc 어노테이션, `@Schema` 필수.
+
+### api — Python FastAPI
+
+**프로젝트 구조 감지**: `pyproject.toml` 에 `[tool.uv.workspace]` 가 있으면 멀티 워크스페이스 → 어느 서비스(`services/api` 등)에 추가할지 물어봅니다. 선택 디렉토리를 루트로 삼아 단일 서비스 구조 그대로 적용. 공유 타입은 `packages/shared/src/shared/` 에 배치.
+
+**생성할 파일** (`python-generator` 가 처리):
+
+1. **SQLAlchemy Model** — `app/models/{resource}.py` — `Mapped[...]` + `mapped_column(...)`
+2. **Pydantic Schemas** — `app/schemas/{resource}.py` — `{Resource}Create`, `{Resource}Update`, `{Resource}Response`, `ErrorResponse` (없으면)
+3. **Repository** — `app/repositories/{resource}.py` — `AsyncSession` 주입, `select(...)` + `.scalar_one_or_none()` / `.scalars().all()`
+4. **Service** — `app/services/{resource}.py` — 비즈니스 로직, 커스텀 예외 (`NotFoundError` 등) 전파
+5. **Router** — `app/routers/{resources}.py` — `APIRouter(prefix="/api/v1/{resources}", tags=["{resources}"])`, `response_model`, `responses`, `Path`/`Query` 검증
+6. **DI Deps** — `app/core/deps.py` 에 `get_{resource}_repository` + `get_{resource}_service` 추가, `{Resource}ServiceDep` Annotated 타입 export
+7. **Exceptions** — `app/exceptions.py` 에 `NotFoundError` 등 없으면 생성
+8. **Alembic Migration** — `uv run alembic revision --autogenerate -m "create_{resources}_table"` 안내 후 생성 파일 수동 검토 필수
+9. **테스트**
+   - `tests/services/test_{resource}_service.py` — `AsyncMock(spec=Repository)`
+   - `tests/routers/test_{resource}_router.py` — `httpx.AsyncClient` + `app.dependency_overrides`
+   - `tests/fixtures/{resource}.py` — Factory (없으면 생성)
+
+**주의사항 (Python FastAPI)**:
+- `models/` 에 비즈니스 로직 추가 금지 — Service 에만
+- `services/` 에서 `HTTPException` / `fastapi.*` import 금지 — 커스텀 예외로 전파, Router 또는 `@app.exception_handler` 에서 변환
+- Pydantic v1 스타일 (`@validator`, 내부 `Config`) 금지 — `@field_validator`, `model_config = ConfigDict(...)` 만
+- SQLAlchemy 2.0 스타일만 — `Mapped[T]` + `mapped_column(...)`, `select(...).where(...)` async API
+- 모든 Service·Repository·Router 함수는 `async def` — sync 혼용 금지
+- `app/main.py` 의 `app.include_router(...)` 에 신규 라우터 등록 안내
+- 생성 후 안내: `uv run alembic revision --autogenerate -m "..."` → 생성 파일 검토 → `uv run alembic upgrade head`
+- 생성된 코드는 `uv run ruff check .` + `uv run mypy .` 통과 기준
 
 ---
 
@@ -289,6 +320,7 @@ lib/features/{feature_name}/
 | 감지 조건 | 타입 |
 |----------|------|
 | `go.work` | Go Workspace |
+| `pyproject.toml` + `[tool.uv.workspace]` | Python uv Workspace |
 | `turbo.json` | Next.js Turborepo |
 | `settings.gradle.kts`에 `include(` | Kotlin 멀티 모듈 |
 
@@ -330,6 +362,23 @@ lib/features/{feature_name}/
 4. **go.work 업데이트**: `use` 디렉티브에 `./services/{moduleName}` 추가
 5. **`go work sync`** 실행
 6. **완료 안내**: 파일 목록, 공유 도메인은 `pkg/shared/`, `cd services/{moduleName} && go build ./...` 빌드, `golangci-lint run ./...`는 각 서비스 디렉토리에서 실행 (workspace root 미지원)
+
+### module — Python uv Workspace
+
+사용자에게 묻습니다: `services/` (FastAPI 서비스 / 워커) vs `packages/` (공유 라이브러리)
+
+**services/** 선택:
+1. **디렉토리 구조**: `services/{moduleName}/{pyproject.toml, app/{main.py, core/, db/, models/, schemas/, repositories/, services/, routers/, exceptions.py}, alembic/, tests/}`
+2. **pyproject.toml**: 기존 서비스 참고 — `[project] name = "{moduleName}"`, `dependencies = ["shared", "fastapi>=0.115", ...]`
+3. **루트 pyproject.toml 업데이트**: `[tool.uv.workspace].members` 배열에 `"services/{moduleName}"` 추가
+
+**packages/** 선택:
+1. **디렉토리 구조**: `packages/{moduleName}/{pyproject.toml, src/{moduleName}/__init__.py}`
+2. **pyproject.toml**: `[project] name = "{moduleName}"` + `[build-system] requires = ["hatchling"]` + `[tool.hatch.build.targets.wheel] packages = ["src/{moduleName}"]`
+3. **루트 pyproject.toml 업데이트**: `members` + `[tool.uv.sources]` 에 `{moduleName} = { workspace = true }` 추가
+
+4. **`uv sync`** 실행 — 락파일 재생성
+5. **완료 안내**: 파일 목록, 사용 시 다른 멤버의 `pyproject.toml` `dependencies` 에 `"{moduleName}"` 추가 → `uv sync`, 실행은 `uv run --directory services/{moduleName} ...`
 
 ---
 
@@ -433,6 +482,7 @@ cd .worktrees/{type}-{name}
 [ -f package.json ] && npm ci
 [ -f gradlew ] && ./gradlew dependencies --no-daemon -q
 [ -f pubspec.yaml ] && flutter pub get
+[ -f pyproject.toml ] && command -v uv &>/dev/null && uv sync
 ```
 
 ### Step 6 — 작업 안내

@@ -101,6 +101,7 @@ prefix 생략 시 — 감지된 스택이 1개면 자동 선택, 2개 이상이�
 
 - `[backend-path]/settings.gradle.kts` 에 `include(` 가 있으면 → `kotlin-multi` 로 감지
 - `[backend-path]/go.work` 가 있으면 → `go-multi` 로 감지
+- `[backend-path]/pyproject.toml` 에 `[tool.uv.workspace]` 가 있으면 → `python-multi` 로 감지
 - `[frontend-path]/turbo.json` 이 있으면 → `nextjs-multi` 로 감지
 
 `/new module <name>` 은 자동으로 해당 역할 디렉토리에서 실행됩니다.
@@ -119,6 +120,7 @@ prefix 생략 시 — 감지된 스택이 1개면 자동 선택, 2개 이상이�
 
 - backend (kotlin/kotlin-multi) → `./gradlew test jacocoTestReport` (해당 경로에서)
 - backend (go/go-multi) → `go test -coverprofile=coverage.out ./...` (해당 경로에서)
+- backend (python/python-multi) → `uv run pytest --cov --cov-report=xml` (해당 경로에서)
 - frontend (nextjs/nextjs-multi) → `npx jest --coverage` (해당 경로에서)
 - mobile (flutter) → `flutter test --coverage` (해당 경로에서)
 

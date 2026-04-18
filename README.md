@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.9.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.10.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -16,6 +16,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-Gin-00ADD8?logo=go&logoColor=white)
+![Python](https://img.shields.io/badge/Python-FastAPI-009688?logo=fastapi&logoColor=white)
 
 </div>
 
@@ -38,7 +39,7 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - **기획자 에이전트** — `/planner` 로 요청 → PRD + 역할별 구현 프롬프트 자동 생성. Agent Teams 로 병렬 구현도 옵션
 - **`/commit` → `/pr` → `/merge` 자동 체인** — 각 단계에서 다음 단계를 제안(수락 시 연결 실행). 완전 자동이 아닌 "연속 확인" 체인
 
-**지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin
+**지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin · Python FastAPI
 
 > **v1.6.0 Breaking Change** — 커맨드 16개 → 11개로 재편. [마이그레이션 가이드](#v160-마이그레이션) 참고.
 
@@ -86,6 +87,8 @@ rm -rf claude-code-starter
 /init flutter        # Flutter 모바일
 /init go             # Go Gin (단일 서비스)
 /init go-multi       # Go (Workspace: services/api,worker + pkg/shared)
+/init python         # Python FastAPI (단일 서비스)
+/init python-multi   # Python (uv Workspace: services/api,worker + packages/shared)
 ```
 
 <details>
@@ -203,7 +206,8 @@ main  ←──── dev  ←──── feature/{name}
 | `nextjs-{generator\|modifier\|tester}` | Next.js 코드 생성·수정·테스트 |
 | `flutter-{generator\|modifier\|tester}` | Flutter 코드 생성·수정·테스트 |
 | `go-{generator\|modifier\|tester}` | Go Gin 코드 생성·수정·테스트 |
-| `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML) — Kotlin · Go 전용 |
+| `python-{generator\|modifier\|tester}` | Python FastAPI 코드 생성·수정·테스트 |
+| `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML) — Kotlin · Go · Python 전용 |
 | `planner` | 기획자 — 요청 → PRD + 역할별 구현 프롬프트 작성 (코드는 작성하지 않음). `/planner` 커맨드가 호출 |
 | `gtm-planner` | Go-To-Market 전담 — PRD 기반으로 `marketing.md` + `sales.md` 초안, `docs/gtm/` 스냅샷 · 히스토리 적립. `/planner --marketing\|--sales\|--gtm` 플래그가 호출 |
 
@@ -211,12 +215,15 @@ main  ←──── dev  ←──── feature/{name}
 
 ## 스택별 기술 표준
 
-| 항목 | Kotlin Spring Boot | Go Gin | Next.js | Flutter |
-|------|-------------------|--------|---------|---------|
-| ORM / 쿼리 | JPA + **QueryDSL** | GORM + **sqlc** | — | — |
-| API 문서 | **SpringDoc OpenAPI** | **swaggo/swag** | — | — |
-| Lint | ktlint | **golangci-lint** | ESLint | dart analyze |
-| Docker 배포 | ✅ GHCR | ✅ GHCR | ✅ GHCR | ❌ |
+| 항목 | Kotlin Spring Boot | Go Gin | Python FastAPI | Next.js | Flutter |
+|------|-------------------|--------|----------------|---------|---------|
+| ORM / 쿼리 | JPA + **QueryDSL** | GORM + **sqlc** | **SQLAlchemy 2.0 (async)** | — | — |
+| Migration | Flyway | golang-migrate | **Alembic** | — | — |
+| API 문서 | **SpringDoc OpenAPI** | **swaggo/swag** | **FastAPI 내장 OpenAPI** | — | — |
+| Lint / Format | ktlint | **golangci-lint** | **ruff** | ESLint | dart analyze |
+| Type Check | kotlinc | `go vet` | **mypy (strict)** | tsc | — |
+| Package Manager | Gradle | Go modules | **uv** | npm | pub |
+| Docker 배포 | ✅ GHCR | ✅ GHCR | ✅ GHCR | ✅ GHCR | ❌ |
 
 ---
 
@@ -249,11 +256,11 @@ main  ←──── dev  ←──── feature/{name}
 
 `/init` 후 설치되는 `settings.json`에는 스택별 자동 검사 훅이 포함됩니다.
 
-| 이벤트 | Kotlin | Next.js | Flutter | Go |
-|--------|--------|---------|---------|-----|
-| 파일 저장 후 | `ktlint` | `eslint` | `dart analyze` | `go vet` |
-| 작업 완료 전 | `gradlew test` | `tsc` + `jest` | `flutter test` | `go test ./...` |
-| **git push 전** | **Jacoco ≥ 90%** | **Jest ≥ 90%** | **Flutter ≥ 90%** | **Go ≥ 90%** |
+| 이벤트 | Kotlin | Next.js | Flutter | Go | Python |
+|--------|--------|---------|---------|-----|--------|
+| 파일 저장 후 | `ktlint` | `eslint` | `dart analyze` | `go vet` | `ruff check` |
+| 작업 완료 전 | `gradlew test` | `tsc` + `jest` | `flutter test` | `go test ./...` | `ruff` + `mypy` |
+| **git push 전** | **Jacoco ≥ 90%** | **Jest ≥ 90%** | **Flutter ≥ 90%** | **Go ≥ 90%** | **pytest-cov ≥ 90%** |
 
 ---
 
@@ -306,7 +313,8 @@ claude-code-starter/
 │   │   ├── kotlin-{generator,modifier,tester}.md
 │   │   ├── nextjs-{generator,modifier,tester}.md
 │   │   ├── flutter-{generator,modifier,tester}.md
-│   │   └── go-{generator,modifier,tester}.md
+│   │   ├── go-{generator,modifier,tester}.md
+│   │   └── python-{generator,modifier,tester}.md
 │   ├── commands/             # 슬래시 커맨드 (13개)
 │   │   ├── init.md           # 스택 초기화 + 모노레포 자동 감지
 │   │   ├── new.md            # 디스패처: api/component/screen/module/workflow/worktree (+ 역할 prefix)
@@ -324,6 +332,7 @@ claude-code-starter/
 │   ├── skills/               # 코드 패턴 참조 (agents가 읽음)
 │   │   ├── kotlin-patterns.md
 │   │   ├── go-patterns.md
+│   │   ├── python-patterns.md
 │   │   ├── nextjs-patterns.md
 │   │   ├── flutter-patterns.md
 │   │   ├── api-design-patterns.md
@@ -331,11 +340,11 @@ claude-code-starter/
 │   │   ├── github-actions-patterns.md
 │   │   └── ui-design-impl.md
 │   ├── templates/            # 스택별 설치 템플릿
-│   │   ├── CLAUDE.{kotlin,go,nextjs,flutter}.md
-│   │   ├── CLAUDE.{kotlin,go,nextjs}-multi.md
+│   │   ├── CLAUDE.{kotlin,go,python,nextjs,flutter}.md
+│   │   ├── CLAUDE.{kotlin,go,python,nextjs}-multi.md
 │   │   ├── CLAUDE.monorepo.md      # 루트 인덱스 (모노레포 모드)
-│   │   ├── settings.{kotlin,go,nextjs,flutter}.json
-│   │   ├── settings.{kotlin,go,nextjs}-multi.json
+│   │   ├── settings.{kotlin,go,python,nextjs,flutter}.json
+│   │   ├── settings.{kotlin,go,python,nextjs}-multi.json
 │   │   ├── settings.monorepo.json  # 병합 settings (경로 가드 hooks)
 │   │   ├── prd.md                  # PRD 템플릿 (/planner 용)
 │   │   ├── role-prompt.md          # 역할별 구현 프롬프트 템플릿
@@ -362,5 +371,5 @@ claude-code-starter/
 │           └── meta.yaml              # feature/status/released_version
 ├── bootstrap.sh              # 설치·업데이트 스크립트
 ├── CHANGELOG.md
-└── VERSION                   # 1.9.1
+└── VERSION                   # 1.10.0
 ```

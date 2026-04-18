@@ -1,6 +1,6 @@
 ---
 description: 프로젝트 스택 선언 → 불필요한 agent/template/skill 제거 → CLAUDE.md + settings.json 설치 + Second Brain 초기화
-argument-hint: [kotlin | kotlin-multi | go | go-multi | nextjs | nextjs-multi | flutter | monorepo] (생략 시 자동 감지)
+argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | nextjs | nextjs-multi | flutter | monorepo] (생략 시 자동 감지)
 ---
 
 프로젝트의 스택을 설정하고 하네스를 구성합니다.
@@ -18,6 +18,7 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | nextjs | nextjs-multi | 
 |----|------|
 | `kotlin` / `kotlin-multi` | Spring Boot 백엔드 (단일 / Gradle 멀티 모듈) |
 | `go` / `go-multi` | Go Gin 백엔드 (단일 / Workspace 멀티 서비스) |
+| `python` / `python-multi` | Python FastAPI 백엔드 (단일 / uv Workspace) |
 | `nextjs` / `nextjs-multi` | Next.js 프론트엔드 (단일 / Turborepo) |
 | `flutter` | Flutter 모바일 |
 | `monorepo` | backend + frontend + mobile 모노레포 (자동 감지 강제) |
@@ -40,6 +41,8 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | nextjs | nextjs-multi | 
 | `build.gradle.kts` / `pom.xml` | `kotlin` |
 | `go.work` | `go-multi` |
 | `go.mod` | `go` |
+| `pyproject.toml` + `[tool.uv.workspace]` | `python-multi` |
+| `pyproject.toml` (fastapi 의존성) | `python` |
 | `turbo.json` | `nextjs-multi` |
 | `package.json` (`next` 의존성) | `nextjs` |
 | `pubspec.yaml` | `flutter` |
@@ -58,6 +61,8 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | nextjs | nextjs-multi | 
 | `build.gradle.kts` / `pom.xml` | `kotlin` |
 | `go.work` | `go-multi` |
 | `go.mod` | `go` |
+| `pyproject.toml` + `[tool.uv.workspace]` | `python-multi` |
+| `pyproject.toml` (`fastapi` 의존성) | `python` |
 | `turbo.json` | `nextjs-multi` |
 | `package.json` (`next` 의존성) | `nextjs` |
 | `pubspec.yaml` | `flutter` |
@@ -81,6 +86,7 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | nextjs | nextjs-multi | 
 |------|-------------|-------------|----------------|
 | `kotlin` / `kotlin-multi` | kotlin-{gen,mod,test}, code-reviewer, api-designer, ui-designer¹, github-actions-designer, **planner** | kotlin-patterns, db-patterns, api-design-patterns, github-actions-patterns | CLAUDE.kotlin[-multi], settings.kotlin[-multi], **prd**, **role-prompt** |
 | `go` / `go-multi` | go-{gen,mod,test}, code-reviewer, api-designer, github-actions-designer, **planner** | go-patterns, db-patterns, api-design-patterns, github-actions-patterns | CLAUDE.go[-multi], settings.go[-multi], **prd**, **role-prompt** |
+| `python` / `python-multi` | python-{gen,mod,test}, code-reviewer, api-designer, github-actions-designer, **planner** | python-patterns, db-patterns, api-design-patterns, github-actions-patterns | CLAUDE.python[-multi], settings.python[-multi], **prd**, **role-prompt** |
 | `nextjs` / `nextjs-multi` | nextjs-{gen,mod,test}, code-reviewer, ui-designer, github-actions-designer, **planner** | nextjs-patterns, ui-design-impl, github-actions-patterns | CLAUDE.nextjs[-multi], settings.nextjs[-multi], **prd**, **role-prompt** |
 | `flutter` | flutter-{gen,mod,test}, code-reviewer, ui-designer, github-actions-designer, **planner** | flutter-patterns, ui-design-impl, github-actions-patterns | CLAUDE.flutter, settings.flutter, **prd**, **role-prompt** |
 
@@ -94,6 +100,7 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | nextjs | nextjs-multi | 
 
 - **backend (kotlin/kotlin-multi)** 감지 → kotlin-{gen,mod,test}, api-designer, kotlin-patterns, db-patterns, api-design-patterns, CLAUDE.kotlin[-multi], settings.kotlin[-multi]
 - **backend (go/go-multi)** 감지 → go-{gen,mod,test}, api-designer, go-patterns, db-patterns, api-design-patterns, CLAUDE.go[-multi], settings.go[-multi]
+- **backend (python/python-multi)** 감지 → python-{gen,mod,test}, api-designer, python-patterns, db-patterns, api-design-patterns, CLAUDE.python[-multi], settings.python[-multi]
 - **frontend (nextjs/nextjs-multi)** 감지 → nextjs-{gen,mod,test}, ui-designer, nextjs-patterns, ui-design-impl, CLAUDE.nextjs[-multi], settings.nextjs[-multi]
 - **mobile (flutter)** 감지 → flutter-{gen,mod,test}, ui-designer, flutter-patterns, ui-design-impl, CLAUDE.flutter, settings.flutter
 - **공통 유지**: code-reviewer, github-actions-designer, **planner**, github-actions-patterns, CLAUDE.monorepo.md, settings.monorepo.json, memory.md, **prd.md**, **role-prompt.md**
@@ -201,6 +208,7 @@ cp .claude/templates/settings.monorepo.json ./.claude/settings.json
 감지된 스택에 따라 `permissions.allow` 를 **실제 필요한 것만** 남기도록 후처리:
 - backend(kotlin/kotlin-multi) 없음 → `Bash(./gradlew *)`, `Bash(./mvnw *)` 제거
 - backend(go/go-multi) 없음 → `Bash(go *)` 제거
+- backend(python/python-multi) 없음 → `Bash(uv *)`, `Bash(uvx *)`, `Bash(python *)`, `Bash(pytest *)`, `Bash(ruff *)`, `Bash(mypy *)`, `Bash(alembic *)`, `Bash(uvicorn *)` 제거
 - frontend 없음 → `Bash(npm *)`, `Bash(npx *)`, `Bash(node *)` 제거
 - mobile 없음 → `Bash(flutter *)`, `Bash(dart *)` 제거
 
