@@ -12,6 +12,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.0] - 2026-04-19
+
+### Added
+
+**Python FastAPI 스택 지원** — 기존 4스택(Kotlin/Go/Next.js/Flutter) 에 Python FastAPI 백엔드 추가. 단일 모듈 `python` + uv workspace 기반 멀티 모듈 `python-multi` 모두 지원.
+
+- 신규 agents (3): `python-generator`, `python-modifier`, `python-tester`
+  - FastAPI + SQLAlchemy 2.0 (async) + Alembic + Pydantic v2 + pytest-asyncio
+  - 레이어: `models/` (ORM) · `schemas/` (Pydantic) · `repositories/` · `services/` · `routers/` — Python 관용 네이밍
+- 신규 skill: `.claude/skills/python-patterns.md` — 모델/스키마/리포지토리/서비스/라우터/Alembic/테스트 패턴 전체
+- 신규 templates (4):
+  - `CLAUDE.python.md` — 단일 스택용 아키텍처 규칙 + Pydantic v2 / SQLAlchemy 2.0 / FastAPI / Alembic / ruff / mypy 규칙
+  - `CLAUDE.python-multi.md` — uv workspace (`services/api`, `services/worker`, `packages/shared`)
+  - `settings.python.json`, `settings.python-multi.json` — uv/ruff/mypy/pytest/alembic 권한 + 파일 저장 시 ruff check + Stop 시 ruff+mypy 자동 실행 hook
+- 패키지 매니저: **uv** (표준화) — poetry 대신
+- API 문서: FastAPI 내장 OpenAPI (`/docs`, `/redoc`) — swagger 별도 생성 불필요
+- `api-designer` agent 가 Python FastAPI 도 지원
+
+### Changed
+
+- `/init` — `python` / `python-multi` 스택 선언·자동 감지 (`pyproject.toml` + `fastapi` 의존성 또는 `[tool.uv.workspace]`)
+- `/new` — Python 스택 감지 시 `api` 서브로 라우팅 (`python-generator` 호출), `module` 서브에 uv workspace 지원 (services/* vs packages/*), worktree 생성 시 `uv sync` 자동 실행
+- `/plan api` — Python FastAPI 스택 추가
+- `/plan db` — Alembic migration 가이드 (autogenerate + 수동 검토 + up/down 쌍)
+- `/planner` — 스택 → agent 매핑에 `python` / `python-multi` → `python-generator` 추가
+- `.claude/hooks/pre-push.sh` — Python 커버리지 게이트 추가 (`uv run pytest --cov --cov-report=xml` → `coverage.xml` line-rate 파싱, 임계값 90%)
+- `settings.monorepo.json` — uv/ruff/mypy/pytest/alembic 권한 + 파일 저장 hook 에 Python 경로 감지 + Stop hook 에 python 스택 pytest 실행
+- 모노레포 역할 경로 별칭은 기존 유지 (`backend`/`api`/`server` → backend) — Python 도 동일하게 `backend` 역할로 분류
+- `CLAUDE.monorepo.md` — Python 커버리지 게이트 및 중첩 멀티모듈 감지 업데이트
+
+### Migration
+
+기존 설치 프로젝트는 `/starter update` 또는 `bootstrap.sh` 재실행으로 최신 스타터 반영. Python 프로젝트는 `/init python` 또는 `/init python-multi` 호출.
+
+---
+
 ## [1.9.1] - 2026-04-17
 
 ### Changed

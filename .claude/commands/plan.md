@@ -107,6 +107,7 @@ CLAUDE.md 아키텍처 규칙 참고하여 다음 형식으로 제시:
 |------|------|------------|
 | `build.gradle.kts` / `pom.xml` | Kotlin Spring Boot | `/new api <Resource>` |
 | `go.mod` | Go Gin | `/new api <Resource>` |
+| `pyproject.toml` (`fastapi` 의존성) | Python FastAPI | `/new api <Resource>` |
 
 ### Step 2 — 도메인 파악
 
@@ -182,8 +183,9 @@ CLAUDE.md 아키텍처 규칙 참고하여 다음 형식으로 제시:
 |------|------|---------------|
 | `build.gradle.kts` / `pom.xml` | Kotlin Spring Boot | Flyway |
 | `go.mod` | Go Gin | golang-migrate |
+| `pyproject.toml` (`fastapi` 의존성) | Python FastAPI | Alembic |
 
-둘 다 없으면 사용자에게 선택 요청.
+셋 다 없으면 사용자에게 선택 요청.
 
 ### Step 2 — 도메인 분석
 
@@ -227,6 +229,16 @@ CLAUDE.md 아키텍처 규칙 참고하여 다음 형식으로 제시:
 - `ls migrations/*.up.sql | sort | tail -1` 로 다음 번호 확인
 - `up`/`down` 쌍 반드시 생성
 - `down`은 FK 자식 테이블부터 역순 `DROP TABLE IF EXISTS`
+
+**Python (Alembic)**: `alembic/versions/{revision}_create_{table}_table.py`
+- 먼저 SQLAlchemy Model (`app/models/{resource}.py`) 을 작성·업데이트
+- `uv run alembic revision --autogenerate -m "create_{table}_table"` 실행 안내
+- 생성된 revision 파일 **반드시 검토** — autogenerate 가 놓치는 것:
+  - 서버 기본값 (`server_default`)
+  - 체크 제약 · 복합 인덱스 순서
+  - ENUM 타입 변경 (drop/create 필요)
+- `upgrade()` / `downgrade()` 쌍 모두 구현 — `downgrade()` 는 자식 테이블부터 역순 drop
+- 기존 revision 파일 수정 금지 — 새 revision 추가만
 
 ### Step 5 — Entity 생성 연계 안내
 

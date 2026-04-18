@@ -130,6 +130,7 @@ Agent(subagent_type="flutter-generator", prompt=<docs/specs/{feature}/mobile.md 
 |------------------|-------------|
 | `kotlin` / `kotlin-multi` | `kotlin-generator` |
 | `go` / `go-multi` | `go-generator` |
+| `python` / `python-multi` | `python-generator` |
 | `nextjs` / `nextjs-multi` | `nextjs-generator` |
 | `flutter` | `flutter-generator` |
 
