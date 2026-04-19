@@ -1,7 +1,7 @@
 ---
 name: python-generator
 model: claude-sonnet-4-6
-description: Python FastAPI 새 코드 생성 전문 에이전트. 새 SQLAlchemy Model, Pydantic Schema, Repository, Service, Router, Alembic Migration 파일을 처음부터 만들 때 사용.
+description: Python FastAPI 신규 코드 — SQLAlchemy Model, Pydantic Schema, Repository, Service, Router, Alembic Migration 생성.
 ---
 
 Python FastAPI 레이어드 아키텍처 기반 새 코드 생성 에이전트.

@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.10.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.11.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -157,7 +157,7 @@ main  ←──── dev  ←──── feature/{name}
 
 ---
 
-## 커맨드 (13개)
+## 커맨드 (14개)
 
 ### 디스패처 (서브명령)
 
@@ -192,6 +192,7 @@ main  ←──── dev  ←──── feature/{name}
 | `/memory [add\|search]` | Second Brain 기억 추가·검색 (전체 조회는 자동 로드) |
 | `/marketing [category task\|자연어]` | 마케팅 작업 라우터 — 35개 `marketing-skills:*` 스킬을 6개 카테고리로 분기 |
 | `/starter [check\|update]` | 스타터 버전 확인 / 재설치 |
+| `/harness [check\|doctor\|dry-run\|size\|lint-settings]` | 하네스(settings.json, hooks, agents) 검증·dry-run·자동 수정 제안 |
 
 ---
 
@@ -315,7 +316,7 @@ claude-code-starter/
 │   │   ├── flutter-{generator,modifier,tester}.md
 │   │   ├── go-{generator,modifier,tester}.md
 │   │   └── python-{generator,modifier,tester}.md
-│   ├── commands/             # 슬래시 커맨드 (13개)
+│   ├── commands/             # 슬래시 커맨드 (14개)
 │   │   ├── init.md           # 스택 초기화 + 모노레포 자동 감지
 │   │   ├── new.md            # 디스패처: api/component/screen/module/workflow/worktree (+ 역할 prefix)
 │   │   ├── plan.md           # 디스패처: 범용 / api / db 설계 (+ 역할 prefix)
@@ -328,6 +329,7 @@ claude-code-starter/
 │   │   ├── rule.md           # 규칙 등록 (구 improve)
 │   │   ├── memory.md         # Second Brain (add/search)
 │   │   ├── marketing.md      # marketing-skills 플러그인 라우터 (6 카테고리 · 자연어)
+│   │   ├── harness.md        # 하네스 검증·dry-run·자동 수정 제안
 │   │   └── starter.md        # 스타터 설치·업데이트
 │   ├── skills/               # 코드 패턴 참조 (agents가 읽음)
 │   │   ├── kotlin-patterns.md
@@ -353,7 +355,11 @@ claude-code-starter/
 │   │   ├── gtm-history.md          # docs/gtm/history.md 초기 템플릿
 │   │   └── memory.md
 │   ├── .starter-version      # 설치된 스타터 버전 (팀 공유)
-│   └── hooks/                # pre-push 커버리지 게이트
+│   └── hooks/
+│       ├── session-start.sh     # 세션 시작 — git/stack 요약 주입
+│       ├── safety-guard.sh      # PreToolUse — main 등 보호 브랜치의 위험 명령 차단
+│       ├── post-edit-lint.sh    # PostToolUse — 파일 확장자 기반 즉시 lint
+│       └── pre-push.sh          # 커버리지 게이트 (활성 스택 전체)
 ├── memory/
 │   └── MEMORY.md             # 이 레포의 Second Brain
 ├── docs/                     # 기능 스펙 + GTM (필요 시 자동 생성)
@@ -371,5 +377,5 @@ claude-code-starter/
 │           └── meta.yaml              # feature/status/released_version
 ├── bootstrap.sh              # 설치·업데이트 스크립트
 ├── CHANGELOG.md
-└── VERSION                   # 1.10.0
+└── VERSION                   # 1.11.0
 ```

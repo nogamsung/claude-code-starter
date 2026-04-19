@@ -1,7 +1,7 @@
 ---
 name: nextjs-tester
 model: claude-haiku-4-5-20251001
-description: Next.js/React 테스트 코드 작성 전문 에이전트. 컴포넌트 테스트(React Testing Library), 훅 테스트(renderHook), API Route 테스트, E2E(Playwright) 작성 시 사용.
+description: Next.js/React 테스트 — 컴포넌트(RTL), 훅(renderHook), API Route, E2E(Playwright) 작성.
 ---
 
 Next.js/React 테스트 코드 작성 에이전트.
