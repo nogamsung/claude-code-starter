@@ -12,6 +12,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.11.0] - 2026-04-19
+
+### Added
+
+**하네스 엔지니어링 인프라** — 토큰 효율·보안 가드·일관성 확보.
+
+- 신규 커맨드: `/harness [check|doctor|dry-run <hook>|size|lint-settings]`
+  - `check` — settings.json 유효성, 중복 Bash 권한, 훅 실행 권한, description 길이 검증
+  - `doctor` — 발견된 문제 자동 수정 제안 (확인 후 적용)
+  - `dry-run <hook>` — 훅 스크립트 테스트 입력으로 실행 (세션 영향 없음)
+  - `size` — 세션마다 로드되는 항목별 토큰 영향 요약
+  - `lint-settings` — settings.json 정책 (와일드카드, 중복 allow/deny) 엄격 검증
+- 신규 공용 훅 스크립트 3개:
+  - `hooks/session-start.sh` — SessionStart 훅, git/stack 간결 요약 주입 (~30줄 이내)
+  - `hooks/safety-guard.sh` — PreToolUse(Bash) 훅, `main`/`master`/`production`/`release/*` 보호 브랜치에서 `git push --force*`, `git reset --hard`, `git commit --amend`, `git branch -D` 차단. `rm -rf /`, `rm -rf ~`, `DROP TABLE`, `TRUNCATE`, `DROP DATABASE` 는 브랜치 무관 차단
+  - `hooks/post-edit-lint.sh` — PostToolUse 훅, 파일 확장자 기반 lint (py→ruff, go→gofmt, kt→ktlint, ts/tsx→eslint, dart→dart analyze). 모노레포면 stacks.json 경로 자동 lookup. 생성 파일(`*.g.dart`, `*.freezed.dart`, `*.pb.go`) skip
+- 스타터 루트 `CLAUDE.md` 신규 — 스타터 자체 개발용 아키텍처 가이드 (토큰 회계, 변경 체크포인트, 기여 가이드)
+
+### Changed
+
+**토큰 최적화** — 사용자 세션마다 로드되는 파일 총 토큰 대폭 절감.
+
+- CLAUDE.md 템플릿 10개 슬림화: **3,215줄 → 728줄 (-77%)**. 상세 코드 패턴은 `skills/{stack}-patterns.md` 로 이미 이관되어 있어 CLAUDE.md 는 규칙·표만 유지
+- settings.*.json 10개 일괄 재작성:
+  - `allow` 리스트에서 내장 도구 중복 제거 (`ls *`, `find *`, `grep *`, `cat *`) — Claude 가 Glob/Grep/Read 내장 도구로 유도됨
+  - `enabledPlugins` 스택당 9~12개 → 5~8개. `context7`, `code-review`, `pr-review-toolkit`, `security-guidance` 기본값에서 제거 (필요시 사용자가 추가)
+  - 인라인 Bash 훅을 공용 훅 스크립트 참조로 교체 — settings 파일 간결화 + 유지보수 단일 지점
+- Agent description 8개 타이트닝 — `gtm-planner`, `code-reviewer`, `api-designer`, `kotlin-tester`, `python-generator`, `nextjs-tester`, `flutter-tester`, `python-tester` 평균 -40%
+
+### Migration
+
+기존 설치 프로젝트는 `/starter update` 또는 `bootstrap.sh` 재실행으로 최신 스타터 반영. 새 훅 3종이 자동 설치됩니다.
+- 이전 인라인 Bash 훅을 커스터마이징한 프로젝트는 `.claude/hooks/post-edit-lint.sh` 를 직접 수정하면 됨 (settings.json 편집 불필요)
+- `context7` 등 자동 제거된 플러그인 중 사용 중인 것은 `.claude/settings.json` 의 `enabledPlugins` 에 수동 추가
+
+---
+
 ## [1.10.0] - 2026-04-19
 
 ### Added

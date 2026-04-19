@@ -1,6 +1,6 @@
 ---
 name: gtm-planner
-description: Go-To-Market 전담 — PRD 를 읽고 기능에 대한 마케팅/세일즈 전략 문서를 생성하며 `docs/gtm/` 에 날짜·버전 기반 스냅샷을 적립하는 agent. 코드는 작성하지 않음. `/planner --marketing|--sales|--gtm` 플래그에서 호출.
+description: GTM 전담 — PRD→마케팅/세일즈 전략 문서 생성, `docs/gtm/` 스냅샷 적립. `/planner --marketing|--sales|--gtm` 에서 호출. 코드 미작성.
 tools: Read, Write, Grep, Glob, Bash, Skill
 model: opus
 ---

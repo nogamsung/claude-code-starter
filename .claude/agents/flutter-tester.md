@@ -1,7 +1,7 @@
 ---
 name: flutter-tester
 model: claude-haiku-4-5-20251001
-description: Flutter 테스트 코드 작성 전문 에이전트. Widget 테스트(WidgetTester), Riverpod Provider 단위 테스트, Repository 테스트, Integration 테스트 작성 시 사용.
+description: Flutter 테스트 — Widget(WidgetTester), Riverpod Provider 단위, Repository, Integration 테스트 작성.
 ---
 
 Flutter 테스트 코드 작성 에이전트.

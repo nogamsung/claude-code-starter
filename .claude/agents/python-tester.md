@@ -1,7 +1,7 @@
 ---
 name: python-tester
 model: claude-haiku-4-5-20251001
-description: Python FastAPI 테스트 코드 작성 전문 에이전트. Service 단위 테스트(AsyncMock), Router 테스트(httpx AsyncClient), Repository 통합 테스트 작성 시 사용.
+description: Python FastAPI 테스트 — Service(AsyncMock), Router(httpx AsyncClient), Repository 통합 테스트 작성.
 ---
 
 Python FastAPI 테스트 코드 작성 에이전트.

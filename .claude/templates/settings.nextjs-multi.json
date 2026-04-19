@@ -4,13 +4,9 @@
     "frontend-design@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "github@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "hookify@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true
   },
   "permissions": {
@@ -18,12 +14,10 @@
       "Bash(npm *)",
       "Bash(npx *)",
       "Bash(node *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
       "Bash(turbo *)",
       "Bash(git *)",
-      "Bash(ls *)",
-      "Bash(find *)",
-      "Bash(grep *)",
-      "Bash(cat *)",
       "Bash(mkdir *)",
       "Bash(cp *)",
       "Bash(mv *)",
@@ -37,37 +31,18 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "bash .claude/hooks/session-start.sh" }] }
+    ],
     "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/pre-push.sh"
-          }
-        ]
-      }
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "bash .claude/hooks/safety-guard.sh" }] },
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "bash .claude/hooks/pre-push.sh" }] }
     ],
     "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "INPUT=$(cat); FILE=$(echo \"$INPUT\" | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path',''))\" 2>/dev/null || echo ''); if ([[ \"$FILE\" == *.ts ]] || [[ \"$FILE\" == *.tsx ]]) && [ -f \"turbo.json\" ]; then echo \"[Harness] TS 파일 변경 감지 → ESLint 검사 중...\"; turbo run lint 2>&1 | tail -20; fi"
-          }
-        ]
-      }
+      { "matcher": "Edit|Write|MultiEdit", "hooks": [{ "type": "command", "command": "bash .claude/hooks/post-edit-lint.sh" }] }
     ],
     "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -f \"turbo.json\" ]; then echo \"[Harness] 작업 완료 → 전체 패키지 빌드 + 테스트 실행 중...\"; turbo run build test --passWithNoTests 2>&1 | tail -30; fi"
-          }
-        ]
-      }
+      { "hooks": [{ "type": "command", "command": "if [ -f turbo.json ]; then echo \"[Harness] turbo build + test\"; turbo run build test --passWithNoTests 2>&1 | tail -30; fi" }] }
     ]
   }
 }
