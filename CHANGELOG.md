@@ -12,6 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.1] - 2026-04-20
+
+### Changed
+
+**`/pr` 커맨드 — PR base branch 자동 감지 규칙 강화**
+
+- 최상단에 "PR base branch 규칙 (필수)" 박스 추가 — 4가지 분기를 한눈에 볼 수 있게 명문화하고, 사용자·Claude 누구도 `gh pr create --base <다른브랜치>` 로 override 할 수 없다고 선언
+- base 결정 로직 3가지 강화:
+  - `git show-ref --verify --quiet refs/heads/dev` — 로컬 `dev` 체크 (기존)
+  - `git ls-remote --heads origin dev 2>/dev/null` — **remote `origin/dev` 도 체크** (신규). 로컬에 `dev` 가 없어도 팀원이 origin 에 만든 `dev` 를 감지. 오프라인 실패 시 로컬 결과로 폴백
+  - 현재 브랜치가 `dev` 면 `main` 으로 폴백 (신규) — `base == head` 방지 (GitHub 가 거부함)
+- 주의사항에 "base branch override 금지" 항목 추가 — 특정 base 요구 시 "규칙 위반이지만 진행할까요?" 명시적 확인 후에만 수동 지정
+
+**영향:** `/commit → /pr` 자동 체인에도 자동 반영. `/merge` 는 변경 불필요 (GitHub PR 생성 시점에 base 확정).
+
+---
+
 ## [1.12.0] - 2026-04-20
 
 ### Added
