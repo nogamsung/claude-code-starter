@@ -65,6 +65,9 @@ if [ "$MODE" = "install" ]; then
   echo "     /init nextjs       # Next.js"
   echo "     /init flutter      # Flutter"
   echo "     /init go           # Go Gin"
+  echo "     /init python       # Python FastAPI"
+  echo "     /init marketing    # 코드 없는 마케팅 전담"
+  echo "     /init sales        # 코드 없는 세일즈 전담"
 else
   echo "다음 단계:"
   echo "  1. Claude Code를 재시작하세요 (새 커맨드 인식)"
