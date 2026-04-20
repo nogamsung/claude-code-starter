@@ -12,6 +12,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.0] - 2026-04-20
+
+### Added
+
+**`marketing` / `sales` 단독 init 모드** — 코드 스택 없이 마케팅·세일즈 산출물만 관리하는 프로젝트용 하네스.
+
+- `/init marketing` — 랜딩 카피·SEO·콘텐츠·광고·이메일 전담 프로젝트
+- `/init sales` — 덱·콜드메일·객관 처리·가격·플레이북 전담 프로젝트
+- 코드 관련 agent (`kotlin-*`, `go-*`, `python-*`, `nextjs-*`, `flutter-*`, `ui-designer`, `api-designer`) · skill (`*-patterns`, `ui-design-impl`) · 템플릿 (`CLAUDE.{코드스택}.md`) 모두 제거
+- 유지: `planner` + `gtm-planner` + `code-reviewer` + 전체 커맨드
+- `.claude/stacks.json` 미생성 — 코드 빌드/테스트 훅 비활성 (`pre-push` · `post-edit-lint` · `Stop` 제외, `safety-guard` + `session-start` 만)
+
+**신규 파일:**
+- `.claude/templates/CLAUDE.marketing.md` — 마케팅 전담 프로젝트 컨텍스트·규칙·디렉토리 구조
+- `.claude/templates/CLAUDE.sales.md` — 세일즈 전담 프로젝트 컨텍스트·규칙·디렉토리 구조
+- `.claude/templates/settings.marketing.json` — `marketing-skills@marketingskills` 플러그인 활성, 권한은 git·gh·파일 작업만
+- `.claude/templates/settings.sales.json` — 동일 구성 (세일즈 용도 동일 스킬셋)
+
+**수정:**
+- `.claude/commands/init.md` — Step 1 인수 표·Step 2 유지 대상 표·Step 3-C (Marketing/Sales 전용 설치 경로)·Step 6 완료 메시지에 marketing/sales 모드 블록 추가. 빈 디렉토리에서 자동 선택은 **하지 않고** 명시 선택 요청
+- `.claude/agents/gtm-planner.md` — marketing/sales 단독 모드에선 PRD 없이도 `raw_request` + `product-marketing-context` 만으로 진행 가능하도록 예외 조항
+- `bootstrap.sh` — 설치 후 안내 echo 에 `/init python`, `/init marketing`, `/init sales` 세 줄 추가
+- `README.md` — `/init` 예시 블록에 python/marketing/sales 모드 + 플러그인 설치 안내 각주
+
+**플러그인 자동화 수준:** `enabledPlugins: true` 로 토글만 (플러그인 자체는 사용자 환경에 설치 필요). 미설치 시 `/init` 완료 메시지에 `/plugin install marketing-skills@marketingskills` 안내.
+
+---
+
 ## [1.11.0] - 2026-04-19
 
 ### Added

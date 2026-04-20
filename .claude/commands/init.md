@@ -1,10 +1,10 @@
 ---
 description: 프로젝트 스택 선언 → 불필요한 agent/template/skill 제거 → CLAUDE.md + settings.json 설치 + Second Brain 초기화
-argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | nextjs | nextjs-multi | flutter | monorepo] (생략 시 자동 감지)
+argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | nextjs | nextjs-multi | flutter | monorepo | marketing | sales] (생략 시 자동 감지)
 ---
 
 프로젝트의 스택을 설정하고 하네스를 구성합니다.
-**모노레포** (backend + frontend + mobile 공존) 와 **단일 스택** 양쪽을 지원합니다.
+**모노레포** (backend + frontend + mobile 공존), **단일 스택**, **코드 없는 마케팅/세일즈 전담 모드** 를 지원합니다.
 
 **선택한 스택:** $ARGUMENTS
 
@@ -22,6 +22,8 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | 
 | `nextjs` / `nextjs-multi` | Next.js 프론트엔드 (단일 / Turborepo) |
 | `flutter` | Flutter 모바일 |
 | `monorepo` | backend + frontend + mobile 모노레포 (자동 감지 강제) |
+| `marketing` | 코드 없는 마케팅 전담 프로젝트 (랜딩 카피 · SEO · 콘텐츠 · 광고 · 이메일) |
+| `sales` | 코드 없는 세일즈 전담 프로젝트 (덱 · 콜드메일 · 객관처리 · 가격 · 플레이북) |
 
 ### 1-2. 자동 감지 (인수 없을 때)
 
@@ -52,6 +54,14 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | 
 - **2개 이상** 역할 디렉토리가 각자 유효한 스택 마커를 가지면 → `monorepo` 모드
 - **1개** 역할만 발견 → 사용자에게 "단일 스택으로 진행할까요, 아니면 단일-역할 모노레포로 구성할까요?" 확인
 - **0개** 발견 → 루트에서 기존 단일 스택 감지 (아래 표)
+
+> ⚠️ **marketing/sales 모드는 자동 감지하지 않습니다.** 코드 마커가 전혀 없을 때에도 marketing/sales 를 가정하지 마세요. 빈 디렉토리일 수 있으므로 사용자에게 **명시 선택**을 요청합니다:
+> ```
+> 코드 스택이 감지되지 않았습니다. 아래 중 선택하세요:
+>   1. marketing  — 마케팅 전담 프로젝트 (코드 없음)
+>   2. sales      — 세일즈 전담 프로젝트 (코드 없음)
+>   3. 취소 — 스택을 직접 명시 (예: /init kotlin)
+> ```
 
 **루트 단일 스택 감지 (폴백):**
 
@@ -89,10 +99,14 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | 
 | `python` / `python-multi` | python-{gen,mod,test}, code-reviewer, api-designer, github-actions-designer, **planner** | python-patterns, db-patterns, api-design-patterns, github-actions-patterns | CLAUDE.python[-multi], settings.python[-multi], **prd**, **role-prompt** |
 | `nextjs` / `nextjs-multi` | nextjs-{gen,mod,test}, code-reviewer, ui-designer, github-actions-designer, **planner** | nextjs-patterns, ui-design-impl, github-actions-patterns | CLAUDE.nextjs[-multi], settings.nextjs[-multi], **prd**, **role-prompt** |
 | `flutter` | flutter-{gen,mod,test}, code-reviewer, ui-designer, github-actions-designer, **planner** | flutter-patterns, ui-design-impl, github-actions-patterns | CLAUDE.flutter, settings.flutter, **prd**, **role-prompt** |
+| `marketing` | code-reviewer, **planner**, **gtm-planner** | (없음 — marketing-skills 플러그인 의존) | CLAUDE.marketing, settings.marketing, **prd**, **role-prompt**, **marketing-plan**, **gtm-history**, **memory** |
+| `sales` | code-reviewer, **planner**, **gtm-planner** | (없음 — marketing-skills 플러그인 의존) | CLAUDE.sales, settings.sales, **prd**, **role-prompt**, **sales-plan**, **gtm-history**, **memory** |
 
 ¹ `ui-designer` 는 백엔드 단독일 땐 제거. 모노레포에서는 frontend/mobile 이 있으면 자동 유지.
 
 > `planner` agent 와 `prd`/`role-prompt` 템플릿은 **모든 스택에서 유지**합니다. `/planner` 커맨드가 이들을 사용합니다.
+>
+> **marketing/sales 모드**: 코드 스택 관련 agent (`kotlin-*`, `go-*`, `python-*`, `nextjs-*`, `flutter-*`, `ui-designer`, `api-designer`, `github-actions-designer`) 와 코드 관련 skills (`*-patterns`, `db-patterns`, `api-design-patterns`, `ui-design-impl`, `github-actions-patterns`) · 템플릿 (`CLAUDE.{코드스택}.md`, `settings.{코드스택}.json`) 을 **모두 제거**합니다. 작업은 `marketing-skills` 플러그인 스킬로 처리합니다.
 
 ### 모노레포 모드 — 유지 대상 (유니온)
 
@@ -218,9 +232,51 @@ cp .claude/templates/settings.monorepo.json ./.claude/settings.json
 
 ---
 
+### 3-C. Marketing / Sales 모드
+
+코드 스택이 없는 **문서 전담 프로젝트**입니다. `.claude/stacks.json` 은 **생성하지 않습니다** (코드 빌드/테스트 훅이 의미 없음).
+
+#### 3-C-1. CLAUDE.md (루트)
+
+**신규 프로젝트** (CLAUDE.md 없음):
+```bash
+cp .claude/templates/CLAUDE.marketing.md ./CLAUDE.md   # marketing 모드
+cp .claude/templates/CLAUDE.sales.md     ./CLAUDE.md   # sales 모드
+```
+
+**기존 프로젝트**: 기존 파일에 템플릿의 "필수 플러그인", "디렉토리 구조", "MUST", "NEVER" 섹션을 병합. 덮어쓰기 전 사용자 확인.
+
+사용자에게 프로젝트명을 물어 `CLAUDE.md` 첫 줄의 `[프로젝트명]` 을 교체.
+
+#### 3-C-2. settings.json
+
+**신규**:
+```bash
+cp .claude/templates/settings.marketing.json ./.claude/settings.json   # marketing 모드
+cp .claude/templates/settings.sales.json     ./.claude/settings.json   # sales 모드
+```
+
+**기존**: `hooks` + `permissions` + `enabledPlugins.marketing-skills@marketingskills` 를 템플릿으로 덮어쓰기. 다른 기존 `enabledPlugins` 는 유지 가능.
+
+> **코드 빌드/테스트 훅 없음**: marketing/sales 모드의 settings 에는 `pre-push.sh` · `post-edit-lint.sh` · `Stop` 훅이 없습니다. `safety-guard.sh` · `session-start.sh` 만 유지.
+
+#### 3-C-3. 플러그인 가용성 확인
+
+`enabledPlugins.marketing-skills@marketingskills` 가 true 지만, 실제 플러그인이 설치돼 있지 않으면 `/marketing` · `/planner --marketing` · `/planner --sales` · `gtm-planner` 가 동작하지 않습니다.
+
+**Step 6 완료 메시지에 반드시 포함**:
+```
+⚠️ marketing-skills 플러그인 필요 — 아직 설치되지 않았다면:
+    /plugin install marketing-skills@marketingskills
+```
+
+---
+
 ### 3-공통. 커버리지 게이트 훅
 
 `.claude/hooks/pre-push.sh` 확인. `bootstrap.sh` 로 설치했으면 이미 존재. 없으면 복사. 훅은 `.claude/stacks.json` 유무로 모드를 자동 감지합니다.
+
+> **marketing/sales 모드 예외**: `settings.{marketing,sales}.json` 에는 `pre-push.sh` 훅이 등록돼 있지 않으므로 이 단계는 **건너뜁니다** (파일만 남아 있어도 실행되지 않음).
 
 ### 3-공통. Second Brain 초기화
 
@@ -358,6 +414,41 @@ GitHub 브랜치 보호 안내:
 
 [멀티 모듈 스택 추가]
   8. /new module <모듈명>        → 새 서브모듈/패키지/서비스
+```
+
+### Marketing / Sales 모드
+
+```
+✅ 프로젝트 하네스 구성 완료 ([marketing|sales] 모드)
+
+프로젝트: [이름]
+모드:    [marketing | sales] — 코드 없음
+제거된 파일: N개
+
+[하네스 기둥 상태]
+  기둥 1 (컨텍스트):     CLAUDE.md ✅
+  기둥 2 (CI/CD 게이트): .claude/settings.json hooks (safety-guard + session-start) ✅
+  기둥 3 (도구 경계):    .claude/settings.json permissions (git · gh · 파일 작업만) ✅
+  기둥 4 (피드백 루프):  /rule 커맨드 ✅
+  기둥 5 (팀 지식):      memory/MEMORY.md ✅
+
+[Git 브랜치 & Worktree]
+  main + dev 또는 main only
+  .worktrees/: gitignore 등록됨
+
+남은 agents: code-reviewer, planner, gtm-planner
+핵심 커맨드: /planner, /marketing, /memory, /commit, /pr, /merge, /rule
+
+⚠️ marketing-skills 플러그인 필요 — 아직 설치되지 않았다면:
+    /plugin install marketing-skills@marketingskills
+
+이제 할 일:
+  1. CLAUDE.md 를 열고 프로젝트에 맞게 커스터마이징
+  2. (권장) /marketing context         → product-marketing-context 생성
+  3. /new worktree {type-name}         → 첫 작업 브랜치
+  4. /planner <기능> [--marketing|--sales|--gtm]  → PRD + 전략 문서 생성
+  5. /marketing <카테고리>             → 스킬 기반 작업 (copywriting / seo-audit / cold-email ...)
+  6. 중요한 결정·캠페인 결과는 /memory add
 ```
 
 ### 모노레포 모드
