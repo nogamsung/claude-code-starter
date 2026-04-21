@@ -12,6 +12,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.2] - 2026-04-21
+
+### Changed
+
+**`/new worktree` — base 브랜치를 항상 origin 최신 기준으로 분기**
+
+- 최상단에 "베이스 브랜치 규칙 (필수)" 박스 추가 — `/pr` 규칙과 완벽히 일관 (시작·끝 동일 기준)
+- base 결정 로직 전면 교체:
+  - `git fetch origin` 으로 remote 최신화 먼저 (오프라인 실패 시 폴백)
+  - `git ls-remote --heads origin dev` 로 원격 `dev` 존재 체크 → `BASE_REF=origin/dev`
+  - 없으면 `BASE_REF=origin/main`
+  - fetch 실패 시 캐시된 `refs/remotes/origin/dev` 로 2차 폴백
+- worktree 생성 시 `git worktree add .worktrees/... -b <branch> "$BASE_REF"` — **remote ref 에서 직접 분기**. `git checkout $BASE_BRANCH && git pull` 단계 제거
+- 로컬 `dev`/`main` 브랜치의 stale 여부가 새 worktree 에 영향을 주지 않음
+- Step 6 완료 메시지의 베이스 표시를 `$BASE_REF` 로 교체
+
+**영향:** `/new feature-login`, `/new fix-signup` 등 worktree 를 만드는 모든 경로가 일관된 기준을 사용. 로컬 브랜치 관리 부담↓, 팀원 동기화 문제 감소.
+
+---
+
 ## [1.12.1] - 2026-04-20
 
 ### Changed
