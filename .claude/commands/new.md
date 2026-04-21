@@ -426,6 +426,18 @@ lib/features/{feature_name}/
 > - 통합 브랜치: `dev`
 > - 피처 브랜치: `feature/{name}`, `fix/{name}`, `hotfix/{name}` 등
 
+### 베이스 브랜치 규칙 (필수)
+
+> 🔒 **이 규칙은 모든 프로젝트·모든 호출에 예외 없이 적용됩니다.**
+> 새 브랜치는 **항상 `origin` 의 최신 상태에서** 분기합니다. 로컬 브랜치 상태(stale 여부)는 무시.
+
+```
+원격 dev 존재  → base = origin/dev   (fetch 후 거기서 분기)
+원격 dev 없음  → base = origin/main  (fetch 후 거기서 분기)
+```
+
+`/pr` 의 PR base 규칙과 완벽히 일관 — 시작(분기)과 끝(PR target)이 같은 기준.
+
 ### Step 1 — .worktrees/ 안전 확인
 
 ```bash
@@ -439,17 +451,29 @@ git add .gitignore
 git commit -m "chore: .worktrees/ gitignore 추가"
 ```
 
-### Step 2 — 베이스 브랜치 결정 & 최신화
+### Step 2 — 베이스 ref 결정 (origin 최신 기준)
 
 ```bash
-if git branch --list dev | grep -q dev; then
-  BASE_BRANCH="dev"
+# 1. origin 최신화 — 오프라인 실패해도 진행
+git fetch origin --quiet 2>/dev/null || true
+
+# 2. 원격 dev 존재 여부로 base ref 결정
+if git ls-remote --heads origin dev 2>/dev/null | grep -q refs/heads/dev; then
+  BASE_REF="origin/dev"
+  BASE_LABEL="dev"
+elif git show-ref --verify --quiet refs/remotes/origin/dev; then
+  # fetch 전에 캐시된 remote-tracking 으로 폴백
+  BASE_REF="origin/dev"
+  BASE_LABEL="dev"
 else
-  BASE_BRANCH="main"
+  BASE_REF="origin/main"
+  BASE_LABEL="main"
 fi
-git checkout $BASE_BRANCH
-git pull origin $BASE_BRANCH
+
+echo "base ref: $BASE_REF (로컬 브랜치 상태 무시, origin 최신 기준)"
 ```
+
+> **로컬 `dev`/`main` 을 checkout·pull 하지 않습니다.** worktree 는 remote ref 에서 직접 분기하므로 로컬이 stale 해도 영향 없음.
 
 ### Step 3 — 브랜치명 결정
 
@@ -471,8 +495,10 @@ git pull origin $BASE_BRANCH
 ### Step 4 — Worktree 생성
 
 ```bash
-git worktree add .worktrees/{type}-{name} -b {type}/{name}
+git worktree add .worktrees/{type}-{name} -b {type}/{name} "$BASE_REF"
 ```
+
+`$BASE_REF` 는 Step 2 에서 결정된 `origin/dev` 또는 `origin/main`. worktree 의 HEAD 가 origin 의 최신 커밋을 가리킨 채로 새 브랜치가 생성됩니다.
 
 ### Step 5 — 스택별 의존성 설치
 
@@ -492,15 +518,15 @@ Worktree 준비 완료
 
 브랜치:  {type}/{name}
 경로:    .worktrees/{type}-{name}/
-베이스:  {BASE_BRANCH}
+베이스:  $BASE_REF (origin 최신 기준)
 
 병렬 작업:
   cd .worktrees/{type}-{name}   # 다른 터미널
   claude --dir .worktrees/{type}-{name}
 
 작업 완료 후:
-  /pr                  → PR 생성 (base: {BASE_BRANCH} 자동)
-  /merge          → 머지 후 정리 (태그 + worktree 제거)
+  /pr                  → PR 생성 (base: $BASE_LABEL 자동 감지)
+  /merge               → 머지 후 정리 (태그 + worktree 제거)
 ```
 
 ### Worktree 현황
