@@ -12,6 +12,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.14.0] - 2026-04-23
+
+### Added
+
+**모노레포 — 동일 role 다중 service 지원** — 한 프로젝트에 **Kotlin backend + Python backend + Next.js frontend** 같은 조합 가능.
+
+**`.claude/stacks.json` 스키마 확장 (backward compatible)**:
+- `name` 필드 신규 — optional. role 이 유일하면 생략 가능, 동일 role 이 2개 이상이면 필수
+- 동일 `role` 중복 허용 — `role:name` 조합이 service 식별자 역할
+- 기존 stacks.json (name 없음, role 고유) 는 그대로 동작 — 회귀 없음
+
+**디렉토리 명명 컨벤션 확장**:
+- 기본: `backend/`, `web/`, `app/` (name 생략)
+- suffix 패턴: `backend-auth/`, `backend-ml/`, `web-admin/`, `app-consumer/` (suffix 가 name)
+- 허용 prefix: `backend-*`, `api-*`, `server-*`, `frontend-*`, `web-*`, `client-*`, `mobile-*`, `app-*`
+
+**Service 식별자 문법 (`/new`, `/plan`, `/planner` 공통)**:
+- `role` 단독 — service 가 1개면 자동 선택, 2개 이상이면 Interactive 프롬프트
+- `role:name` — 명시 선택 (예: `/new backend:auth api User`)
+- `name` 단독 — name 이 프로젝트 전체에서 유일할 때만 허용 (단축 문법)
+
+**수정:**
+- `.claude/commands/init.md`:
+  - Step 1-2 감지 규칙 확장 — role 당 **전부** 스캔 (기존: 첫 번째만). suffix 자동 추출로 name 결정
+  - Step 3-B-1 `.claude/stacks.json` 스키마 문서 업데이트 — 다중 backend 예시, name 규칙, service 식별자 정의
+  - 이름 중복 충돌 검사 규칙 추가
+- `.claude/commands/new.md`:
+  - Step 0 재작성 — `role` / `role:name` / `name` 3가지 파싱 지원
+  - jq 기반 service 해석 로직 — 1개 매칭 시 즉시, 2개 이상이면 interactive 프롬프트
+- `.claude/commands/plan.md`:
+  - Step 0 동일 문법 반영 — service 식별자 매칭 후 `STACK_PATH`/`STACK_TYPE` 추출
+- `.claude/commands/planner.md`:
+  - Step 6-a Teams 모드 — service 단위 병렬 실행 (역할 단위 X)
+  - 프롬프트 파일명 규칙 확장: `docs/specs/{feature}/{role}.md` 또는 `{role}-{name}.md`
+
+**예시 stacks.json (다중 backend):**
+```json
+{
+  "mode": "monorepo",
+  "stacks": [
+    { "role": "backend",  "name": "auth", "type": "kotlin-multi", "path": "backend-auth" },
+    { "role": "backend",  "name": "ml",   "type": "python",       "path": "backend-ml" },
+    { "role": "frontend", "type": "nextjs", "path": "web" }
+  ]
+}
+```
+
+**사용 예시:**
+```bash
+/new backend:auth api User      # Kotlin backend 에 User 리소스
+/new backend:ml api Prediction  # Python backend 에 Prediction 리소스
+/new frontend component Card    # Next.js 에 Card 컴포넌트
+/new backend api Foo            # backend 2개 → "auth / ml 중?" interactive
+```
+
+**Backward compatibility:**
+- 기존 단일-role 모노레포 (backend + frontend + mobile) 는 그대로 동작
+- `name` 없는 stacks.json 자동 호환 — role 이 고유하면 `/new backend` 는 즉시 실행
+- 기존 프로젝트 마이그레이션 불필요
+
+---
+
 ## [1.13.0] - 2026-04-23
 
 ### Added

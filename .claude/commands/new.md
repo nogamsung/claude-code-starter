@@ -11,29 +11,61 @@ argument-hint: <Name> (자동 감지) 또는 <sub> <Name> [옵션] (명시 지�
 
 ## 서브명령 결정 (역할 prefix → 자동 감지 → override 순서)
 
-### Step 0 — 모노레포 역할 prefix 체크
+### Step 0 — 모노레포 service prefix 체크
 
-`.claude/stacks.json` 이 존재하고 `mode: "monorepo"` 이면, 첫 토큰이 역할명이면 **그 역할 디렉토리로 cd 해서 실행**합니다.
+`.claude/stacks.json` 이 존재하고 `mode: "monorepo"` 이면, 첫 토큰이 service 식별자면 **그 service 디렉토리로 cd 해서 실행**합니다.
+
+**Service 식별자 문법:**
 
 | 첫 토큰 | 의미 |
 |---------|------|
-| `backend` | `.claude/stacks.json` 에서 `role: "backend"` 의 `path` 로 이동 |
-| `frontend` | `role: "frontend"` 의 `path` 로 이동 |
-| `mobile` | `role: "mobile"` 의 `path` 로 이동 |
+| `backend` / `frontend` / `mobile` (role) | 해당 role 의 service 경로 — 동일 role 이 1개면 바로 선택, 2개 이상이면 interactive 프롬프트 |
+| `backend:auth` / `backend:ml` (role:name) | role + name 명시 선택 |
+| `auth` / `ml` (name only) | `name` 이 프로젝트 전체에서 유일하면 허용 (단축) |
 
-실행 방식:
+**Service 해석 로직:**
 
 ```bash
-STACK_PATH=$(jq -r '.stacks[] | select(.role == "backend") | .path' .claude/stacks.json)
-cd "$STACK_PATH"   # 이후 작업은 이 디렉토리를 루트로 간주
+TOKEN="$1"
+
+# 1. role:name 형식 먼저 매칭
+if [[ "$TOKEN" == *:* ]]; then
+  ROLE="${TOKEN%%:*}"
+  NAME="${TOKEN##*:}"
+  MATCH=$(jq -r ".stacks[] | select(.role==\"$ROLE\" and (.name // \"\")==\"$NAME\")" .claude/stacks.json)
+fi
+
+# 2. role 단독 매칭 (동일 role 이 1개면 자동 선택)
+if [ -z "$MATCH" ] && [[ "$TOKEN" =~ ^(backend|frontend|mobile)$ ]]; then
+  COUNT=$(jq "[.stacks[] | select(.role==\"$TOKEN\")] | length" .claude/stacks.json)
+  if [ "$COUNT" = "1" ]; then
+    MATCH=$(jq ".stacks[] | select(.role==\"$TOKEN\")" .claude/stacks.json)
+  elif [ "$COUNT" -gt 1 ]; then
+    # Interactive 프롬프트
+    NAMES=$(jq -r ".stacks[] | select(.role==\"$TOKEN\") | .name" .claude/stacks.json | paste -sd" / " -)
+    echo "⚠️  $TOKEN 이 여러 개입니다. 어느 것? ($NAMES)"
+    # 사용자 선택 받은 후 name 매칭으로 진행
+  fi
+fi
+
+# 3. name 단독 매칭 (유일할 때만)
+if [ -z "$MATCH" ]; then
+  COUNT=$(jq "[.stacks[] | select((.name // \"\")==\"$TOKEN\")] | length" .claude/stacks.json)
+  if [ "$COUNT" = "1" ]; then
+    MATCH=$(jq ".stacks[] | select((.name // \"\")==\"$TOKEN\")" .claude/stacks.json)
+  fi
+fi
+
+STACK_PATH=$(echo "$MATCH" | jq -r '.path')
+cd "$STACK_PATH"
 ```
 
-prefix 를 소비하고 나머지 인자로 Step 1 부터 진행합니다 (예: `/new backend api User` → `api User` 로 재평가).
+prefix 를 소비하고 나머지 인자로 Step 1 부터 진행 (예: `/new backend:auth api User` → `api User` 재평가).
 
-prefix 없이 호출되고 모노레포이면:
-- 활성 스택이 **1개면** 자동 선택 (예: backend 만 있음 → 자동으로 backend 경로)
+**prefix 없이 호출되고 모노레포이면**:
+- service 가 **1개면** 자동 선택
 - **2개 이상**이면 사용자에게 확인:
-  > "어느 스택에서 실행할까요? (backend / frontend / mobile)"
+  > "어느 service 에서 실행할까요? (backend:auth / backend:ml / frontend)"
 
 단일 스택 모드(`.claude/stacks.json` 없음)에서는 Step 0 을 건너뜁니다.
 

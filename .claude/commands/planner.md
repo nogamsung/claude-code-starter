@@ -116,12 +116,18 @@ gtm-planner 의 리포트를 Step 4 리포트 아래에 덧붙여 사용자에�
 
 ### 6-a. Teams 모드
 
-`.claude/stacks.json` 의 각 스택에 대해 **단일 메시지** 에서 Agent tool 병렬 호출:
+`.claude/stacks.json` 의 **각 service (role+name 조합)** 에 대해 **단일 메시지** 에서 Agent tool 병렬 호출. 동일 role 이 여러 개면 service 단위로 각각 병렬 실행:
+
+**Service 별 프롬프트 파일명 규칙:**
+- `name` 없음 → `docs/specs/{feature}/{role}.md` (예: `backend.md`, `frontend.md`)
+- `name` 있음 → `docs/specs/{feature}/{role}-{name}.md` (예: `backend-auth.md`, `backend-ml.md`)
+
+**예시 (backend 2개 + frontend 1개):**
 
 ```
-Agent(subagent_type="kotlin-generator",  prompt=<docs/specs/{feature}/backend.md 내용>)
+Agent(subagent_type="kotlin-generator",  prompt=<docs/specs/{feature}/backend-auth.md 내용>)
+Agent(subagent_type="python-generator",  prompt=<docs/specs/{feature}/backend-ml.md 내용>)
 Agent(subagent_type="nextjs-generator",  prompt=<docs/specs/{feature}/frontend.md 내용>)
-Agent(subagent_type="flutter-generator", prompt=<docs/specs/{feature}/mobile.md 내용>)
 ```
 
 **스택 → agent 매핑 표:**
@@ -136,9 +142,10 @@ Agent(subagent_type="flutter-generator", prompt=<docs/specs/{feature}/mobile.md 
 
 각 agent prompt 머리에 다음 지시 추가:
 
-> 이 작업은 `/planner` 가 생성한 **역할 프롬프트**에 따라 진행합니다.
+> 이 작업은 `/planner` 가 생성한 **service 프롬프트**에 따라 진행합니다.
 > 프롬프트 본문을 Step 별로 **순서대로** 수행하세요.
-> 다른 역할 (frontend/mobile 등) 의 디렉토리는 건드리지 마세요.
+> 다른 service 의 디렉토리(예: 다른 backend service, frontend, mobile)는 건드리지 마세요.
+> 작업 디렉토리: `{service.path}` (stacks.json 참고)
 > 완료 후 생성한 파일 목록을 짧게 리포트하세요.
 
 병렬 실행 완료되면 각 agent 의 리포트를 합쳐 사용자에게 요약:
