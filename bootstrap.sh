@@ -68,6 +68,7 @@ if [ "$MODE" = "install" ]; then
   echo "     /init python       # Python FastAPI"
   echo "     /init marketing    # 코드 없는 마케팅 전담"
   echo "     /init sales        # 코드 없는 세일즈 전담"
+  echo "     /init product      # 코드 없는 Product Management 전담 (pm-skills)"
 else
   echo "다음 단계:"
   echo "  1. Claude Code를 재시작하세요 (새 커맨드 인식)"

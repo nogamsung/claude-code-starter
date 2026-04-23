@@ -12,6 +12,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.13.0] - 2026-04-23
+
+### Added
+
+**`/init product` 모드 — Product Management 전담 프로젝트 하네스** — `phuryn/pm-skills` 마켓플레이스(⭐10k+, MIT, 65+ 스킬/36 워크플로우/8 플러그인) 기반.
+
+- `/init product` — Discovery / Strategy / PRD / OKR / GTM / Research / Analytics 전 과정을 pm-skills 의 커맨드 체인 (`/discover`, `/strategy`, `/write-prd`, `/plan-launch`, `/north-star` 등) 으로 처리
+- 기반 프레임워크: Teresa Torres (Continuous Discovery), Marty Cagan (Inspired/Empowered), Alberto Savoia (Pretotyping)
+
+**신규 파일:**
+- `.claude/templates/CLAUDE.product.md` — PM 전담 프로젝트 컨텍스트 + 7단계 PM 워크플로 가이드 (Discovery → Strategy → Execution → Launch → Analytics → Research → 통합) + MUST/NEVER 규칙 + 디렉토리 구조 (`docs/{discovery,strategy,prd,stories,okrs,roadmap,launch,research,analytics}/`)
+- `.claude/templates/settings.product.json` — pm-skills 마켓플레이스 8개 플러그인 + `marketing-skills` (보완) + github/commit/claude-md-management/hookify 플러그인 활성. 권한은 git · gh · 파일 작업만. 코드 빌드/테스트 훅 없음 (`safety-guard` + `session-start` 만)
+
+**수정:**
+- `.claude/commands/init.md`:
+  - Step 1-1 인수 표에 `product` 행 추가
+  - Step 1-2 자동 감지 경고 박스에 product 선택지 추가 (marketing/sales/product 모두 자동 감지 안 함)
+  - Step 2 유지 대상 표에 `product` 행 추가 (유지: code-reviewer, planner, gtm-planner / 제거: 모든 코드 관련 agent·skill·template)
+  - Step 3-C 섹션명을 "Marketing / Sales / Product 모드" 로 확장, 3-C-1/3-C-2/3-C-3 각각 product 분기 추가. 플러그인 가용성 확인 메시지에 pm-skills 마켓플레이스 + 8개 플러그인 설치 명령 포함
+  - Step 6 완료 메시지에 "Product 모드" 블록 신규 추가 — 핵심 커맨드 목록 (`/discover`, `/strategy`, `/write-prd`, `/plan-launch`, `/north-star`) + 설치 안내 + 9단계 "이제 할 일"
+- `bootstrap.sh` — 설치 후 echo 안내에 `/init product` 한 줄 추가
+- `README.md` — `/init` 예시에 `/init product` + pm-skills 설치 안내 문단 추가
+
+**pm-skills 플러그인 구성 (참고):**
+
+| 플러그인 | 주요 커맨드 |
+|---------|-----------|
+| pm-product-discovery | `/discover`, `/brainstorm`, `/interview`, `/setup-metrics`, `/triage-requests` |
+| pm-product-strategy | `/strategy`, `/market-scan`, `/business-model`, `/pricing`, `/value-proposition` |
+| pm-execution | `/write-prd`, `/write-stories`, `/sprint`, `/plan-okrs`, `/pre-mortem`, `/stakeholder-map`, `/test-scenarios`, `/transform-roadmap`, `/generate-data`, `/meeting-notes` |
+| pm-go-to-market | `/plan-launch`, `/battlecard`, `/growth-strategy` |
+| pm-market-research | `/research-users`, `/competitive-analysis`, `/analyze-feedback` |
+| pm-data-analytics | `/analyze-cohorts`, `/analyze-test`, `/write-query` |
+| pm-marketing-growth | `/market-product`, `/north-star` |
+| pm-toolkit | `/draft-nda`, `/proofread`, `/privacy-policy`, `/review-resume`, `/tailor-resume` |
+
+**플러그인 자동화:** `enabledPlugins: true` 로 토글만. 마켓플레이스 등록(`/plugin marketplace add phuryn/pm-skills`)과 각 플러그인 설치는 사용자 몫 — init 완료 메시지가 설치 명령을 순서대로 안내.
+
+---
+
 ## [1.12.2] - 2026-04-21
 
 ### Changed

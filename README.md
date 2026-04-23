@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.12.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.13.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -91,9 +91,12 @@ rm -rf claude-code-starter
 /init python-multi   # Python (uv Workspace: services/api,worker + packages/shared)
 /init marketing      # 코드 없는 마케팅 전담 (랜딩 카피·SEO·콘텐츠·광고)
 /init sales          # 코드 없는 세일즈 전담 (덱·콜드메일·객관처리·가격)
+/init product        # 코드 없는 Product Management 전담 (Discovery·Strategy·PRD·OKR·GTM·Analytics)
 ```
 
 > **marketing / sales** 모드는 `marketing-skills@marketingskills` 플러그인을 사용합니다. 미설치 상태면 `/plugin install marketing-skills@marketingskills` 를 실행하세요.
+>
+> **product** 모드는 `phuryn/pm-skills` 마켓플레이스 8개 플러그인(pm-toolkit, pm-product-discovery, pm-product-strategy, pm-execution, pm-go-to-market, pm-market-research, pm-data-analytics, pm-marketing-growth) 을 사용합니다. 미설치 상태면 `/plugin marketplace add phuryn/pm-skills` → 각 `/plugin install pm-*@pm-skills` 실행.
 
 <details>
 <summary><code>/init</code>이 하는 일</summary>
