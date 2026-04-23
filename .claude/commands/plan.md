@@ -11,21 +11,32 @@ argument-hint: [api <Resource> | db <도메인>] <설명>  또는  <기능 설�
 
 ## 진입 모드 결정
 
-### Step 0 — 모노레포 역할 prefix 체크
+### Step 0 — 모노레포 service prefix 체크
 
-`.claude/stacks.json` 이 존재하고 `mode: "monorepo"` 이면, 첫 토큰이 역할명(`backend` / `frontend` / `mobile`)이면 **해당 스택의 경로·타입을 컨텍스트로 설정**한 뒤 prefix 를 소비하고 나머지 인자로 진행.
+`.claude/stacks.json` 이 존재하고 `mode: "monorepo"` 이면, 첫 토큰이 service 식별자면 **해당 service 의 경로·타입을 컨텍스트로 설정**한 뒤 prefix 를 소비하고 나머지 인자로 진행.
+
+**Service 식별자**: `/new` 와 동일 문법 — `role` / `role:name` / `name` 지원.
 
 ```bash
-# 예: /plan backend api User
-STACK_PATH=$(jq -r '.stacks[] | select(.role == "backend") | .path' .claude/stacks.json)
-STACK_TYPE=$(jq -r '.stacks[] | select(.role == "backend") | .type' .claude/stacks.json)
+# 예시:
+# /plan backend api User           — backend 1개면 자동 / 여러 개면 interactive
+# /plan backend:auth api User      — role+name 명시
+# /plan auth api User              — name 유일할 때만 허용
+
+TOKEN="$1"
+# (1) role:name  (2) role 단독 + 유일성 검사  (3) name 단독 + 유일성 검사
+# 매칭된 service 에서 STACK_PATH, STACK_TYPE 추출
+STACK_PATH=$(echo "$MATCH" | jq -r '.path')
+STACK_TYPE=$(echo "$MATCH" | jq -r '.type')
 # → 이후 파일 경로 / 스택 감지는 $STACK_PATH 를 루트로 간주
 ```
 
 prefix 생략 시:
-- 활성 스택이 **1개면** 자동 선택
+- service 가 **1개면** 자동 선택
 - **2개 이상**이면 사용자에게 확인:
-  > "어느 스택에 대한 계획인가요? (backend / frontend / mobile)"
+  > "어느 service 에 대한 계획인가요? (backend:auth / backend:ml / frontend)"
+
+동일 role 중복이 있으면 `role` 단독 prefix 는 interactive 프롬프트로 분기. `role:name` 또는 유일한 `name` 을 쓰면 즉시 선택.
 
 단일 스택 모드에서는 Step 0 을 건너뜁니다.
 

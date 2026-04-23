@@ -28,15 +28,20 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | 
 
 ### 1-2. 자동 감지 (인수 없을 때)
 
-**먼저 모노레포 감지 시도**. 아래 역할 후보 디렉토리들을 순서대로 스캔:
+**먼저 모노레포 감지 시도**. 아래 역할 후보 디렉토리들을 **전부** 스캔 (동일 역할 다중 허용):
 
-| 역할 | 허용 디렉토리 이름 (별칭 포함) |
-|------|--------------------------------|
-| backend | `backend`, `api`, `server` |
-| frontend | `frontend`, `web`, `client` |
-| mobile | `mobile`, `app` |
+| 역할 | 허용 디렉토리 이름 패턴 (별칭 + suffix 허용) |
+|------|---------------------------------------------|
+| backend | `backend`, `api`, `server`, `backend-*`, `api-*`, `server-*` |
+| frontend | `frontend`, `web`, `client`, `frontend-*`, `web-*`, `client-*` |
+| mobile | `mobile`, `app`, `mobile-*`, `app-*` |
 
-각 역할당 **첫 번째로 발견된** 디렉토리를 사용. 그 안에서 아래 마커로 스택 타입 판정:
+**이름 추출**:
+- 기본 이름 (`backend`, `web`, `app` 등) → `name` 필드 생략 (role 이 유일한 경우)
+- suffix 패턴 (`backend-auth`, `backend-ml`, `web-admin` 등) → suffix 부분이 `name` (`auth`, `ml`, `admin`)
+- 동일 role 이 2개 이상이면 각 스택은 **반드시 `name`** 을 가져야 함 (없으면 사용자에게 수동 지정 요청)
+
+각 디렉토리에서 아래 마커로 스택 타입 판정:
 
 | 마커 (역할 디렉토리 기준) | 스택 타입 |
 |---------------------------|-----------|
@@ -52,9 +57,21 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | 
 
 **모노레포 판정 규칙:**
 
-- **2개 이상** 역할 디렉토리가 각자 유효한 스택 마커를 가지면 → `monorepo` 모드
-- **1개** 역할만 발견 → 사용자에게 "단일 스택으로 진행할까요, 아니면 단일-역할 모노레포로 구성할까요?" 확인
+- **2개 이상** service 디렉토리 (동일 role 포함) 가 각자 유효한 스택 마커를 가지면 → `monorepo` 모드
+- **1개** service 만 발견 → 사용자에게 "단일 스택으로 진행할까요, 아니면 단일-service 모노레포로 구성할까요?" 확인
 - **0개** 발견 → 루트에서 기존 단일 스택 감지 (아래 표)
+
+**동일 role 다중 감지 예시:**
+```
+my-project/
+├── backend-auth/     (kotlin-multi)  → role=backend, name=auth
+├── backend-ml/       (python)         → role=backend, name=ml
+├── web/              (nextjs)         → role=frontend, name=web (또는 생략)
+└── app/              (flutter)        → role=mobile,  name=app (또는 생략)
+```
+→ `stacks.json` 에 4개 service 등록, 같은 role 이어도 `name` 으로 구분됨
+
+**이름 중복 금지**: 동일 role 내에서 `name` 이 같은 service 2개 불가. 감지 시 충돌이면 사용자에게 수정 요청.
 
 > ⚠️ **marketing/sales/product 모드는 자동 감지하지 않습니다.** 코드 마커가 전혀 없을 때에도 이 모드들을 가정하지 마세요. 빈 디렉토리일 수 있으므로 사용자에게 **명시 선택**을 요청합니다:
 > ```
@@ -164,8 +181,9 @@ cp .claude/templates/settings.{stack}.json ./.claude/settings.json
 
 #### 3-B-1. `.claude/stacks.json` 생성 (단일 진실의 원천)
 
-감지 결과로 `.claude/stacks.json` 을 작성합니다:
+감지 결과로 `.claude/stacks.json` 을 작성합니다. **동일 role 이 여러 개 있어도 됩니다** (`name` 으로 구분).
 
+**단일 스택 예시** (기존 호환):
 ```json
 {
   "mode": "monorepo",
@@ -177,11 +195,34 @@ cp .claude/templates/settings.{stack}.json ./.claude/settings.json
 }
 ```
 
-- `role` 은 표준 이름 (`backend`/`frontend`/`mobile`) — 별칭 디렉토리를 써도 이 값은 표준
-- `type` 은 실제 감지된 스택 타입
-- `path` 는 실제 발견된 디렉토리명 (별칭 포함)
+**다중 backend 예시** (신규):
+```json
+{
+  "mode": "monorepo",
+  "stacks": [
+    { "role": "backend",  "name": "auth", "type": "kotlin-multi", "path": "backend-auth" },
+    { "role": "backend",  "name": "ml",   "type": "python",       "path": "backend-ml" },
+    { "role": "frontend", "type": "nextjs", "path": "web" }
+  ]
+}
+```
 
-이 파일은 `/new`, `/plan`, `.claude/hooks/pre-push.sh`, `settings.monorepo.json` hooks 가 모두 읽습니다.
+**스키마 규칙:**
+- `role` — 표준 이름 (`backend`/`frontend`/`mobile`) — 별칭 디렉토리를 써도 이 값은 표준
+- `name` — **optional** (role 이 유일할 때 생략 가능). 동일 role 이 2개 이상이면 **필수**. 충돌 금지
+- `type` — 실제 감지된 스택 타입
+- `path` — 실제 발견된 디렉토리명
+
+**name 자동 추출 규칙:**
+- 디렉토리명이 `backend`, `api`, `server`, `frontend`, `web`, `client`, `mobile`, `app` 같은 기본 별칭이면 → `name` 생략
+- 디렉토리명이 `backend-auth`, `web-admin` 처럼 suffix 가 있으면 → suffix 가 `name`
+- 사용자가 감지 결과를 확인할 때 수정 가능
+
+이 파일은 `/new`, `/plan`, `/planner`, `.claude/hooks/pre-push.sh`, `settings.monorepo.json` hooks 가 모두 읽습니다.
+
+**Service 식별자 (통칭 `service-id`)**:
+- `name` 있으면 → `role:name` (예: `backend:auth`, `backend:ml`)
+- `name` 없으면 → `role` 그대로 (예: `backend`, `frontend`)
 
 #### 3-B-2. 루트 CLAUDE.md (인덱스)
 
