@@ -12,6 +12,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.15.0] - 2026-04-23
+
+### Added
+
+**AI/ML agent 4종 + ai-patterns skill** — FastAPI 서비스 내부에 embedded 방식으로 AI 기능 통합. python-generator/modifier 와 영역 분리 기반 협업.
+
+**신규 agents (4):**
+- `ai-researcher` — AI/ML 리서치 전담 (모델·프레임워크 비교, 벤치마크 조사, 실험 설계). `docs/research/` 에 리포트 산출. 코드 미작성.
+- `ai-generator` — LLM 호출, RAG chain, 프롬프트, 임베딩, PyTorch 훈련, HuggingFace 추론, MLflow 실험 코드 신규 생성. `app/ml/`, `app/chains/`, `app/prompts/`, `app/embeddings/` 담당.
+- `ai-modifier` — 기존 AI 코드 수정·튜닝·리팩토링 (프롬프트 개선, LLM 모델 교체, RAG chain 수정, 성능 최적화, fine-tuning 재훈련).
+- `ai-tester` — AI 테스트 (LLM 모킹 단위 테스트, 프롬프트 evaluation integration 테스트, RAG 품질, 모델 정확도). pytest + pytest-asyncio + marker 기반 (`integration`, `gpu`).
+
+**신규 skill**: `.claude/skills/ai-patterns.md` — 7개 프레임워크 사용 패턴 + 디렉토리 구조 + 협업 프로토콜
+
+**지원 프레임워크 (기본 내장):**
+
+| 영역 | 프레임워크 |
+|------|-----------|
+| LLM SDK | Anthropic SDK + OpenAI SDK |
+| LLM Orchestration | LangChain (LCEL) |
+| ML 훈련 | PyTorch + scikit-learn |
+| Model Hub | HuggingFace Transformers |
+| Vector DB | pgvector (기존 Postgres 재사용) |
+| Serving | FastAPI embedded (python-generator 협업) |
+| 실험 추적 | MLflow |
+
+**협업 모델** (A — Embedded):
+- AI 코드가 **FastAPI 서비스 내부**에 위치 — 별도 service 분리 X (필요 시 v1.14.0 다중 service 로 분리 가능)
+- **영역 분리**:
+  - `app/ml/`, `app/chains/`, `app/prompts/`, `app/embeddings/` → **ai-\*** 담당
+  - `app/routers/`, `app/schemas/`, `app/services/`, `app/models/`, `alembic/` → **python-\*** 담당
+- **협업 프로토콜**: ai-generator 가 순수 함수 export → python-generator 가 Service 에서 import 해서 Router 로 HTTP 응답 변환
+
+**수정:**
+- `.claude/agents/python-generator.md` — "AI/ML 코드 협업" 섹션 추가 (영역 분리 표, 협업 예시)
+- `.claude/agents/python-modifier.md` — 동일한 협업 섹션 + 공유 경계 상황 (시그니처 변경, pgvector Model 분담)
+- `.claude/commands/init.md` — python/python-multi 유지 대상 표에 `ai-{researcher,generator,modifier,tester}` + `ai-patterns` skill 추가
+
+**디렉토리 구조 (AI embedded 프로젝트):**
+```
+app/
+├── ml/                # nn.Module, 훈련, 추론, 평가
+├── chains/            # LangChain LCEL
+├── prompts/           # 프롬프트 템플릿 (코드 분리)
+├── embeddings/        # pgvector 저장·검색
+│── (위는 ai-* 영역)
+├── routers/           # python-*
+├── schemas/
+├── services/
+├── models/            # SQLAlchemy ORM (pgvector Vector 컬럼 포함)
+└── exceptions.py
+```
+
+**LLM 안전 규칙 (ai-patterns 기준):**
+- 모든 호출 `async`, 싱글톤 클라이언트 재사용
+- 실제 LLM API unit test 금지 — `AsyncMock` 으로 모킹, integration 은 `@pytest.mark.integration` 분리
+- 비밀키는 `settings.ANTHROPIC_API_KEY` 경유 (Pydantic Settings), `os.environ` 직접 금지
+- 모델 파일 (`*.pt`, `*.safetensors`, `mlruns/`) git 커밋 금지
+
+**Backward compatibility:**
+- 기존 python 프로젝트에 `app/ml/` 없으면 ai-* agent 는 로드되지만 호출되지 않음 — 회귀 없음
+- pyproject.toml 의 `[project.optional-dependencies.ai]` 로 AI deps 분리 권장 — `uv sync --extra ai` 로만 설치
+
+---
+
 ## [1.14.0] - 2026-04-23
 
 ### Added

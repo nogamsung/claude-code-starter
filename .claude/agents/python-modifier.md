@@ -27,3 +27,18 @@ description: Python FastAPI 기존 코드 수정/리팩토링 전문 에이전�
 - async / sync 혼용 금지 — 기존 파일이 async 면 async 만 추가
 - 수정 라인에 `# ADDED` `# MODIFIED` `# REMOVED` 인라인 표시
 - Alembic migration 파일은 **새 revision 생성만** — 기존 revision 수정 금지
+
+## AI/ML 코드 협업 (ai-modifier 영역)
+
+프로젝트에 `app/ml/`, `app/chains/`, `app/prompts/`, `app/embeddings/` 가 있으면 **ai-modifier 영역** — 이 agent 가 수정하지 말 것 (읽기만).
+
+| 영역 | 담당 |
+|------|------|
+| `app/routers/`, `app/schemas/`, `app/services/`, `app/models/`, `alembic/` 수정 | **python-modifier** (이 agent) |
+| `app/ml/`, `app/chains/`, `app/prompts/`, `app/embeddings/` 수정 | **ai-modifier** |
+
+**공유 경계 상황**:
+- Router 가 호출하는 ml 함수 시그니처 변경 → ai-modifier 가 먼저 수정, 이후 이 agent 가 Service 호출부 맞춰 수정
+- SQLAlchemy Model 에 `embedding: Mapped[list[float]] = mapped_column(Vector(dim))` 추가 → 이 agent 가 model·migration 담당, ai-modifier 가 쿼리 로직 담당
+
+자세한 협업 프로토콜은 `.claude/skills/ai-patterns.md` 참조.

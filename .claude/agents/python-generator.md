@@ -58,3 +58,31 @@ SQLAlchemy Model · Pydantic Schemas (Create/Update/Response) · Repository · S
 - 사용하지 않는 import·변수 금지 (ruff `F401`, `F841`)
 - `# type: ignore` 는 반드시 이유 주석과 함께 (`# type: ignore[misc]  # SQLAlchemy 2.0 quirk`)
 - print 문 금지 — `logging` 모듈 사용
+
+## AI/ML 코드 협업 (ai-generator 영역)
+
+프로젝트에 `app/ml/`, `app/chains/`, `app/prompts/`, `app/embeddings/` 디렉토리가 있으면 **ai-generator 영역**.
+
+| 영역 | 담당 | 절대 규칙 |
+|------|------|----------|
+| `app/routers/`, `app/schemas/`, `app/services/`, `app/models/`, `alembic/` | **python-generator** (이 agent) | AI 로직 코드 넣지 말 것 |
+| `app/ml/`, `app/chains/`, `app/prompts/`, `app/embeddings/` | **ai-generator** | 수정하지 말 것 (읽기는 OK) |
+
+**협업 방식:**
+- AI 로직이 필요한 엔드포인트: `app/services/{resource}_service.py` 에서 `app.ml.tasks.{task}` import 해서 호출
+- **HTTP 변환은 Router 에서만** — ai-generator 의 순수 함수는 `HTTPException` 이나 `fastapi.*` import 없음
+- `pgvector.sqlalchemy.Vector` 컬럼을 가진 Model 은 **python-generator** 가 생성 (ai-generator 가 벡터 쿼리 로직에서 사용)
+
+**예시**:
+```python
+# app/services/summarize_service.py (이 agent 가 작성)
+from app.ml.tasks.summarize import summarize_text  # ai-generator 작성
+from app.schemas.summarize import SummarizeRequest, SummarizeResponse
+
+class SummarizeService:
+    async def summarize(self, req: SummarizeRequest) -> SummarizeResponse:
+        summary = await summarize_text(req.text, req.max_length)
+        return SummarizeResponse(summary=summary)
+```
+
+**신규 AI 기능 필요 시**: ai-generator 에게 입력/출력/제약/권장 접근을 명세로 요청. 자세한 협업 프로토콜은 `.claude/skills/ai-patterns.md` 참조.
