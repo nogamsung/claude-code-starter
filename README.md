@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.15.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -218,6 +218,7 @@ main  ←──── dev  ←──── feature/{name}
 | `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML) — Kotlin · Go · Python 전용 |
 | `planner` | 기획자 — 요청 → PRD + 역할별 구현 프롬프트 작성 (코드는 작성하지 않음). `/planner` 커맨드가 호출 |
 | `gtm-planner` | Go-To-Market 전담 — PRD 기반으로 `marketing.md` + `sales.md` 초안, `docs/gtm/` 스냅샷 · 히스토리 적립. `/planner --marketing\|--sales\|--gtm` 플래그가 호출 |
+| `security-reviewer` | OWASP Top 10 + 시크릿 유출 + 의존성 CVE 검토 전담. `/pr` Step 1.5 에서 자동 호출 → Critical 발견 시 PR 차단 |
 
 ---
 
@@ -317,6 +318,7 @@ claude-code-starter/
 │   │   ├── api-designer.md
 │   │   ├── planner.md        # 기획자 (PRD + 역할 프롬프트)
 │   │   ├── gtm-planner.md    # GTM 전담 (marketing.md + sales.md + 스냅샷)
+│   │   ├── security-reviewer.md # OWASP + 시크릿 + CVE 리뷰 (/pr 자동 호출)
 │   │   ├── github-actions-designer.md
 │   │   ├── kotlin-{generator,modifier,tester}.md
 │   │   ├── nextjs-{generator,modifier,tester}.md
@@ -347,7 +349,10 @@ claude-code-starter/
 │   │   ├── api-design-patterns.md
 │   │   ├── db-patterns.md
 │   │   ├── github-actions-patterns.md
-│   │   └── ui-design-impl.md
+│   │   ├── ui-design-impl.md
+│   │   ├── security-patterns.md    # OWASP Top 10 + 스택별 pitfall
+│   │   ├── docker-patterns.md      # 스택별 멀티스테이지 Dockerfile + compose
+│   │   └── cache-patterns.md       # Redis 패턴 (cache/rate-limit/lock/session)
 │   ├── templates/            # 스택별 설치 템플릿
 │   │   ├── CLAUDE.{kotlin,go,python,nextjs,flutter}.md
 │   │   ├── CLAUDE.{kotlin,go,python,nextjs}-multi.md

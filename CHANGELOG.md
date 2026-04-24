@@ -12,6 +12,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.16.0] - 2026-04-20
+
+### Added
+
+**Tier 1 — 보안 리뷰 자동화 + Docker/Redis 패턴** — 기능 완성 시점에 보안 게이트를 강제하고, 컨테이너화·캐시 베스트 프랙티스를 스킬로 내재화.
+
+**신규 agent:**
+- `security-reviewer` — OWASP Top 10 + 스택별 보안 pitfall + 시크릿 유출 + 의존성 CVE 검토 전담. `/pr` Step 1.5 에서 **자동 호출**. Critical/High/Medium/Low 등급 + PASS/REVIEW/BLOCK 판정. 코드 수정은 안 하고 리포트만 반환.
+
+**신규 skills (3):**
+- `security-patterns.md` — OWASP Top 10 + 스택별(Python/Kotlin/Go/Next.js/Flutter) 보안 패턴. 비밀번호 해싱(bcrypt/argon2), CORS, CSP, rate limiting, 의존성 audit 명령어.
+- `docker-patterns.md` — 스택별 멀티스테이지 Dockerfile + docker-compose.yml + .dockerignore 템플릿. distroless/alpine 베이스, non-root user, HEALTHCHECK 기본 포함.
+- `cache-patterns.md` — Redis 패턴 (cache-aside, write-through, rate limiting, distributed lock, session, pub/sub) + 스택별 클라이언트 초기화. TTL 가이드·키 네이밍 컨벤션·캐시 무효화 전략 포함.
+
+**신규 서브명령:**
+- `/new dockerfile` — 현재 스택 감지 → 멀티스테이지 Dockerfile + .dockerignore + docker-compose.yml 생성. `--no-compose` 옵션 지원.
+
+**수정:**
+- `.claude/commands/pr.md` — **Step 1.5 "🔒 보안 리뷰 (자동, 필수)"** 추가. `security-reviewer` agent 가 staged diff 를 자동 검토하고 판정값에 따라 분기 (PASS → 진행, REVIEW → 사용자 확인, BLOCK → 차단 exit). `--skip-security` 옵션은 긴급 hotfix 용 예외 — 이유 입력 필수 + PR 본문에 경고 주입.
+
+**개념 요약:**
+
+| 시점 | 자동 개입 |
+|------|-----------|
+| 기능 구현 완료 → `/pr` | security-reviewer (Step 1.5) |
+| Dockerfile 없을 때 `/new dockerfile` | docker-patterns 스킬 |
+| 캐시/세션/rate-limit 구현 | cache-patterns 스킬 |
+
+**보안 리뷰 판정 체계:**
+
+| 판정 | 동작 |
+|------|------|
+| PASS | Critical/High 없음 → 바로 PR 생성 |
+| REVIEW | High 1개 이상 → "계속 진행? (y/N)" 확인 |
+| BLOCK | Critical 1개 이상 → exit, 수정 후 재실행 |
+
+---
+
 ## [1.15.0] - 2026-04-23
 
 ### Added

@@ -113,11 +113,11 @@ my-project/
 
 | 스택 | 유지 agents | 유지 skills | 유지 templates |
 |------|-------------|-------------|----------------|
-| `kotlin` / `kotlin-multi` | kotlin-{gen,mod,test}, code-reviewer, api-designer, ui-designer¹, github-actions-designer, **planner** | kotlin-patterns, db-patterns, api-design-patterns, github-actions-patterns | CLAUDE.kotlin[-multi], settings.kotlin[-multi], **prd**, **role-prompt** |
-| `go` / `go-multi` | go-{gen,mod,test}, code-reviewer, api-designer, github-actions-designer, **planner** | go-patterns, db-patterns, api-design-patterns, github-actions-patterns | CLAUDE.go[-multi], settings.go[-multi], **prd**, **role-prompt** |
-| `python` / `python-multi` | python-{gen,mod,test}, **ai-{researcher,gen,mod,test}**, code-reviewer, api-designer, github-actions-designer, **planner** | python-patterns, **ai-patterns**, db-patterns, api-design-patterns, github-actions-patterns | CLAUDE.python[-multi], settings.python[-multi], **prd**, **role-prompt** |
-| `nextjs` / `nextjs-multi` | nextjs-{gen,mod,test}, code-reviewer, ui-designer, github-actions-designer, **planner** | nextjs-patterns, ui-design-impl, github-actions-patterns | CLAUDE.nextjs[-multi], settings.nextjs[-multi], **prd**, **role-prompt** |
-| `flutter` | flutter-{gen,mod,test}, code-reviewer, ui-designer, github-actions-designer, **planner** | flutter-patterns, ui-design-impl, github-actions-patterns | CLAUDE.flutter, settings.flutter, **prd**, **role-prompt** |
+| `kotlin` / `kotlin-multi` | kotlin-{gen,mod,test}, code-reviewer, **security-reviewer**, api-designer, ui-designer¹, github-actions-designer, **planner** | kotlin-patterns, db-patterns, api-design-patterns, github-actions-patterns, **security-patterns**, **docker-patterns**, **cache-patterns** | CLAUDE.kotlin[-multi], settings.kotlin[-multi], **prd**, **role-prompt** |
+| `go` / `go-multi` | go-{gen,mod,test}, code-reviewer, **security-reviewer**, api-designer, github-actions-designer, **planner** | go-patterns, db-patterns, api-design-patterns, github-actions-patterns, **security-patterns**, **docker-patterns**, **cache-patterns** | CLAUDE.go[-multi], settings.go[-multi], **prd**, **role-prompt** |
+| `python` / `python-multi` | python-{gen,mod,test}, **ai-{researcher,gen,mod,test}**, code-reviewer, **security-reviewer**, api-designer, github-actions-designer, **planner** | python-patterns, **ai-patterns**, db-patterns, api-design-patterns, github-actions-patterns, **security-patterns**, **docker-patterns**, **cache-patterns** | CLAUDE.python[-multi], settings.python[-multi], **prd**, **role-prompt** |
+| `nextjs` / `nextjs-multi` | nextjs-{gen,mod,test}, code-reviewer, **security-reviewer**, ui-designer, github-actions-designer, **planner** | nextjs-patterns, ui-design-impl, github-actions-patterns, **security-patterns**, **docker-patterns**, **cache-patterns** | CLAUDE.nextjs[-multi], settings.nextjs[-multi], **prd**, **role-prompt** |
+| `flutter` | flutter-{gen,mod,test}, code-reviewer, **security-reviewer**, ui-designer, github-actions-designer, **planner** | flutter-patterns, ui-design-impl, github-actions-patterns, **security-patterns** | CLAUDE.flutter, settings.flutter, **prd**, **role-prompt** |
 | `marketing` | code-reviewer, **planner**, **gtm-planner** | (없음 — marketing-skills 플러그인 의존) | CLAUDE.marketing, settings.marketing, **prd**, **role-prompt**, **marketing-plan**, **gtm-history**, **memory** |
 | `sales` | code-reviewer, **planner**, **gtm-planner** | (없음 — marketing-skills 플러그인 의존) | CLAUDE.sales, settings.sales, **prd**, **role-prompt**, **sales-plan**, **gtm-history**, **memory** |
 | `product` | code-reviewer, **planner**, **gtm-planner** | (없음 — pm-skills 마켓플레이스 + marketing-skills 플러그인 의존) | CLAUDE.product, settings.product, **prd**, **role-prompt**, **marketing-plan**, **sales-plan**, **gtm-history**, **memory** |
@@ -132,12 +132,12 @@ my-project/
 
 감지된 스택들의 "유지 대상" **합집합**을 적용:
 
-- **backend (kotlin/kotlin-multi)** 감지 → kotlin-{gen,mod,test}, api-designer, kotlin-patterns, db-patterns, api-design-patterns, CLAUDE.kotlin[-multi], settings.kotlin[-multi]
-- **backend (go/go-multi)** 감지 → go-{gen,mod,test}, api-designer, go-patterns, db-patterns, api-design-patterns, CLAUDE.go[-multi], settings.go[-multi]
-- **backend (python/python-multi)** 감지 → python-{gen,mod,test}, api-designer, python-patterns, db-patterns, api-design-patterns, CLAUDE.python[-multi], settings.python[-multi]
-- **frontend (nextjs/nextjs-multi)** 감지 → nextjs-{gen,mod,test}, ui-designer, nextjs-patterns, ui-design-impl, CLAUDE.nextjs[-multi], settings.nextjs[-multi]
+- **backend (kotlin/kotlin-multi)** 감지 → kotlin-{gen,mod,test}, api-designer, kotlin-patterns, db-patterns, api-design-patterns, **docker-patterns**, **cache-patterns**, CLAUDE.kotlin[-multi], settings.kotlin[-multi]
+- **backend (go/go-multi)** 감지 → go-{gen,mod,test}, api-designer, go-patterns, db-patterns, api-design-patterns, **docker-patterns**, **cache-patterns**, CLAUDE.go[-multi], settings.go[-multi]
+- **backend (python/python-multi)** 감지 → python-{gen,mod,test}, **ai-{researcher,gen,mod,test}**, api-designer, python-patterns, **ai-patterns**, db-patterns, api-design-patterns, **docker-patterns**, **cache-patterns**, CLAUDE.python[-multi], settings.python[-multi]
+- **frontend (nextjs/nextjs-multi)** 감지 → nextjs-{gen,mod,test}, ui-designer, nextjs-patterns, ui-design-impl, **docker-patterns**, **cache-patterns**, CLAUDE.nextjs[-multi], settings.nextjs[-multi]
 - **mobile (flutter)** 감지 → flutter-{gen,mod,test}, ui-designer, flutter-patterns, ui-design-impl, CLAUDE.flutter, settings.flutter
-- **공통 유지**: code-reviewer, github-actions-designer, **planner**, github-actions-patterns, CLAUDE.monorepo.md, settings.monorepo.json, memory.md, **prd.md**, **role-prompt.md**
+- **공통 유지**: code-reviewer, **security-reviewer**, github-actions-designer, **planner**, github-actions-patterns, **security-patterns**, CLAUDE.monorepo.md, settings.monorepo.json, memory.md, **prd.md**, **role-prompt.md**
 
 ### 제거 대상
 
