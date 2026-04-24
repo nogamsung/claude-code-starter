@@ -6,6 +6,38 @@
 
 ---
 
+## 2026-04-20: v1.16.0 — Tier 1 보안 리뷰 자동화 + Docker/Redis 패턴
+
+**카테고리:** 결정
+
+### 배경
+기능 구현 완료 시점에 보안 검토가 수동이었고, Dockerfile·Redis 패턴도 프로젝트마다 재발명하고 있었음. 기능이 머지되기 직전에 **반드시 통과해야 하는 게이트**로 보안을 못박고, 컨테이너·캐시 베스트 프랙티스를 스킬로 내재화.
+
+### 핵심 결정
+
+1. **security-reviewer 는 agent, 개입 시점은 `/pr` Step 1.5** — 사용자가 기능을 만들 때마다 마지막 단계에서 자동 호출. 코드 수정은 안 하고 리포트만 반환 (수정은 해당 스택의 modifier agent).
+2. **3단계 판정 체계** — PASS/REVIEW/BLOCK. Critical 1개면 exit (강제 차단), High 1개면 확인 후 진행, 나머지는 경고만.
+3. **`--skip-security` 는 hotfix 전용 예외** — 이유 입력 필수 + PR 본문에 경고 주입. 일반 개발 플로우엔 쓰지 말 것.
+4. **Docker 는 `/new dockerfile` 서브명령으로 분리** — `/new` 의 기존 api/component/screen 라인에 얹어서 호출. `docker-patterns.md` 스킬이 실제 템플릿 공급.
+5. **Redis/Cache 는 스킬 only** — 별도 커맨드 없음. ai-generator/python-generator/kotlin-generator 가 필요 시 `cache-patterns.md` 읽고 적용. 과도한 커맨드 증식 방지.
+
+### 철학
+기능 게이트는 command/skill 레이어가 아니라 **agent 호출 자체**로 강제해야 안 우회됨 — `/pr` 하면 반드시 security-reviewer 가 돈다. 우회 옵션(`--skip-security`)은 있지만 비용이 높게(이유 요구 + PR 본문 경고) 설계.
+
+### 구조
+
+```
+.claude/
+  agents/security-reviewer.md        # 신규 agent (opus, Read/Grep/Bash/Skill)
+  skills/security-patterns.md        # OWASP + 스택별 체크리스트
+  skills/docker-patterns.md          # 멀티스테이지 + compose + .dockerignore
+  skills/cache-patterns.md           # Redis cache/rate-limit/lock/session
+  commands/pr.md                     # Step 1.5 보안 리뷰 자동 실행 추가
+  commands/new.md                    # dockerfile 서브명령 추가
+```
+
+---
+
 ## 2026-04-17: v1.9.0 — /planner GTM 옵션 + gtm-planner agent
 
 **카테고리:** 결정
