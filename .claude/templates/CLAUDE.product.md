@@ -166,3 +166,5 @@ gh pr list / view / create
 
 ## Memory
 세션 시작 시 `memory/MEMORY.md` 자동 로드. 리서치 인사이트·실패한 가설·전략 피벗·경쟁 동향은 `/memory add` 로 기록.
+
+> **CLAUDE.md ≤ 300줄 캡** — 초과 시 상세는 `.claude/skills/` 또는 `docs/` 로 이관, 본문은 인덱스 한 줄로.

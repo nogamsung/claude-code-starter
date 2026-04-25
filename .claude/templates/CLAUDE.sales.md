@@ -77,3 +77,5 @@ gh pr list / view / create
 
 ## Memory
 세션 시작 시 `memory/MEMORY.md` 자동 로드. 승리/패배 요인 · 객관 패턴 · 경쟁 인사이트 · 프로세스 변경은 `/memory add` 로 기록.
+
+> **CLAUDE.md ≤ 300줄 캡** — 초과 시 상세는 `.claude/skills/` 또는 `docs/` 로 이관, 본문은 인덱스 한 줄로.

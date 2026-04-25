@@ -84,3 +84,5 @@ prefix 생략 시 — 스택 1개면 자동, 2개 이상이면 확인. `/test`, 
 - **PR 스코프** — 가능하면 PR 당 1개 스택. 걸치면 커밋 분리
 
 각 스택 `CLAUDE.md` 반드시 읽으세요.
+
+> **CLAUDE.md ≤ 300줄 캡** — 루트 인덱스와 모든 역할별 sub-CLAUDE.md 포함. 초과 시 상세는 `.claude/skills/` 또는 `docs/` 로 이관.

@@ -12,6 +12,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.17.0] - 2026-04-25
+
+### Added
+
+**GHCR semver-only 정책 + CLAUDE.md ≤ 300줄 캡** — 패키지 레지스트리를 단일 진실 형식으로 통일하고, CLAUDE.md 비대화로 인한 매 세션 토큰 낭비를 차단.
+
+**GitHub Actions 정책 강화 (`.claude/skills/github-actions-patterns.md` · `.claude/agents/github-actions-designer.md`)**:
+- GHCR Docker 태그를 `MAJOR.MINOR.PATCH` + `latest` 단일 형식으로 제한 — `v1`, `v1.0`, `sha-*`, `dev` 등 비-semver 태그 발행 금지
+- 안정 릴리스에만 `latest` 태그 자동 부여 (pre-release `-rc.1` 제외)
+- publish 워크플로 끝에 `cleanup-non-semver` job 필수 — `actions/github-script` 로 비-semver GHCR 버전 자동 삭제
+- 동일 semver 태그 overwrite 허용 — `workflow_dispatch` 트리거로 수동 재발행 가능
+- 스테이징 이미지는 별도 레지스트리 또는 별도 패키지명(`{repo}-staging`) 으로 분리 권장
+
+**CLAUDE.md ≤ 300줄 캡 (전 모드 강제)**:
+- `CLAUDE.md` (이 저장소) — "1-1. CLAUDE.md ≤ 300줄" 핵심 원칙으로 추가
+- `.claude/commands/init.md` — Step 3 모든 모드 공통으로 줄 수 검사 + 초과분 `.claude/skills/*.md` 이관 안내
+- `.claude/commands/rule.md` — 새 Step 5 줄 수 가드 추가 (≤ 280 정상 / 281–300 경고 / > 300 차단)
+- 전체 13개 `templates/CLAUDE.*.md` footer 에 한 줄 가드 인라인 — 사용자 프로젝트 즉석 편집에서도 보호
+- 이유: CLAUDE.md 는 매 세션 로드. 1줄 줄이면 모든 협업자 × 모든 세션 토큰 절감
+
+---
+
 ## [1.16.0] - 2026-04-20
 
 ### Added

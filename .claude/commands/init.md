@@ -151,6 +151,8 @@ my-project/
 
 ## Step 3 — 하네스 파일 설치
 
+> 🔒 **CLAUDE.md ≤ 300줄 캡 (모든 모드 공통)** — 설치하거나 병합한 모든 CLAUDE.md (루트, 역할별 sub-CLAUDE.md 포함) 의 줄 수를 검사합니다. 300줄을 넘으면 초과분을 `.claude/skills/{topic}.md` 또는 `docs/{topic}.md` 로 이관하고 CLAUDE.md 에는 ``상세: `.claude/skills/{topic}.md`` 한 줄로 인덱스만 남깁니다. 사용자에게 이관 결과를 보고하고 확인을 받습니다.
+
 ### 3-A. 단일 스택 모드
 
 #### 3-A-1. CLAUDE.md (루트)

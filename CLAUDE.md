@@ -11,6 +11,14 @@ Claude Code 하네스(agent · skill · command · hook · settings) 배포용 �
 - CLAUDE.md 템플릿은 **규칙만**, 예시 금지
 - settings.json 의 `allow` 리스트에 `ls/find/grep/cat` 등 내장 도구 중복 금지
 
+### 1-1. CLAUDE.md ≤ 300줄 (절대 초과 금지)
+**모든 CLAUDE.md** (이 저장소 / `templates/CLAUDE.*.md` / 사용자 프로젝트 루트·역할별 / 모노레포 sub-CLAUDE.md) 은 300줄을 넘기지 못합니다.
+- 초과 시 **즉시** 상세 내용을 `.claude/skills/*.md` 또는 `docs/*.md` 로 이관
+- CLAUDE.md 에는 **규칙 + 인덱스만** — 코드 예시·스니펫·긴 표는 skill/docs 파일로
+- 인덱싱 형식: ``상세: `.claude/skills/{name}.md`` 한 줄로 참조 (claude code 가 필요시에만 로드)
+- `/init`, `/rule`, 사용자가 CLAUDE.md 를 직접 편집할 때마다 줄 수 검사
+- 이유: CLAUDE.md 는 매 세션 로드 — 초과 시 모든 사용자에게 매 세션 토큰 낭비
+
 ### 2. 토큰 회계
 | 위치 | 로드 시점 | 최적화 우선순위 |
 |------|---------|---------------|
