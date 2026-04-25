@@ -6,6 +6,38 @@
 
 ---
 
+## 2026-04-25: v1.17.0 — GHCR semver-only 정책 + CLAUDE.md ≤ 300줄 캡
+
+**카테고리:** 결정
+
+### 배경
+GitHub Packages (GHCR) 가 publish 워크플로 호출마다 `v1`, `v1.0`, `1.0.0`, `latest`, `sha-*` 등 5–7개 태그를 동시에 만들어내며 패키지 목록이 비대화. 동시에 사용자 프로젝트의 CLAUDE.md 도 정해진 상한 없이 비대해져 매 세션 토큰 낭비가 누적되는 패턴 관찰. 두 문제 모두 "단일 진실의 형식"이 없어서 발생한 것으로 보고 한 릴리스에서 묶어 정책화.
+
+### 핵심 결정
+
+1. **GHCR 태그는 `MAJOR.MINOR.PATCH` + `latest` 만** — `v1`, `v1.0`, `sha-*`, `dev`, `pr-*` 모두 발행 금지. 이전 docker/metadata-action 의 multi-tag 출력 (`{{major}}`, `{{major}}.{{minor}}`) 도 전부 삭제. semver 단일 vs 부분 태그 혼용은 캐시·롤백 모호성을 만들어 운영 사고 위험이 더 큼.
+2. **`latest` 는 안정 릴리스에만** — pre-release (`-rc.1`, `-beta`) 는 enable 조건 `!contains(github.ref_name, '-')` 로 제외. `is_default_branch` 가 아닌 ref 기반 — 릴리스는 무조건 태그에서 트리거되므로.
+3. **non-semver cleanup 은 같은 워크플로 안에서** — publish job 의 needs 후속으로 `cleanup-non-semver` job 강제. `actions/github-script` + `packages.deletePackageVersion*` API 로 자동 삭제. cleanup 을 별도 scheduled workflow 로 빼면 사용자가 끄거나 잊을 수 있음 — publish 와 한 묶음으로 강제.
+4. **동일 semver overwrite 허용 + `workflow_dispatch` 트리거** — 정정 빌드(예: 같은 1.2.3 재빌드)는 의도된 동작. GHCR 은 기본 덮어쓰기.
+5. **스테이징 이미지는 별도 패키지명** — production GHCR 에 비-semver 태그가 단 하나도 없어야 cleanup job 이 안전하게 동작. 스테이징 필요 시 `{repo}-staging` 별도 패키지 또는 별도 레지스트리 사용 권장.
+6. **CLAUDE.md ≤ 300줄 — 4곳 분산 가드** — 한 곳에만 두면 우회 가능. 스타터 핵심 원칙 1-1 (이 저장소) / `/init` Step 3 (설치 시) / `/rule` Step 5 (규칙 추가 시) / 13개 templates footer (사용자 즉석 편집 시). 280–300 경고, > 300 차단.
+7. **이관 형식: `상세: .claude/skills/{topic}.md` 한 줄** — 인덱스 패턴 통일. claude code 가 필요시에만 skill 파일을 on-demand 로드.
+
+### 철학
+- **단일 진실의 형식이 없으면 비대화는 시간 문제** — 패키지 태그도, 컨텍스트 파일도. 형식을 좁히면 자동 정리/검증이 가능해짐.
+- **정책은 가능한 가장 가까운 곳에서 강제** — GHCR cleanup 을 별도 cron 으로 빼지 않고 publish 워크플로 끝에 묶은 것, CLAUDE.md cap 을 install/rule/template 모든 진입점에 박은 것 동일한 원리.
+- **사용자 매 세션 비용을 0이 아닌 수로 곱한 값이 토큰 비용** — CLAUDE.md 1줄은 100명 × 매 세션. 10줄 줄이면 1000줄/일 절감.
+
+### 영향 범위
+- 신규 사용자 프로젝트: `/init` 시점부터 두 정책 자동 적용
+- 기존 사용자 프로젝트: `/starter update` 또는 직접 적용 필요
+- 스타터 자체 publish 워크플로는 .github/workflows 에 별도 publish.yml 이 없어서 이번 릴리스에는 영향 없음 (정책만 라이브러리에 추가)
+
+### 후속
+- v1.17.1 — README.md version badge 1.16.0 → 1.17.1 업데이트, 본 메모리 항목 추가 (v1.17.0 릴리스 시 누락된 부수 문서 갱신)
+
+---
+
 ## 2026-04-20: v1.16.0 — Tier 1 보안 리뷰 자동화 + Docker/Redis 패턴
 
 **카테고리:** 결정
