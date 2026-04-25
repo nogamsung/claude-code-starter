@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.17.1] - 2026-04-25
+
+### Fixed
+
+- **README.md badge** — `1.16.0` → `1.17.1` (v1.17.0 릴리스 시 누락)
+- **memory/MEMORY.md** — v1.17.0 (GHCR semver-only 정책 + CLAUDE.md ≤ 300줄 캡) 의사결정 기록 추가
+
+---
+
 ## [1.17.0] - 2026-04-25
 
 ### Added
