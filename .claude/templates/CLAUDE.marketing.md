@@ -72,3 +72,5 @@ gh pr list / view / create
 
 ## Memory
 세션 시작 시 `memory/MEMORY.md` 자동 로드. 캠페인 성과 · 포지셔닝 변경 · 주요 인사이트는 `/memory add` 로 기록.
+
+> **CLAUDE.md ≤ 300줄 캡** — 초과 시 상세는 `.claude/skills/` 또는 `docs/` 로 이관, 본문은 인덱스 한 줄로.

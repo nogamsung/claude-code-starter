@@ -69,3 +69,5 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 ## Memory
 세션 시작 시 `memory/MEMORY.md` 자동 로드. `/plan`, `/rule`, 버그 해결, 라이브러리 도입, 아키텍처·성능 변경 → 자동 기록.
+
+> **CLAUDE.md ≤ 300줄 캡** — 초과 시 상세는 `.claude/skills/` 또는 `docs/` 로 이관, 본문은 인덱스 한 줄로.

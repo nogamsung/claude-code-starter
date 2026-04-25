@@ -70,3 +70,5 @@ uv add --project services/api fastapi
 
 ## Memory
 세션 시작 시 `memory/MEMORY.md` 자동 로드.
+
+> **CLAUDE.md ≤ 300줄 캡** — 초과 시 상세는 `.claude/skills/` 또는 `docs/` 로 이관, 본문은 인덱스 한 줄로.
