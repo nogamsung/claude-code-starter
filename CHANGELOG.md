@@ -12,6 +12,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.18.0] - 2026-04-27
+
+### Changed (Breaking)
+
+**신규 기능 시작 흐름 단순화** — `/new worktree → /planner → /plan` 3단계를 `/start` 단일 진입점으로 압축. 사용자 인지 부담과 인터랙션 횟수를 대폭 감소.
+
+**`/start` 신규 커맨드 (`commands/start.md`)** — 신규 기능 개발의 기본 진입점:
+- `/start <기능>` 한 번으로 worktree 자동 생성 + PRD + 역할별 프롬프트 + generator agent 실행까지
+- 단일 스택 — 사용자 확인 없이 자동 실행 (디폴트)
+- 모노레포 — **1회만** 확인 (이전 2단계 → 1단계)
+- 인터뷰 — 요청이 명확하면 0개 질문, 모호할 때만 최대 3개
+- `--no-worktree` / `--output-only` / `--marketing` / `--sales` / `--gtm` 플래그 지원
+
+**`/planner` 커맨드 deprecated → `/plan` 으로 흡수**:
+- `/plan <기능>` 디폴트 = 이전 `/planner` 동작 (PRD + 역할 프롬프트, 실행 없음)
+- `/plan <기능> --teams` = 이전 `/planner --teams` (PRD 후 즉시 generator 실행)
+- `/plan <기능> --light` = 이전 `/plan` 의 범용 모드 (가벼운 단일 변경 계획)
+- `/plan api <Resource>` / `/plan db <도메인>` = 그대로 유지
+- `/plan <기능> --marketing|--sales|--gtm` = GTM 문서 (이전 `/planner` 와 동일)
+- `commands/planner.md` 파일 제거 — 매 세션 description 1개 절감
+
+**디폴트 박기**:
+- 단일 스택은 묻지 않고 즉시 generator 실행 (`/start` 디폴트, `/plan --teams`)
+- 모노레포 인터랙션 2회 → 1회 통합
+- 인터뷰 "요청이 명확하면 0개" 룰 강화
+
+**참조 업데이트** (총 19개 파일):
+- 9개 CLAUDE 템플릿 (`templates/CLAUDE.{kotlin,go,python,nextjs,flutter,monorepo,marketing,sales,product}.md`)
+- 3개 agent (`planner`, `gtm-planner`, `security-reviewer`)
+- 3개 템플릿 (`role-prompt`, `gtm-history`, `prd`)
+- `commands/init.md` 완료 메시지 → `/start` 우선 안내
+- `README.md` 워크플로/커맨드 표/디렉토리 구조 갱신
+
+### Migration
+
+기존 `/planner <기능>` 사용자는 다음과 같이 매핑:
+| 이전 | 신규 |
+|------|------|
+| `/planner <기능>` | `/plan <기능>` |
+| `/planner <기능> --teams` | `/plan <기능> --teams` 또는 `/start <기능>` (worktree 포함) |
+| `/planner <기능> --output-only` | `/plan <기능>` (이제 디폴트가 output-only) |
+| `/planner <기능> --gtm` | `/plan <기능> --gtm` 또는 `/start <기능> --gtm` |
+| `/new worktree feature-X` + `/planner X` | `/start X` (한 번에) |
+
+이유: 사용자 인지 부담 감소 + 토큰 절감 (frontmatter description 1개 제거 + 본문 통합으로 ~150줄 감소). 신규 기능 시작 마찰 80% 감소.
+
+---
+
 ## [1.17.1] - 2026-04-25
 
 ### Fixed

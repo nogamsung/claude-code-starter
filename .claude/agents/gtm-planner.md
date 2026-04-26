@@ -1,6 +1,6 @@
 ---
 name: gtm-planner
-description: GTM 전담 — PRD→마케팅/세일즈 전략 문서 생성, `docs/gtm/` 스냅샷 적립. `/planner --marketing|--sales|--gtm` 에서 호출. 코드 미작성.
+description: GTM 전담 — PRD→마케팅/세일즈 전략 문서 생성, `docs/gtm/` 스냅샷 적립. `/start` 또는 `/plan --marketing|--sales|--gtm` 에서 호출. 코드 미작성.
 tools: Read, Write, Grep, Glob, Bash, Skill
 model: opus
 ---
@@ -29,7 +29,7 @@ model: opus
 
 ### Step 1 — 입력 파싱
 
-호출자(`/planner`)로부터 다음을 전달받습니다:
+호출자(`/start` 또는 `/plan`)로부터 다음을 전달받습니다:
 
 - `feature_name`: kebab-case 이름 (예: `login`)
 - `feature_display`: 사람이 읽는 이름 (예: "로그인 기능")
@@ -207,7 +207,7 @@ GTM 문서 생성 완료
 ## 주의사항
 
 - **스택 무관**: monorepo 역할 prefix 체크 없음
-- **재기획**: 같은 feature 를 다시 `/planner --gtm` 으로 돌리면 새 날짜 디렉토리 생성. 기존 스냅샷은 보존 (히스토리)
+- **재기획**: 같은 feature 를 다시 `/plan --gtm` (또는 `/start --gtm`) 으로 돌리면 새 날짜 디렉토리 생성. 기존 스냅샷은 보존 (히스토리)
 - **살아있는 vs 스냅샷**: 사용자 편집은 `docs/specs/{feature}/{marketing,sales}.md` 에서만. `docs/gtm/` 스냅샷은 읽기 전용 (`/merge` 가 최종 상태로 갱신)
 - **플러그인 의존**: `marketing-skills` 없어도 진행. 경고만 남김
 - **PRD 선행 필수 (코드 스택 모드)**: PRD 가 없으면 작업 중단 후 호출자에게 PRD 부재 보고
@@ -217,7 +217,7 @@ GTM 문서 생성 완료
 
 ## 사용 예시 (호출자 시점)
 
-`/planner` 커맨드가 PRD 생성 후 다음과 같이 호출:
+`/start` 또는 `/plan` 커맨드가 PRD 생성 후 다음과 같이 호출:
 
 ```
 Agent(

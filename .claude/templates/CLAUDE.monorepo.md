@@ -63,10 +63,15 @@ prefix 생략 시 — 스택 1개면 자동, 2개 이상이면 확인. `/test`, 
 
 ## 기획 → 구현 워크플로
 ```
-/planner 결제 취소 기능
+/start 결제 취소 기능
+  → worktree(feature/payment-cancel) 자동 생성
   → docs/specs/payment-cancel.md (PRD)
   → docs/specs/payment-cancel/{backend,frontend,mobile}.md (역할별 프롬프트)
-실행: (a) Agent Teams 병렬  또는  (b) 각 역할에서 /new 수동
+  → 1회 확인 후 generator agent 병렬 실행 (단일 스택은 무확인)
+
+# 설계만 (worktree 없이) 원하면:
+/plan 결제 취소 기능              # PRD + 프롬프트만
+/plan 결제 취소 기능 --teams      # PRD 후 즉시 generator 실행
 /review → 3개 역할 일괄 리뷰
 /pr
 ```

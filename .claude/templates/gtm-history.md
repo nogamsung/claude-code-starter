@@ -2,7 +2,7 @@
 
 기능별 Go-To-Market 기록. 날짜는 **초안 작성 시점**, 버전은 **릴리스 태그**입니다.
 
-- 기획: `/planner <기능> --gtm` (또는 `--marketing` / `--sales`)
+- 기획: `/plan <기능> --gtm` (또는 `--marketing` / `--sales`, `/start` 도 동일 플래그 지원)
 - 릴리스: `/merge` 실행 시 해당 기능의 스냅샷에 `released_version` 이 자동 기록됩니다.
 
 ---

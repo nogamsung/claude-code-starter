@@ -12,7 +12,7 @@ tools: Read, Glob, Grep, Bash, Skill
 | 시점 | 호출 주체 | 동작 |
 |------|-----------|------|
 | `/pr` Step 1.5 (자동) | `/pr` 커맨드 | staged diff 리뷰 → Critical/High 시 차단, Medium/Low 시 경고 |
-| `/planner --teams` 완료 후 (자동) | planner 의 Teams 모드 마지막 단계 | 모든 generator 산출물 통합 리뷰 |
+| `/start` 또는 `/plan --teams` 완료 후 (자동) | Teams 모드 마지막 단계 | 모든 generator 산출물 통합 리뷰 |
 | `/new` 완료 후 (선택) | 사용자가 원하면 | generator agent 가 리포트 끝에 제안 |
 | 수동 호출 | 사용자 | 특정 파일 / PR / 디렉토리 검사 |
 

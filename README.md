@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.17.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.18.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -36,7 +36,8 @@ Claude Code를 프로젝트에서 바로 활용할 수 있도록 **커맨드, �
 - **DB 설계 자동화** — `/plan db` 로 MySQL 스키마 → Flyway/golang-migrate SQL
 - **API 설계 자동화** — `/plan api` 로 REST API 설계 → OpenAPI 3.0 YAML → 코드 생성
 - **모노레포 모드** — `backend/` + `frontend/` + `mobile/` 공존 자동 감지 → 역할별 CLAUDE.md + 경로 가드 hooks
-- **기획자 에이전트** — `/planner` 로 요청 → PRD + 역할별 구현 프롬프트 자동 생성. Agent Teams 로 병렬 구현도 옵션
+- **`/start` 단일 진입점** — 신규 기능 한 번에: worktree + PRD + 역할별 프롬프트 + 자동 구현. 단일 스택은 무확인, 모노레포는 1회만 확인
+- **기획자 에이전트** — `/plan` (또는 `/start`) 가 요청 → PRD + 역할별 구현 프롬프트 자동 생성. Agent Teams 로 병렬 구현도 옵션
 - **`/commit` → `/pr` → `/merge` 자동 체인** — 각 단계에서 다음 단계를 제안(수락 시 연결 실행). 완전 자동이 아닌 "연속 확인" 체인
 
 **지원 스택:** Kotlin Spring Boot · Next.js · Flutter · Go Gin · Python FastAPI
@@ -113,13 +114,18 @@ rm -rf claude-code-starter
 ### 3. 기능 개발 시작
 
 ```bash
-/new feature-login             # 자동 감지: type prefix → worktree 생성
-/new fix-signup                # 자동 감지: type prefix → worktree 생성
-/new User                      # 자동 감지: 스택별 (Go/Kotlin→api, Next.js→component, Flutter→screen)
-                               # 의존성 자동 설치 후 바로 작업 가능
+# 권장 — 단일 진입점 (worktree + PRD + 자동 구현 한 번에)
+/start 로그인 기능              # worktree(feature/login) + PRD + 역할 프롬프트 + 자동 generator
+/start 결제 취소 --gtm          # + 마케팅·세일즈 GTM 문서
 
 /pr                            # 작업 완료 후 PR 생성 (→ /merge 자동 제안)
 /merge                         # GitHub 머지 + main 최신화 + 태그 + worktree 정리
+
+# 또는 단계별로 — 더 세밀한 제어
+/new feature-login             # worktree만 생성
+/plan 로그인 기능               # PRD + 역할 프롬프트만 (실행 없음)
+/plan 로그인 기능 --teams       # PRD 후 즉시 generator 실행
+/new User                      # 개별 리소스 스캐폴딩 (스택 자동 감지)
 ```
 
 ---
@@ -127,19 +133,21 @@ rm -rf claude-code-starter
 ## 워크플로
 
 ```
-/new feature-login             # 1. worktree 생성 (type prefix 자동 감지)
-/plan <기능 설명>              # 2. 코드 전 설계 합의 (DB/API 설계 자동 감지)
-                               # 3. Claude가 적절한 agent로 구현
-/commit                        # 4. 커밋 → 피처 브랜치면 /pr 자동 제안
-/pr                            # 5. (제안 수락) PR 생성 → /merge 자동 제안
-/merge                         # 6. (제안 수락) 머지 실행 + 태그 + 정리
+/start <기능 설명>             # 1. 신규 기능 한 번에: worktree + PRD + 자동 구현
+/commit                        # 2. 커밋 → 피처 브랜치면 /pr 자동 제안
+/pr                            # 3. (제안 수락) PR 생성 → /merge 자동 제안
+/merge                         # 4. (제안 수락) 머지 실행 + 태그 + 정리
 
-# 명시 호출이 필요한 경우만:
-/new User                      # 스캐폴딩 (스택 자동 감지: api/component/screen)
+# 더 세밀한 제어가 필요한 경우:
+/new feature-login             # worktree만 생성
+/plan <기능>                   # PRD + 역할별 프롬프트 (실행 없음)
+/plan <기능> --teams           # PRD 후 generator 실행
+/plan <기능> --light           # 가벼운 단일 변경 계획
+/plan api Order                # API 설계 (OpenAPI 3.0 YAML)
+/plan db "..."                 # DB 설계 (Migration SQL)
+/new User                      # 개별 리소스 스캐폴딩 (스택 자동 감지)
 /test <파일>                   # 테스트 자동 생성
 /review staged                 # 독립 리뷰
-/plan api Order                # API 설계 명시
-/plan db "..."                 # DB 설계 명시
 /rule <실수 설명>              # AI 실수를 CLAUDE.md 규칙 등록
 /memory add <내용>             # 결정·교훈 수동 기록 (조회는 자동 로드됨)
 ```
@@ -166,6 +174,8 @@ main  ←──── dev  ←──── feature/{name}
 
 ## 커맨드 (14개)
 
+> v1.18.0 — `/planner` 가 `/plan` 으로 흡수되고, 새 단일 진입점 `/start` 가 추가되었습니다.
+
 ### 디스패처 (서브명령)
 
 | 커맨드 | 인자 | 설명 |
@@ -173,16 +183,17 @@ main  ←──── dev  ←──── feature/{name}
 | `/new` | `<Name>` | **자동 감지** — 스택(go/kotlin→api, nextjs→component, flutter→screen) 또는 이름 패턴(`feature-*`→worktree, `ci\|release\|publish`→workflow)으로 분기 |
 | | `<sub> <Name>` (override) | `api` / `component` / `screen` / `module` / `workflow` / `worktree` 명시 지정 |
 | | `<role> <sub> <Name>` (모노레포) | 역할 prefix — `backend` / `frontend` / `mobile` 로 대상 스택 경로 지정 |
-| `/plan` | `<기능 설명>` | 범용 구현 계획 (소크라테스식 인터뷰 + 계획 합의) |
+| `/start` | `<기능>` | **신규 기능 단일 진입점** — worktree + PRD + 역할 프롬프트 + 자동 구현 |
+| | `<기능> --no-worktree` | 이미 worktree 안일 때 |
+| | `<기능> --output-only` | 파일만 생성, 자동 실행 없음 |
+| | `<기능> --marketing\|--sales\|--gtm` | + GTM 문서 |
+| `/plan` | `<기능>` | PRD + 역할별 구현 프롬프트 (실행 없음) |
+| | `<기능> --teams` | PRD 후 즉시 generator 병렬 실행 |
+| | `<기능> --light` | 가벼운 단일 변경 계획 (PRD 없이) |
 | | `api <Resource>` | REST API 설계 → OpenAPI 3.0 YAML |
 | | `db <도메인>` | MySQL 스키마 → Migration SQL |
+| | `<기능> --marketing\|--sales\|--gtm` | + GTM 문서 |
 | | `<role> ...` (모노레포) | 역할 prefix — `/plan backend api User`, `/plan backend db order` |
-| `/planner` | `<기능>` | PRD + 역할별 구현 프롬프트 생성 (모노레포는 3세트, 단일은 1세트) |
-| | `<기능> --teams` | 생성 직후 활성 스택 agent 를 병렬 호출해 즉시 구현 |
-| | `<기능> --output-only` | 파일만 생성, 수동으로 `/new ...` 실행 |
-| | `<기능> --marketing` | + 마케팅 전략 (`docs/specs/{feature}/marketing.md` + `docs/gtm/` 스냅샷) |
-| | `<기능> --sales` | + 세일즈 전략 (`docs/specs/{feature}/sales.md` + `docs/gtm/` 스냅샷) |
-| | `<기능> --gtm` | + 마케팅 + 세일즈 둘 다 (날짜/버전별 히스토리로 적립) |
 | `/review` | (없음) / `<파일>` / `staged` / `diff` | 범용 코드 리뷰 |
 | | `api` | REST 컨벤션·보안·OpenAPI 리뷰 |
 
@@ -216,8 +227,8 @@ main  ←──── dev  ←──── feature/{name}
 | `go-{generator\|modifier\|tester}` | Go Gin 코드 생성·수정·테스트 |
 | `python-{generator\|modifier\|tester}` | Python FastAPI 코드 생성·수정·테스트 |
 | `api-designer` | REST API 설계 전문 (OpenAPI 3.0 YAML) — Kotlin · Go · Python 전용 |
-| `planner` | 기획자 — 요청 → PRD + 역할별 구현 프롬프트 작성 (코드는 작성하지 않음). `/planner` 커맨드가 호출 |
-| `gtm-planner` | Go-To-Market 전담 — PRD 기반으로 `marketing.md` + `sales.md` 초안, `docs/gtm/` 스냅샷 · 히스토리 적립. `/planner --marketing\|--sales\|--gtm` 플래그가 호출 |
+| `planner` | 기획자 — 요청 → PRD + 역할별 구현 프롬프트 작성 (코드는 작성하지 않음). `/start` 또는 `/plan` 이 호출 |
+| `gtm-planner` | Go-To-Market 전담 — PRD 기반으로 `marketing.md` + `sales.md` 초안, `docs/gtm/` 스냅샷 · 히스토리 적립. `/start` 또는 `/plan --marketing\|--sales\|--gtm` 플래그가 호출 |
 | `security-reviewer` | OWASP Top 10 + 시크릿 유출 + 의존성 CVE 검토 전담. `/pr` Step 1.5 에서 자동 호출 → Critical 발견 시 PR 차단 |
 
 ---
@@ -327,9 +338,9 @@ claude-code-starter/
 │   │   └── python-{generator,modifier,tester}.md
 │   ├── commands/             # 슬래시 커맨드 (14개)
 │   │   ├── init.md           # 스택 초기화 + 모노레포 자동 감지
+│   │   ├── start.md          # 신규 기능 단일 진입점 (worktree + PRD + 자동 구현)
 │   │   ├── new.md            # 디스패처: api/component/screen/module/workflow/worktree (+ 역할 prefix)
-│   │   ├── plan.md           # 디스패처: 범용 / api / db 설계 (+ 역할 prefix)
-│   │   ├── planner.md        # 기획자 호출: PRD + 역할별 프롬프트 + Agent Teams 옵션
+│   │   ├── plan.md           # 디스패처: 기획(PRD+프롬프트) / --light / api / db (+ 역할 prefix)
 │   │   ├── review.md         # 범용 + api 모드
 │   │   ├── test.md           # 테스트 생성
 │   │   ├── commit.md         # Conventional Commits + /pr 자동 제안
@@ -360,10 +371,10 @@ claude-code-starter/
 │   │   ├── settings.{kotlin,go,python,nextjs,flutter}.json
 │   │   ├── settings.{kotlin,go,python,nextjs}-multi.json
 │   │   ├── settings.monorepo.json  # 병합 settings (경로 가드 hooks)
-│   │   ├── prd.md                  # PRD 템플릿 (/planner 용)
+│   │   ├── prd.md                  # PRD 템플릿 (/start, /plan 용)
 │   │   ├── role-prompt.md          # 역할별 구현 프롬프트 템플릿
-│   │   ├── marketing-plan.md       # 마케팅 전략 템플릿 (/planner --marketing|--gtm)
-│   │   ├── sales-plan.md           # 세일즈 전략 템플릿 (/planner --sales|--gtm)
+│   │   ├── marketing-plan.md       # 마케팅 전략 템플릿 (/plan --marketing|--gtm)
+│   │   ├── sales-plan.md           # 세일즈 전략 템플릿 (/plan --sales|--gtm)
 │   │   ├── gtm-history.md          # docs/gtm/history.md 초기 템플릿
 │   │   └── memory.md
 │   ├── .starter-version      # 설치된 스타터 버전 (팀 공유)
@@ -379,8 +390,8 @@ claude-code-starter/
 │   │   ├── {feature}.md               # PRD
 │   │   └── {feature}/
 │   │       ├── {role}.md              # 역할별 구현 프롬프트 (backend/frontend/mobile)
-│   │       ├── marketing.md           # 살아있는 마케팅 전략 (/planner --marketing|--gtm)
-│   │       └── sales.md               # 살아있는 세일즈 전략 (/planner --sales|--gtm)
+│   │       ├── marketing.md           # 살아있는 마케팅 전략 (/plan --marketing|--gtm)
+│   │       └── sales.md               # 살아있는 세일즈 전략 (/plan --sales|--gtm)
 │   └── gtm/
 │       ├── history.md                 # 날짜/버전 인덱스
 │       └── {YYYY-MM-DD}-{feature}/    # 스냅샷 (릴리스 시 freeze)

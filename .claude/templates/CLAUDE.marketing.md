@@ -6,7 +6,7 @@
 ## Agents & Commands
 | 목적 | Agent / Command |
 |------|----------------|
-| 기획 → PRD + 마케팅 전략 | `/planner <기능> --marketing` |
+| 기획 → PRD + 마케팅 전략 | `/plan <기능> --marketing` |
 | 마케팅 작업 라우팅 | `/marketing [카테고리] [작업]` |
 | GTM 문서 전담 agent | `gtm-planner` |
 | 문서 리뷰 | `code-reviewer` · `/review` |
@@ -15,7 +15,7 @@
 | 규칙 추가 | `/rule` |
 
 ## 필수 플러그인
-`marketing-skills@marketingskills` — 없으면 `/marketing` · `/planner --marketing` · `gtm-planner` 가 동작하지 않습니다. 미설치 상태면 설치:
+`marketing-skills@marketingskills` — 없으면 `/marketing` · `/plan --marketing` · `gtm-planner` 가 동작하지 않습니다. 미설치 상태면 설치:
 ```
 /plugin install marketing-skills@marketingskills
 ```
@@ -42,7 +42,7 @@ memory/
 ```
 
 ## 작업 흐름
-1. `/planner <기능> --marketing` — PRD + `docs/specs/{feature}/marketing.md` 생성
+1. `/plan <기능> --marketing` — PRD + `docs/specs/{feature}/marketing.md` 생성
 2. `/marketing copywriting` — 랜딩페이지 · 헤드라인 · CTA 초안
 3. `/marketing seo-audit` — SEO 진단
 4. `/marketing launch-strategy` — 런치 체크리스트

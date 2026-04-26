@@ -14,7 +14,8 @@ FastAPI · SQLAlchemy 2.0 (async) · Alembic · Pydantic v2 · pytest+httpx · r
 | DB 설계 | `/plan db <도메인>` |
 | REST API 스캐폴딩 | `/new <Resource>` |
 | 커밋/PR/머지 | `/commit` · `/pr` · `/merge` |
-| 기획 → 프롬프트 | `/planner <기능>` |
+| 신규 기능 시작 | `/start <기능>` (worktree + PRD + 자동 구현) |
+| 설계만 / 추가 PRD | `/plan <기능>` |
 | Second Brain | `/memory [add\|search]` |
 
 ## Git 전략

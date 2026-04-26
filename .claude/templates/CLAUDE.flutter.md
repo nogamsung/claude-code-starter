@@ -13,7 +13,8 @@ Flutter · Dart (null safety) · **Riverpod 2.x** (`@riverpod`) · GoRouter · D
 | 코드 리뷰 | `code-reviewer` · `/review` |
 | Screen + 레이어 생성 | `/new <Name>` |
 | 커밋/PR/머지 | `/commit` · `/pr` · `/merge` |
-| 기획 → 프롬프트 | `/planner <기능>` |
+| 신규 기능 시작 | `/start <기능>` (worktree + PRD + 자동 구현) |
+| 설계만 / 추가 PRD | `/plan <기능>` |
 | Second Brain | `/memory [add\|search]` |
 
 ## Git 전략
