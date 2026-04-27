@@ -8,8 +8,9 @@
 ## Agents & Commands
 | 목적 | Agent / Command |
 |------|----------------|
-| 기획 → PRD + 구현 프롬프트 | `/planner <기능>` |
-| GTM 전략 (마케팅+세일즈) | `/planner <기능> --gtm` · `gtm-planner` |
+| 신규 기능 시작 | `/start <기능>` |
+| 설계만 / 추가 PRD | `/plan <기능>` |
+| GTM 전략 (마케팅+세일즈) | `/plan <기능> --gtm` · `gtm-planner` |
 | 마케팅 작업 라우팅 | `/marketing [카테고리]` |
 | 문서 리뷰 | `code-reviewer` · `/review` |
 | 커밋/PR/머지 | `/commit` · `/pr` · `/merge` |
@@ -133,8 +134,9 @@ memory/
 
 ### 7. 통합
 ```
-/planner <기능>           # PRD + 역할별 프롬프트 (pm-skills 와 조합 가능)
-/planner <기능> --gtm     # + 마케팅 + 세일즈 전략
+/start <기능>            # worktree + PRD + 자동 구현
+/plan <기능>             # PRD + 역할별 프롬프트만 (pm-skills 와 조합 가능)
+/plan <기능> --gtm       # + 마케팅 + 세일즈 전략
 /merge                    # 릴리스 → docs/gtm/ 스냅샷 자동 freeze
 ```
 

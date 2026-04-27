@@ -6,6 +6,56 @@
 
 ---
 
+## 2026-04-27: v1.18.0 — 신규 기능 시작 흐름 단순화 (`/start` 신설 + `/planner` → `/plan` 흡수)
+
+**카테고리:** 결정
+
+### 배경
+신규 기능 시작이 `/new worktree → /planner → /plan` 3단계로 분리돼 있어 사용자 인지 부담이 컸음. `/planner` 와 `/plan` 의 범용 모드가 거의 동일 (둘 다 소크라테스식 인터뷰 + 자연어 요청 처리) 해서 어떤 걸 쓸지 매번 망설이게 했음. 모노레포에선 인터랙션 2회 (실행 모드 선택 + 안전장치 yes/no) 가 매번 발생.
+
+### 결정
+
+**`/start <기능>` 신설** — 신규 기능 시작의 단일 진입점:
+1. worktree 자동 생성 (`feature/{name}`, base = origin/dev 또는 origin/main)
+2. planner agent 호출 → PRD + 역할별 프롬프트
+3. 단일 스택은 자동 generator 실행 / 모노레포는 1회만 확인
+4. 인터뷰는 요청이 명확하면 0개 — 모호할 때만 최대 3개
+
+**`/plan` 이 `/planner` 흡수**:
+- 디폴트 = PRD + 역할 프롬프트 (이전 `/planner` 동작, 실행 없음)
+- `--teams` = PRD 후 즉시 generator (이전 `/planner --teams`)
+- `--light` = 가벼운 단일 변경 계획 (이전 `/plan` 범용 모드)
+- `api`/`db` 서브 그대로
+- `--marketing|--sales|--gtm` 그대로
+
+`commands/planner.md` 제거 — frontmatter description 1개 절감 (매 세션 로드되는 토큰).
+
+### 영향
+- 사용자 흐름 5 inputs → 1~2 inputs (신규 기능 시작 마찰 80% 감소)
+- 모노레포 인터랙션 2회 → 1회
+- frontmatter description 14 → 13 (스킬 리스트 토큰 절감)
+- 본문은 on-invoke 이지만 통합으로 ~150줄 절감
+
+### 변경 파일 (총 19개)
+```
+.claude/commands/start.md            # 신규
+.claude/commands/plan.md             # planner 흡수 (271→390줄, 통합 효과)
+.claude/commands/planner.md          # 삭제
+.claude/commands/init.md             # 완료 메시지에 /start 우선 안내
+.claude/agents/{planner,gtm-planner,security-reviewer}.md  # 호출자 표기 갱신
+.claude/templates/CLAUDE.{kotlin,go,python,nextjs,flutter}.md  # 5개 — 표에 /start 행 추가
+.claude/templates/CLAUDE.{monorepo,marketing,sales,product}.md # 4개 — /planner → /plan 또는 /start
+.claude/templates/{role-prompt,gtm-history}.md             # 호출자 표기 갱신
+README.md, CHANGELOG.md, VERSION (1.17.1 → 1.18.0)
+```
+
+### 마이그레이션
+- `/planner X` → `/plan X`
+- `/planner X --teams` → `/start X` (worktree 포함) 또는 `/plan X --teams` (worktree 없이)
+- `/new worktree feature-X` + `/planner X` → `/start X` 한 번에
+
+---
+
 ## 2026-04-25: v1.17.0 — GHCR semver-only 정책 + CLAUDE.md ≤ 300줄 캡
 
 **카테고리:** 결정

@@ -6,7 +6,7 @@
 ## Agents & Commands
 | 목적 | Agent / Command |
 |------|----------------|
-| 기획 → PRD + 세일즈 전략 | `/planner <기능> --sales` |
+| 기획 → PRD + 세일즈 전략 | `/plan <기능> --sales` |
 | 세일즈 작업 라우팅 | `/marketing sales-enablement` · `/marketing cold-email` · `/marketing pricing-strategy` |
 | GTM 문서 전담 agent | `gtm-planner` |
 | 문서 리뷰 | `code-reviewer` · `/review` |
@@ -44,7 +44,7 @@ memory/
 ```
 
 ## 작업 흐름
-1. `/planner <기능> --sales` — PRD + `docs/specs/{feature}/sales.md` 생성
+1. `/plan <기능> --sales` — PRD + `docs/specs/{feature}/sales.md` 생성
 2. `/marketing sales-enablement` — 세일즈 덱 · 객관 처리 · 데모 스크립트
 3. `/marketing competitor-alternatives` — 배틀카드 · 비교 문서
 4. `/marketing pricing-strategy` — 가격 플랜 · 할인 정책
