@@ -6,6 +6,71 @@
 
 ---
 
+## 2026-05-08: v1.24.0 — P2 두 번째 (DevOps/Infra 카테고리 신설)
+
+**카테고리:** 결정
+
+### 배경
+P2 후보 4건 중 가장 큰 공백 — 5개 코드 스택 (kotlin/go/python/nextjs/flutter) + 3개 코드 없는 모드 (marketing/sales/product) 외 인프라 영역이 통째로 비어 있었음. 사용자가 자기 앱의 helm chart, terraform module, k8s manifest 를 다룰 때 참조할 패턴 없음.
+
+### 결정
+
+**한 PR 로 인프라 클래스 통째 신설** — skill 3개 + agent 1개 + template 2개 + /init infra 모드:
+
+1. **skill 3개**: terraform/kubernetes/helm 각각 ~130줄. 패턴 + 의식적 배제 + 운영 체크리스트.
+2. **infra-generator agent (단일)**: modifier/tester 분리 안 함 — 인프라는 변경 빈도 낮고 작업 단위가 거의 generator 와 동일.
+3. **/init infra 모드**: 코드 없이 IaC 만 다루는 프로젝트용. 자동 감지 안 함 (백엔드 프로젝트의 부속 인프라일 수 있음).
+
+### 핵심 정책 결정
+
+**1. Helm vs kustomize 우선순위**
+- 자기 앱 manifest = kustomize (template 엔진 X, 단순)
+- 외부 OSS (Prometheus, Cert-Manager 등) = Helm
+- `helm-patterns.md` 의 첫 섹션이 이 결정 명시
+
+**2. terraform workspace 배제**
+- 환경 분리에 부적합 (같은 backend 의 다른 key 만 다를 뿐 blast radius 동일)
+- 디렉토리 분리 (`envs/{prod,staging,dev}/`) 가 안전
+- 예외: 동일 환경 multi-region 만 workspace 가능
+
+**3. K8s 필수 항목**
+- resources requests/limits — 미설정 = 안티패턴 (노드 OOM 시 random kill)
+- liveness ≠ readiness — 둘 다 정의 (재시작 vs 트래픽 차단)
+- image tag = SemVer 명시, latest 금지
+- Secret 평문 금지 — ExternalSecret/SOPS/Sealed Secrets
+
+**4. apply 자동화 거부**
+- `settings.infra.json` 의 deny 리스트에 `terraform apply -auto-approve`, `kubectl delete namespace`, `helm uninstall` 명시
+- 운영 환경 실수 차단
+
+**5. modifier/tester agent 분리 안 함**
+- 코드 스택은 generator/modifier/tester 3종이지만, 인프라는 generator 한 개로 충분
+- 이유: 인프라 변경 빈도 낮음, 단위 테스트 개념 약함 (terraform plan/k8s dry-run 자체가 검증), modifier 와 generator 경계 모호 (대부분 새 모듈 추가 또는 변수 추가)
+
+### 변경 파일
+```
+.claude/skills/terraform-patterns.md      # 신규 (129줄)
+.claude/skills/kubernetes-patterns.md     # 신규 (147줄)
+.claude/skills/helm-patterns.md           # 신규 (138줄)
+.claude/agents/infra-generator.md         # 신규 (70줄)
+.claude/templates/CLAUDE.infra.md         # 신규 (100줄)
+.claude/templates/settings.infra.json     # 신규
+.claude/commands/init.md                  # infra 모드 행 + 자동 감지 안내 갱신
+README.md, CHANGELOG.md, VERSION (1.23.0 → 1.24.0)
+```
+
+### 의식적 배제
+
+- **infra 자동 감지** — `*.tf`, `Chart.yaml` 마커는 백엔드 프로젝트 부속일 수 있어 가정 안 함. 명시 선택만.
+- **infra-modifier / infra-tester** — 코드 스택 패턴 답습 안 함. 인프라 컨텍스트엔 generator 만으로 충분.
+- **모노레포 공통 유지에 infra-generator 추가** — 모노레포가 너무 비대해짐. 인프라 작업은 별도 infra 모드로 분리.
+
+### 다음 P2 후보
+1. AI prompt regression suite (ai-tester 보강)
+2. 추가 코드 스택 (Rust / NestJS / Django) — 사용자 요청 누적 시
+
+---
+
 ## 2026-05-08: v1.23.0 — P2 첫 번째 (observability-patterns skill)
 
 **카테고리:** 결정

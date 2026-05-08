@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.23.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.24.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -117,6 +117,7 @@ rm -rf claude-code-starter
 /init go-multi       # Go (Workspace: services/api,worker + pkg/shared)
 /init python         # Python FastAPI (단일 서비스)
 /init python-multi   # Python (uv Workspace: services/api,worker + packages/shared)
+/init infra          # DevOps / IaC 전담 (Terraform · Kubernetes · Helm)
 /init marketing      # 코드 없는 마케팅 전담 (랜딩 카피·SEO·콘텐츠·광고)
 /init sales          # 코드 없는 세일즈 전담 (덱·콜드메일·객관처리·가격)
 /init product        # 코드 없는 Product Management 전담 (Discovery·Strategy·PRD·OKR·GTM·Analytics)

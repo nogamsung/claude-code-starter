@@ -1,0 +1,58 @@
+{
+  "enabledPlugins": {
+    "github@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(terraform *)",
+      "Bash(tflint *)",
+      "Bash(tfsec *)",
+      "Bash(kubectl *)",
+      "Bash(kustomize *)",
+      "Bash(kube-linter *)",
+      "Bash(kubeval *)",
+      "Bash(helm *)",
+      "Bash(helmfile *)",
+      "Bash(aws *)",
+      "Bash(gcloud *)",
+      "Bash(az *)",
+      "Bash(sops *)",
+      "Bash(git *)",
+      "Bash(docker *)",
+      "Bash(docker-compose *)",
+      "Bash(docker compose *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~*)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(terraform apply -auto-approve*)",
+      "Bash(kubectl delete namespace *)",
+      "Bash(helm uninstall *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "bash .claude/hooks/session-start.sh" }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "bash .claude/hooks/safety-guard.sh" }] },
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "bash .claude/hooks/pre-push.sh" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write|MultiEdit", "hooks": [{ "type": "command", "command": "bash .claude/hooks/post-edit-lint.sh" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "if ls *.tf 2>/dev/null | head -1 | grep -q .; then echo \"[Harness] terraform fmt\"; terraform fmt -check 2>&1 | tail -10; fi" }] }
+    ]
+  }
+}

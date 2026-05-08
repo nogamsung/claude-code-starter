@@ -1,6 +1,6 @@
 ---
 description: 프로젝트 스택 선언 → 불필요한 agent/template/skill 제거 → CLAUDE.md + settings.json 설치 + Second Brain 초기화
-argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | nextjs | nextjs-multi | flutter | monorepo | marketing | sales | product] (생략 시 자동 감지)
+argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | nextjs | nextjs-multi | flutter | monorepo | infra | marketing | sales | product] (생략 시 자동 감지)
 ---
 
 프로젝트의 스택을 설정하고 하네스를 구성합니다.
@@ -22,6 +22,7 @@ argument-hint: [kotlin | kotlin-multi | go | go-multi | python | python-multi | 
 | `nextjs` / `nextjs-multi` | Next.js 프론트엔드 (단일 / Turborepo) |
 | `flutter` | Flutter 모바일 |
 | `monorepo` | backend + frontend + mobile 모노레포 (자동 감지 강제) |
+| `infra` | DevOps / IaC 전담 (Terraform · Kubernetes · Helm) — 코드 스택 외 별도 |
 | `marketing` | 코드 없는 마케팅 전담 프로젝트 (랜딩 카피 · SEO · 콘텐츠 · 광고 · 이메일) |
 | `sales` | 코드 없는 세일즈 전담 프로젝트 (덱 · 콜드메일 · 객관처리 · 가격 · 플레이북) |
 | `product` | 코드 없는 Product Management 전담 (Discovery · Strategy · PRD · OKR · GTM · Analytics) |
@@ -73,13 +74,14 @@ my-project/
 
 **이름 중복 금지**: 동일 role 내에서 `name` 이 같은 service 2개 불가. 감지 시 충돌이면 사용자에게 수정 요청.
 
-> ⚠️ **marketing/sales/product 모드는 자동 감지하지 않습니다.** 코드 마커가 전혀 없을 때에도 이 모드들을 가정하지 마세요. 빈 디렉토리일 수 있으므로 사용자에게 **명시 선택**을 요청합니다:
+> ⚠️ **infra/marketing/sales/product 모드는 자동 감지하지 않습니다.** 코드 마커 (`*.tf`, `Chart.yaml`, k8s manifest) 가 있어도 백엔드 프로젝트의 부속 인프라일 수 있으므로 가정하지 않습니다. 사용자에게 **명시 선택**을 요청합니다:
 > ```
 > 코드 스택이 감지되지 않았습니다. 아래 중 선택하세요:
->   1. marketing  — 마케팅 전담 프로젝트 (코드 없음)
->   2. sales      — 세일즈 전담 프로젝트 (코드 없음)
->   3. product    — Product Management 전담 프로젝트 (코드 없음, pm-skills 플러그인 사용)
->   4. 취소 — 스택을 직접 명시 (예: /init kotlin)
+>   1. infra      — DevOps / IaC 전담 (Terraform · K8s · Helm)
+>   2. marketing  — 마케팅 전담 프로젝트 (코드 없음)
+>   3. sales      — 세일즈 전담 프로젝트 (코드 없음)
+>   4. product    — Product Management 전담 (pm-skills 플러그인 사용)
+>   5. 취소 — 스택을 직접 명시 (예: /init kotlin)
 > ```
 
 **루트 단일 스택 감지 (폴백):**
@@ -118,6 +120,7 @@ my-project/
 | `python` / `python-multi` | python-{gen,mod,test}, **ai-{researcher,gen,mod,test}**, code-reviewer, **security-reviewer**, api-designer, github-actions-designer, **planner** | python-patterns, **ai-patterns**, db-patterns, api-design-patterns, github-actions-patterns, **security-patterns**, **docker-patterns**, **cache-patterns**, **observability-patterns** | CLAUDE.python[-multi], settings.python[-multi], **prd**, **role-prompt** |
 | `nextjs` / `nextjs-multi` | nextjs-{gen,mod,test}, code-reviewer, **security-reviewer**, ui-designer, github-actions-designer, **planner** | nextjs-patterns, ui-design-impl, github-actions-patterns, **security-patterns**, **docker-patterns**, **cache-patterns**, **observability-patterns** | CLAUDE.nextjs[-multi], settings.nextjs[-multi], **prd**, **role-prompt** |
 | `flutter` | flutter-{gen,mod,test}, code-reviewer, **security-reviewer**, ui-designer, github-actions-designer, **planner** | flutter-patterns, ui-design-impl, github-actions-patterns, **security-patterns**, **observability-patterns** | CLAUDE.flutter, settings.flutter, **prd**, **role-prompt** |
+| `infra` | **infra-generator**, code-reviewer, **security-reviewer**, github-actions-designer, **planner** | **terraform-patterns**, **kubernetes-patterns**, **helm-patterns**, github-actions-patterns, **security-patterns**, **docker-patterns**, **observability-patterns** | CLAUDE.infra, settings.infra, **prd**, **role-prompt** |
 | `marketing` | code-reviewer, **planner**, **gtm-planner** | (없음 — marketing-skills 플러그인 의존) | CLAUDE.marketing, settings.marketing, **prd**, **role-prompt**, **marketing-plan**, **gtm-history**, **memory** |
 | `sales` | code-reviewer, **planner**, **gtm-planner** | (없음 — marketing-skills 플러그인 의존) | CLAUDE.sales, settings.sales, **prd**, **role-prompt**, **sales-plan**, **gtm-history**, **memory** |
 | `product` | code-reviewer, **planner**, **gtm-planner** | (없음 — pm-skills 마켓플레이스 + marketing-skills 플러그인 의존) | CLAUDE.product, settings.product, **prd**, **role-prompt**, **marketing-plan**, **sales-plan**, **gtm-history**, **memory** |
@@ -127,6 +130,8 @@ my-project/
 > `planner` agent 와 `prd`/`role-prompt` 템플릿은 **모든 스택에서 유지**합니다. `/start` · `/plan` 커맨드가 이들을 사용합니다.
 >
 > **marketing/sales/product 모드**: 코드 스택 관련 agent (`kotlin-*`, `go-*`, `python-*`, `nextjs-*`, `flutter-*`, `ui-designer`, `api-designer`, `github-actions-designer`) 와 코드 관련 skills (`*-patterns`, `db-patterns`, `api-design-patterns`, `ui-design-impl`, `github-actions-patterns`) · 템플릿 (`CLAUDE.{코드스택}.md`, `settings.{코드스택}.json`) 을 **모두 제거**합니다. 작업은 marketing/sales 는 `marketing-skills` 플러그인, product 는 `pm-skills` 마켓플레이스 8개 플러그인(+ `marketing-skills`) 로 처리합니다.
+>
+> **infra 모드**: 코드 스택 generator/modifier/tester (`kotlin-*`, `go-*`, `python-*`, `nextjs-*`, `flutter-*`, `ai-*`) · `ui-designer` · `api-designer` 및 코드 skills (`kotlin-patterns`, `go-patterns`, `python-patterns`, `nextjs-patterns`, `flutter-patterns`, `ai-patterns`, `db-patterns`, `api-design-patterns`, `ui-design-impl`, `cache-patterns`) · 코드 stack templates 를 제거합니다. **유지**: `infra-generator`, `terraform-patterns`, `kubernetes-patterns`, `helm-patterns`, `docker-patterns`, `github-actions-patterns`, `security-patterns`, `observability-patterns`, `security-reviewer`, `github-actions-designer`.
 
 ### 모노레포 모드 — 유지 대상 (유니온)
 
