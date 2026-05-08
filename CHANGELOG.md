@@ -12,6 +12,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.30.0] - 2026-05-08
+
+### Fixed (Token audit — agent description)
+
+**`ui-designer` description multi-line YAML block scalar 버그 fix**:
+- 이전: `description: |` 다음 14줄 trigger 예시 (~300자, 매 세션 모든 사용자에게 로드)
+- 변경: 1줄 230자 description + 본문 markdown 으로 trigger 예시 이전
+- 다른 26개 agent 와 형식 일관 (single-line frontmatter description)
+- Agent tool schema 가 string 단일 필드라 multi-line YAML 은 안티패턴
+
+**근거**: 9 릴리스 동안 26 agent + 16 commands 의 frontmatter description 점검 0회. 측정 후 `ui-designer` 만 multi-line, 나머지 26개는 평균 ~95자/single-line 으로 일관.
+
+### Added (CI 가드 — `agent-description-lint` job)
+
+`install-matrix.yml` 에 8번째 job (이번 PR 부터 9 jobs):
+- 모든 `.claude/agents/*.md` 의 frontmatter `description` 검증
+- **multi-line YAML scalar 차단** (`description: |` 또는 `description: >`)
+- **길이 ≤ 250자 가드** (현재 27개 평균 95자, 최대 ui-designer 146자)
+- description 필드 누락도 차단
+
+미래에 다시 multi-line block scalar 로 description 작성하면 CI 실패. dogfood 스타일 자동 가드.
+
+### Changed
+
+- 버전 배지 1.29.0 → 1.30.0 (한국어 + 영문 README + plugin.json 동기)
+- `install-matrix.yml`: 8 jobs → 9 jobs
+
+이유: 토큰 회계 audit. CLAUDE.md 캡 (300줄), settings.json 권한 중복 (v1.7.x) 같은 토큰 가드는 있었지만 agent/command frontmatter description 은 빠져 있었음. 26개 agent description 합 ~2400자 = 매 세션 모든 사용자에게 600~800 토큰 비용 — 적지 않음. 이번 fix 로 ui-designer 만 ~70자 절감 + 향후 추가 agent 의 형식 일탈 차단.
+
+---
+
 ## [1.29.0] - 2026-05-08
 
 ### Changed (Dogfood — `/release` commit message + plugin meta CI 가드)
