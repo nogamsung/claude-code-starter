@@ -6,6 +6,75 @@
 
 ---
 
+## 2026-05-08: v1.25.0 — P2 세 번째 (AI prompt regression — ai-eval-patterns skill)
+
+**카테고리:** 결정
+
+### 배경
+ai-tester agent 가 단위/통합/RAG 테스트 패턴은 다루지만 **회귀 검증 (regression / eval)** 영역이 비어 있었음. LLM 출력은 비결정적이라 `assert ==` 가 안 통하는데, 그에 대응하는 표준 프로세스 부재.
+
+기존 ai-patterns.md 가 530줄로 비대해 거기에 추가하면 가드레일 부담. 별도 skill 분리.
+
+### 결정
+
+**`ai-eval-patterns.md` 신설** (별도 skill, 202줄) — 4가지 검증 layer:
+
+1. **Golden snapshot** — 가장 흔한 패턴
+   - `tests/fixtures/prompts/{case}.json` (입력) + `{case}.golden` (기대 출력)
+   - `UPDATE_GOLDEN=1 pytest` 로 갱신
+   - golden 변경은 **항상 PR 에 포함 + 리뷰** — 자동 갱신 후 검토 없이 머지 금지
+
+2. **LLM-as-judge** — 자유 형식 답변
+   - rubric → score (1-5) → threshold 통과 여부
+   - **target ≠ judge 모델** — 같은 모델로 자기 평가 = 가짜 합격
+
+3. **메트릭 기반** (BLEU/ROUGE/embedding cosine) — 보조만
+   - 의미 무시 등 한계 명시
+   - 단독 사용 금지
+
+4. **RAG 분리 평가** — retrieval recall + answer grounding
+   - 검색 정확도와 생성 충실도를 나눠 측정
+
+### 핵심 정책 결정
+
+**1. Golden 자동 갱신 거부**
+- v1.17.0 사고 (CHANGELOG 누락) 와 같은 교훈 — "검증 없는 자동 갱신" 은 의도 누락 위험.
+- `UPDATE_GOLDEN=1` 은 명시적 갱신 모드, 결과는 PR diff 로 리뷰어 검증.
+
+**2. judge 모델 분리 강제**
+- target 이 sonnet 이면 judge 는 haiku. 같은 모델로 자기 평가 시 false positive 빈발 (논문 Anthropic eval 가이드).
+
+**3. CI 비용 게이트**
+- PR CI = mocked + golden (무료, 빠름)
+- nightly = real LLM (낮은 비용)
+- weekly = full eval set 100+ cases (높은 비용)
+- 매 PR 실 호출 안티패턴 명시
+
+**4. eval set 사람 큐레이션**
+- LLM 자동 생성 거부 — 노이즈 + 정답 편향. 최소 5~10 케이스를 사람이 만들어야.
+
+### 의식적 배제
+
+- **`assert response == expected` 비결정 출력에** — golden + UPDATE_GOLDEN 패턴
+- **temperature=0 결정성 강제** — 일부 모델만 지원, 미세 변동 여전
+- **단일 케이스 합격** — 최소 5~10 fixture, 다양성 확보
+- **eval set LLM 자동 생성** — 정답 편향
+- **mock 없이 매 PR 실 호출** — 비용 폭증 + flaky CI
+
+### 변경 파일
+```
+.claude/skills/ai-eval-patterns.md    # 신규 (202줄)
+.claude/agents/ai-tester.md           # 워크플로 step 3 추가
+.claude/commands/init.md              # python/python-multi/모노레포-python/infra 4 군데
+README.md, CHANGELOG.md, VERSION (1.24.0 → 1.25.0)
+```
+
+### 다음 P2 후보
+1. 추가 코드 스택 (Rust / NestJS / Django) — 사용자 요청 누적 시
+   (P2 마지막 항목)
+
+---
+
 ## 2026-05-08: v1.24.0 — P2 두 번째 (DevOps/Infra 카테고리 신설)
 
 **카테고리:** 결정
