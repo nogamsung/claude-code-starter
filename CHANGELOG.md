@@ -12,6 +12,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.28.0] - 2026-05-08
+
+### Added (P3 — Plugin marketplace 메타, 실험적)
+
+**`.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json` 신규**:
+- Anthropic 공식 plugin spec 준수 (https://anthropic.com/claude-code/marketplace.schema.json)
+- marketplace name: `claude-code-starter` · owner: `nogamsung`
+- 단일 plugin: `claude-code-starter` · `source: "."` (저장소 자체를 단일 plugin 으로)
+- category: `development` · tags: `[starter, korean, harness, multi-stack]`
+
+### 사용 방법
+
+```
+/plugin marketplace add nogamsung/claude-code-starter
+/plugin install claude-code-starter@claude-code-starter
+```
+
+### ⚠️ 의식적인 한계 명시
+
+Plugin 시스템은 **`commands` · `agents` · `skills` 만 install** 합니다. 우리 스타터의 핵심 가치 중 다음은 **plugin 으로 다룰 수 없음**:
+- `hooks/*.sh` — session-start, post-edit-lint, pre-push, safety-guard, usage-counter
+- `templates/CLAUDE.{stack}.md` + `templates/settings.{stack}.json` — `/init` 이 사용자 프로젝트에 복사하는 자산
+- `memory/MEMORY.md` 초기화
+- `.claude/.starter-version` + rollback 메타
+
+**따라서 `bootstrap.sh` (방법 A) 가 여전히 권장 entry point**. plugin 경로는 일부 자산만 가벼이 사용하고 싶을 때.
+
+README 의 install 옵션 순서:
+1. **방법 A — `bootstrap.sh`** (권장, 풀 install)
+2. 방법 B — 수동 복사
+3. **방법 C — Plugin marketplace** (실험적, 부분 install)
+4. 방법 D — Claude Code 안에서 `/starter`/`/upgrade`/`/release` (이미 설치된 프로젝트)
+
+### Changed
+
+- 버전 배지 1.27.0 → 1.28.0 (한국어 + 영문 README 양쪽)
+- README.md / README.en.md 에 plugin install 안내 + 한계 추가
+
+이유: P3 마지막 — 자체 plugin marketplace 메타 신설. 우리 스타터의 install path 를 다양화 (curl|bash 외 plugin 옵션). 단, plugin 시스템 자체 한계 (hooks/templates 미지원) 를 정직하게 명시 — 사용자가 잘못된 기대 안 가지도록.
+
+---
+
 ## [1.27.0] - 2026-05-08
 
 ### Added (P3 — opt-in 사용량 텔레메트리)

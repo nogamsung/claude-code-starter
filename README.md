@@ -9,7 +9,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.27.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.28.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -88,7 +88,16 @@ cp -r claude-code-starter/.claude /path/to/your-project/
 rm -rf claude-code-starter
 ```
 
-**방법 C — Claude Code 안에서 업데이트·롤백** (이미 설치된 프로젝트)
+**방법 C — Plugin marketplace** (실험적, v1.28.0+)
+
+```
+/plugin marketplace add nogamsung/claude-code-starter
+/plugin install claude-code-starter@claude-code-starter
+```
+
+> ⚠️ **한계**: plugin 경로는 `commands` · `agents` · `skills` 만 install 합니다. `hooks` · `templates` · `settings.json` · `memory/` 는 plugin 시스템이 다루지 않으므로 **bootstrap.sh 가 여전히 권장 entry point** 입니다. plugin 경로는 일부 자산만 가벼이 사용하고 싶을 때.
+
+**방법 D — Claude Code 안에서 업데이트·롤백** (이미 설치된 프로젝트)
 
 ```
 /starter check                      # 현재·최신·이전 버전 표시

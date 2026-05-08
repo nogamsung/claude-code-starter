@@ -9,7 +9,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.27.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.28.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -88,7 +88,16 @@ cp -r claude-code-starter/.claude /path/to/your-project/
 rm -rf claude-code-starter
 ```
 
-**Option C — Update / rollback inside Claude Code** (already-installed projects)
+**Option C — Plugin marketplace** (experimental, v1.28.0+)
+
+```
+/plugin marketplace add nogamsung/claude-code-starter
+/plugin install claude-code-starter@claude-code-starter
+```
+
+> ⚠️ **Limitation**: the plugin path installs only `commands` · `agents` · `skills`. `hooks` · `templates` · `settings.json` · `memory/` are outside the plugin system, so **`bootstrap.sh` remains the primary entry point**. Use the plugin path when you only want a subset of assets.
+
+**Option D — Update / rollback inside Claude Code** (already-installed projects)
 
 ```
 /starter check                      # Show current · latest · previous version
