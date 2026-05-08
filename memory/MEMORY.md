@@ -6,6 +6,75 @@
 
 ---
 
+## 2026-05-08: v1.28.0 — P3 마지막 (Plugin marketplace 메타 + 한계 명시)
+
+**카테고리:** 결정
+
+### 배경
+P3 후보 3건 중 마지막. 자체 plugin marketplace 등록을 검토. Anthropic 공식 marketplace 형식 (`.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`) 조사 후 진행.
+
+### 핵심 발견 — 우리 가치 제안과 plugin 시스템의 미스매치
+
+**plugin 시스템이 install 가능한 자산**: `commands` / `agents` / `skills` / `MCP servers` / `LSP servers`
+**plugin 시스템이 install 불가능한 자산**: `hooks` / `templates` (CLAUDE.{stack}.md, settings.{stack}.json) / `memory/`
+
+우리 스타터의 핵심 가치는 `bootstrap.sh` 의 **풀 install** (`.claude/` 전체 + hooks + templates + `.starter-version` 메타). plugin 으로 받으면 commands/agents/skills 만 들어오고, 사용자는 여전히 `/init` 또는 `bootstrap.sh` 를 추가로 실행해야 hooks/templates 활성화. 즉 plugin 화는 install 단계를 줄이는 게 아니라 **늘림**.
+
+### 결정
+
+**메타 추가 + 한계 정직하게 명시**:
+1. `.claude-plugin/marketplace.json` 신설 — Anthropic 공식 schema 준수
+2. `.claude-plugin/plugin.json` 신설 — 단일 plugin, source `"."` (저장소 자체 = 단일 plugin)
+3. README 양쪽 (한/영) 에 "방법 C — Plugin marketplace (실험적)" 추가
+4. **bootstrap.sh 가 여전히 권장 entry point** 임을 명시
+5. plugin 한계 (hooks/templates 미지원) 사용자에게 명시
+
+### 의식적 배제
+
+**1. plugin 화를 위해 .claude/ 구조 재편 거부**
+- 안 검토안: `plugins/{stack-pack}/.claude-plugin/` 디렉토리 신설하고 .claude/ 자산을 거기로 옮기기 (또는 symlink)
+- 거부 이유: bootstrap.sh + /init 흐름이 핵심 가치. 그 자산을 plugins/ 에 미러링하면 single source of truth 깨짐
+- 결정: source `"."` 으로 저장소 자체를 단일 plugin 처리. plugins/ 디렉토리 신설 안 함.
+
+**2. Anthropic marketplace 등록 자동화 거부**
+- 우리는 메타 파일만 commit. Anthropic 공식 marketplace 제출은 외부 프로세스 (PR to claude-plugins-official) 로 사용자 (maintainer) 가 직접.
+- 자동화하면 잘못된 메타로 spam 등록 위험.
+
+**3. plugin 한계 숨기기 거부**
+- "plugin 으로도 풀 install 가능" 같은 잘못된 약속 안 함
+- README 의 ⚠️ 박스로 "hooks/templates 는 plugin 으로 못 install — bootstrap.sh 권장" 명시
+
+### 변경 파일
+```
+.claude-plugin/marketplace.json   # 신규 (저장소 루트)
+.claude-plugin/plugin.json         # 신규 (저장소 루트)
+README.md                          # 방법 C 추가, 배지 갱신
+README.en.md                       # 방법 C 추가, 배지 갱신
+CHANGELOG.md, VERSION (1.27.0 → 1.28.0)
+```
+
+### Anthropic 공식 marketplace 등록 (별도 외부 프로세스)
+maintainer 가 별도로 진행:
+1. https://github.com/anthropics/claude-plugins-official 에 PR
+2. 그쪽 marketplace.json 에 우리 plugin 추가 요청
+3. Anthropic 측 검토·승인 후 `claude-code-starter@claude-plugins-official` 으로 등록 가능
+4. 또는 사용자가 직접 `/plugin marketplace add nogamsung/claude-code-starter` 로 third-party marketplace 사용
+
+이번 PR scope = (4) 까지. (1)~(3) 은 별도 단계.
+
+### P 카테고리 마무리
+
+| 카테고리 | 진행 |
+|---------|-----|
+| P0 (안정성) | ✅ 1/1 (v1.19.0) |
+| P1 (사용자 흐름) | ✅ 4/4 (v1.20.0~v1.22.0) |
+| P2 (영역 확장) | 3/4 (observability ✅ + DevOps/Infra ✅ + AI regression ✅, 추가 스택 ⏸) |
+| P3 (장기 채택·운영) | ✅ 3/3 (i18n ✅ + 텔레메트리 ✅ + plugin marketplace ✅) |
+
+P2-마지막 (추가 스택 — Rust/NestJS/Django) 은 텔레메트리 데이터 누적 후 사용자 요청 기반으로 결정. 이번 세션은 P0/P1/P3 100% + P2 75% 완료.
+
+---
+
 ## 2026-05-08: v1.27.0 — P3 두 번째 (opt-in 사용량 텔레메트리)
 
 **카테고리:** 결정
