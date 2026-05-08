@@ -6,6 +6,60 @@
 
 ---
 
+## 2026-05-08: v1.20.0 — P1 `/upgrade` selective diff 커맨드
+
+**카테고리:** 결정
+
+### 배경
+v1.19.0 에서 `bootstrap.sh` 가 custom 자산을 보존하도록 개선됐지만 갱신 단위는 여전히 all-or-nothing. 사용자가 "skills 만 새로 받아보고 싶다", "agents 변경 없이 hooks 만 갱신" 같은 부분 갱신을 원할 때 경로 없음. 큰 변경(예: 26개 agents 일괄 변경) 을 한 번에 적용하기엔 심리적 부담이 큼.
+
+### 결정
+
+**`/upgrade` 커맨드 신설** — 카테고리 단위 selective diff:
+- `agents`, `commands`, `skills`, `templates`, `hooks`, `settings` 6개 카테고리
+- 디폴트는 dry-run (통계만), `apply <cat>` 로 명시적 적용
+- `--version <ref>` 로 임의 시점 비교 가능 (롤백 결정용)
+- 보존 정책은 bootstrap.sh 와 동일 (`custom/` + `settings.local.json`)
+
+### 인터페이스 결정 사유
+
+세 가지 후보 중 **카테고리 단위** 선택:
+1. **카테고리 단위** ✅ — 변경 단위가 자연스럽고 인터랙션 1~2회로 끝남
+2. 파일별 fine-grained — 정밀하지만 인터랙션 폭증 (8개 변경이면 16번 Y/N)
+3. 프리셋 (minimal/standard/full) — 단순하지만 사용자 의도와 매핑 안 맞음
+
+### 사용 시나리오
+
+```
+/upgrade                      → 통계 (예: skills +0 ~2 -0)
+/upgrade apply skills         → skills 만 갱신
+/upgrade --version v1.18.0    → 1.18.0 과 비교 (롤백 결정용)
+/upgrade apply all            → bootstrap update 호출
+```
+
+### `/starter` 와의 관계
+
+| 커맨드 | 입자 | 인터랙션 |
+|--------|------|----------|
+| `/starter update` | 전체 | 1회 확인 |
+| `/upgrade apply <cat>` | 카테고리 | 카테고리당 1회 |
+| `/upgrade apply all` | 전체 | `/starter update` 와 동일 (내부 호출) |
+
+`/upgrade apply all` 이 bootstrap.sh 를 그대로 호출하므로 `/starter` 와 기능 중복 같지만, **diff 보기 → 부분 적용 흐름** 이 `/upgrade` 의 핵심 가치. 둘 다 유지.
+
+### 변경 파일
+```
+.claude/commands/upgrade.md     # 신규 (205줄)
+README.md                        # 빠른 시작에 /upgrade 안내
+CHANGELOG.md, VERSION (1.19.0 → 1.20.0)
+```
+
+### 한계
+- 카테고리 단위 부분 갱신 시 의존성 불일치 가능 (예: `commands/` 만 갱신했는데 새 command 가 미설치 agent 호출). 사용자에게 경고 명시.
+- `templates/` 갱신은 사용자 루트 `CLAUDE.md` 에 영향 없음 — `/init` 재실행 시에만 반영.
+
+---
+
 ## 2026-05-07: v1.19.0 — P0 안정성 패치 (bootstrap 비파괴 + 버전 핀 + CI 매트릭스 + 300줄 가드)
 
 **카테고리:** 결정
