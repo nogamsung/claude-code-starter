@@ -12,6 +12,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.20.0] - 2026-05-08
+
+### Added (P1 — `/upgrade` selective diff 커맨드)
+
+**`/upgrade` 신설** (`.claude/commands/upgrade.md`):
+- 내 프로젝트 `.claude/` 와 최신 스타터(또는 `--version <ref>` 핀)를 **카테고리 단위** 비교·적용
+- `bootstrap.sh` 의 all-or-nothing 갱신 한계를 해소 — `agents`/`commands`/`skills`/`templates`/`hooks`/`settings` 6개 카테고리에서 원하는 것만 선택 가능
+
+**서브명령**:
+| 명령 | 동작 |
+|------|------|
+| `/upgrade` 또는 `/upgrade diff` | 카테고리별 +추가/~변경/-제거 통계 (dry-run) |
+| `/upgrade apply <cat>[,<cat>...]` | 지정 카테고리만 갱신 |
+| `/upgrade apply all` | `bootstrap.sh` 호출 (전체 갱신) |
+| `--version <ref>` | 비교 기준을 main 대신 특정 태그/SHA |
+
+**보존 정책** (`bootstrap.sh` 와 동일):
+- `agents/custom/`, `commands/custom/`, `hooks/custom/`, `skills/custom/`, `settings.local.json` 항상 보존
+- 사용자만 보유한 stock 외 파일은 카운트만 표시하고 그대로 유지
+
+### Changed
+
+- README — 빠른 시작에 `/upgrade` 안내 추가, `/starter` 와 차이 명시
+- 버전 배지 1.19.0 → 1.20.0
+
+### 사용 예시
+
+```bash
+/upgrade                       # 변경 통계만 보기
+/upgrade apply skills,hooks    # 특정 카테고리만
+/upgrade --version v1.18.0     # 롤백 시점 비교
+/upgrade apply all             # bootstrap update 와 동일
+```
+
+이유: P1 사용자 흐름의 미싱 링크 1번 — 사용자가 스타터 갱신을 두려워하지 않도록 부분 갱신 경로 제공. 큰 카테고리(예: `skills`) 한 종류만 안전하게 업데이트하고 결과를 확인 후 다른 카테고리 진행 가능.
+
+---
+
 ## [1.19.0] - 2026-05-07
 
 ### Added (P0 — 안정성·신뢰 격차 해소)

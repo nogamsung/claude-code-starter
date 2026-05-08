@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.19.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.20.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -90,10 +90,16 @@ rm -rf claude-code-starter
 
 ```
 /starter check                      # 현재·최신·이전 버전 표시
-/starter update                     # 최신으로 (custom 자산 보존)
+/starter update                     # 전체 갱신 (custom 자산 보존)
 /starter update --version v1.18.0   # 특정 태그로 핀
 /starter rollback                   # 직전 버전으로 되돌리기
+
+/upgrade                            # 카테고리별 변경 통계 표시 (dry-run)
+/upgrade apply skills,hooks         # 일부 카테고리만 선택 갱신
+/upgrade --version v1.18.0          # 특정 버전 기준 비교
 ```
+
+> `/starter` 는 all-or-nothing 갱신, `/upgrade` 는 `agents`/`commands`/`skills`/`templates`/`hooks`/`settings` 카테고리 단위 부분 갱신. 둘 다 `custom/` + `settings.local.json` 보존.
 
 ### 2. Claude Code에서 스택 초기화
 
