@@ -12,6 +12,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.29.0] - 2026-05-08
+
+### Changed (Dogfood — `/release` commit message + plugin meta CI 가드)
+
+**A. `/release.md` dogfood 발견 fix**:
+- v1.21.0 도입 후 v1.22~v1.28 까지 7번 릴리스 모두 수동. 이유: `/release` 의 Step 6 commit message = `chore(release): vX.Y.Z` 가 우리 실제 패턴 (기능 PR 안에 VERSION 동시 bump = `feat/fix(scope):`) 과 mismatch
+- **Step 5 신설** — staged 파일 기반 commit message 자동 추론:
+  - `--message "<msg>"` 인자 → 그대로 사용 (가장 안전)
+  - VERSION/CHANGELOG/README/memory 외 staged 변경 있음 → staged 카테고리로 type 추론 (`agents/commands/skills/templates` → `feat`, `hooks/workflows` → `fix`)
+  - VERSION/CHANGELOG/README 만 staged → `chore(release): vX.Y.Z` (순수 release commit)
+- **Step 7 (commit)** README.en.md + memory/MEMORY.md 도 자동 stage 추가
+- 사용 예시에 `--message` override 추가
+- `argument-hint` 에 `--message` 추가
+
+**B. plugin meta 검증 CI job 신규** (`install-matrix.yml`):
+- `plugin-meta-validation` job 추가:
+  - `marketplace.json` + `plugin.json` JSON 문법
+  - 필수 필드 (name/owner.name/plugins[]/source/description/version)
+  - marketplace name = kebab-case
+  - **Anthropic 예약 이름 차단** (claude-code-marketplace, claude-plugins-official 등)
+  - **plugin.json version ↔ VERSION 파일 sync 가드** — 릴리스 시 plugin.json 갱신 누락 자동 차단
+- `paths` 에 `.claude-plugin/**` 추가 — meta 변경 시 CI 트리거
+
+### Added
+
+- 이번 릴리스 자체가 자동 sync 가드의 첫 적용 — `plugin.json` 1.28.0 → 1.29.0 bump 누락이면 CI 실패
+
+### Changed
+
+- `release.md`: 198줄 → 230줄 (Step 5 추가, Step 6/7/8/9 재번호)
+- `install-matrix.yml`: 7 jobs → 8 jobs (`plugin-meta-validation`)
+- 버전 배지 1.28.0 → 1.29.0 (한국어 + 영문 README + plugin.json 동기)
+
+이유: dogfooding 라운드 — 우리가 만든 `/release` 를 우리 자체에서 안 썼던 이유 발견 + fix. 또한 v1.28.0 의 plugin meta 가 main 에 있지만 검증 CI 가 없어 향후 sync 깨질 위험. 두 격차 한 PR 로 해소.
+
+---
+
 ## [1.28.0] - 2026-05-08
 
 ### Added (P3 — Plugin marketplace 메타, 실험적)

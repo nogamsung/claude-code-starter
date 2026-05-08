@@ -1,6 +1,6 @@
 ---
 description: SemVer 룰로 VERSION bump + CHANGELOG 동기화 + commit + (옵션) /pr 자동 체인. v1.17.0/1.17.1 같은 누락 사고 방지.
-argument-hint: [patch | minor | major] [--dry-run] [--no-pr]
+argument-hint: [patch | minor | major] [--dry-run] [--no-pr] [--message "feat(...): ..."]
 ---
 
 VERSION + CHANGELOG + commit + (옵션) PR 까지를 한 번에. **현재 브랜치에 변경사항을 함께 묶어** 릴리스합니다 (별도 release PR 패턴이 아님).
@@ -28,18 +28,14 @@ VERSION + CHANGELOG + commit + (옵션) PR 까지를 한 번에. **현재 브랜
 | `major` | **X+1**.0.0 |
 | `--dry-run` | 변경 미리보기만, 실제 파일 수정 X |
 | `--no-pr` | commit 까지만, `/pr` 자동 호출 안 함 |
+| `--message "<msg>"` | commit message 명시 override (Conventional Commits) |
 
 ```bash
 BUMP=patch  # 디폴트
 DRY=false
 NO_PR=false
-for a in $ARGUMENTS; do
-  case "$a" in
-    patch|minor|major) BUMP="$a" ;;
-    --dry-run) DRY=true ;;
-    --no-pr) NO_PR=true ;;
-  esac
-done
+MSG=""
+# (실제 파싱은 Claude Code 가 인자 흐름 해석 — --message 는 인용 포함 다음 토큰)
 ```
 
 ---
@@ -123,32 +119,65 @@ fi
 
 ---
 
-## Step 5 — Dry run 출력
+## Step 5 — commit message 결정
 
-`--dry-run` 이면 여기서 종료:
+우리 실제 패턴은 **기능 PR 안에 VERSION 동시 bump** 라 항상 `chore(release):` 가 적절하지 않음. 다음 우선순위:
+
+1. **`--message` 인자 주어짐** → 그대로 사용 (사용자가 의도 명시)
+2. **VERSION/CHANGELOG/README 외에도 staged 변경 있음** (= 기능/수정 동반 릴리스) → 사용자에게 묻거나 staged 파일에서 type 추론:
+   - `.claude/agents/`, `.claude/commands/`, `.claude/skills/` 신규 → `feat`
+   - `.claude/hooks/`, 기존 파일 수정 위주 → `fix` 또는 `feat` (사용자 확인)
+   - 추론 결과를 사용자에게 1회 확인 권장 (기본 yes)
+3. **VERSION/CHANGELOG/README 만 staged** (= 순수 release commit) → `chore(release): v$NEW`
+
+추론 예시:
+```bash
+# staged 파일에 VERSION/CHANGELOG/README/memory 외 추가 있으면
+EXTRA=$(git diff --cached --name-only | grep -vE '^(VERSION|CHANGELOG\.md|README(\.en)?\.md|memory/MEMORY\.md)$' | head -3)
+if [ -n "$EXTRA" ]; then
+  # 첫 staged 카테고리로 type 추론
+  case "$(echo "$EXTRA" | head -1)" in
+    .claude/agents/*|.claude/commands/*|.claude/skills/*|.claude/templates/*) TYPE=feat ;;
+    .claude/hooks/*|.github/workflows/*) TYPE=fix ;;
+    *) TYPE=feat ;;
+  esac
+  COMMIT_MSG="$TYPE(<scope>): <summary> (v$NEW)"  # scope/summary 사용자 확인
+else
+  COMMIT_MSG="chore(release): v$NEW"
+fi
+```
+
+---
+
+## Step 6 — Dry run 출력
+
+`--dry-run` 이면 여기서 종료. 추론된 commit message 도 함께:
 
 ```
 [dry-run]
   VERSION:        $CURRENT → $NEW
   CHANGELOG:      가장 위 섹션 [$NEW] - $(date +%Y-%m-%d)
   README 배지:    version-${NEW}-blue
-  Commit message: chore(release): v$NEW
+  Commit message: $COMMIT_MSG
+  staged extra:   <list or "none">
 ```
 
 ---
 
-## Step 6 — commit
+## Step 7 — commit
 
 ```bash
-git add VERSION CHANGELOG.md README.md 2>/dev/null
-git commit -m "chore(release): v$NEW"
+git add VERSION CHANGELOG.md README.md README.en.md 2>/dev/null
+[ -f memory/MEMORY.md ] && git add memory/MEMORY.md
+# 다른 staged 변경은 그대로 (사용자가 미리 add 한 것)
+git commit -m "$COMMIT_MSG"
 ```
 
-> **이미 다른 변경사항이 staged 됐다면 그것도 함께 commit** — 릴리스는 기능 PR 안에 들어가는 흐름이므로 자연스러움. 사용자가 거부하려면 `--no-pr` + 수동 unstage.
+> **이미 다른 변경사항이 staged 됐다면 그것도 함께 commit** — 우리 패턴은 기능 PR 안에 VERSION 동시 bump. `--message` 로 message override 또는 위 step 5 추론 사용.
 
 ---
 
-## Step 7 — `/pr` 자동 체인 (`--no-pr` 아니면)
+## Step 8 — `/pr` 자동 체인 (`--no-pr` 아니면)
 
 `/pr` 커맨드 호출 (이미 존재). PR 본문에 다음 안내 자동 포함:
 
@@ -158,7 +187,7 @@ git commit -m "chore(release): v$NEW"
 
 ---
 
-## Step 8 — 머지 후 사용자 안내
+## Step 9 — 머지 후 사용자 안내
 
 PR 생성 직후 출력:
 
@@ -175,13 +204,16 @@ PR 생성 직후 출력:
 ## 사용 예시
 
 ```bash
-# 가장 흔한 패턴 — 기능 PR 의 마지막에 호출
+# 가장 흔한 패턴 — 기능 PR 의 마지막에 호출 (commit message 자동 추론)
 /release patch
 
 # minor (새 기능 묶음)
 /release minor
 
-# 미리보기
+# commit message 명시 override (가장 안전)
+/release minor --message "feat(observability): 5스택 횡단 skill 추가"
+
+# 미리보기 (추론된 commit message 도 출력)
 /release patch --dry-run
 
 # CHANGELOG 만 작성하고 PR 은 따로
