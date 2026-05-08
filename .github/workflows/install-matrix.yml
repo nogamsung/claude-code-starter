@@ -1,0 +1,203 @@
+name: Install matrix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - bootstrap.sh
+      - .claude/**
+      - .github/workflows/install-matrix.yml
+  pull_request:
+    paths:
+      - bootstrap.sh
+      - .claude/**
+      - .github/workflows/install-matrix.yml
+
+jobs:
+  fresh-install:
+    name: Fresh install (curl | bash)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run bootstrap.sh in empty dir
+        run: |
+          set -euo pipefail
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+          bash "$GITHUB_WORKSPACE/bootstrap.sh"
+          test -d .claude
+          test -f .claude/.starter-version
+          test -f .claude/settings.json
+          test -d .claude/agents && [ "$(ls -A .claude/agents)" ]
+          test -d .claude/commands && [ "$(ls -A .claude/commands)" ]
+          test -d .claude/hooks && [ "$(ls -A .claude/hooks)" ]
+          echo "✅ install OK · version=$(cat .claude/.starter-version)"
+
+      - name: Verify hooks are syntactically valid
+        run: |
+          set -e
+          for h in .claude/hooks/*.sh; do
+            bash -n "$h" && echo "✅ $h"
+          done
+
+  update-preserve:
+    name: Update preserves custom assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: First install + add custom assets + re-run (default preserve)
+        run: |
+          set -euo pipefail
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+
+          # 1) install
+          bash "$GITHUB_WORKSPACE/bootstrap.sh"
+
+          # 2) 사용자 자산 추가
+          mkdir -p .claude/agents/custom .claude/commands/custom \
+                   .claude/hooks/custom  .claude/skills/custom
+          echo "custom-agent"   > .claude/agents/custom/my-agent.md
+          echo "custom-command" > .claude/commands/custom/my-cmd.md
+          echo "custom-hook"    > .claude/hooks/custom/my-hook.sh
+          echo "custom-skill"   > .claude/skills/custom/my-skill.md
+          echo '{"local":"yes"}' > .claude/settings.local.json
+
+          # 3) update (디폴트 = preserve on)
+          bash "$GITHUB_WORKSPACE/bootstrap.sh"
+
+          # 4) 보존 검증
+          for f in agents/custom/my-agent.md commands/custom/my-cmd.md \
+                   hooks/custom/my-hook.sh  skills/custom/my-skill.md \
+                   settings.local.json; do
+            test -f ".claude/$f" || { echo "❌ $f 가 사라짐"; exit 1; }
+            echo "✅ preserved: $f"
+          done
+
+  update-no-preserve:
+    name: Update with --no-preserve wipes custom
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: First install + add custom + re-run with --no-preserve
+        run: |
+          set -euo pipefail
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+
+          bash "$GITHUB_WORKSPACE/bootstrap.sh"
+          mkdir -p .claude/agents/custom
+          echo "custom" > .claude/agents/custom/my-agent.md
+
+          bash "$GITHUB_WORKSPACE/bootstrap.sh" --no-preserve
+
+          if [ -f .claude/agents/custom/my-agent.md ]; then
+            echo "❌ --no-preserve 였으나 custom 자산이 남아있음"
+            exit 1
+          fi
+          echo "✅ --no-preserve 가 custom 자산을 정확히 제거함"
+
+  version-pin:
+    name: Version pin (--version)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pin to known prior tag (smoke)
+        run: |
+          set -euo pipefail
+          # 최근 태그 하나 동적으로 조회 (현재 release 와 다른 것)
+          TAG=$(git ls-remote --tags --refs https://github.com/nogamsung/claude-code-starter.git \
+                 | awk -F/ '{print $NF}' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+                 | sort -V | tail -2 | head -1)
+          if [ -z "$TAG" ]; then
+            echo "ℹ️ 사용 가능한 prior 태그가 없음 — skip"
+            exit 0
+          fi
+
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+          bash "$GITHUB_WORKSPACE/bootstrap.sh" --version "$TAG"
+
+          INSTALLED=$(cat .claude/.starter-version)
+          EXPECTED="${TAG#v}"
+          if [ "$INSTALLED" != "$EXPECTED" ]; then
+            echo "❌ 핀 실패: expected=$EXPECTED installed=$INSTALLED"
+            exit 1
+          fi
+          echo "✅ 버전 핀 OK · $INSTALLED"
+
+  rollback-meta:
+    name: Update writes .starter-version-prev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install old → update to current → check prev
+        run: |
+          set -euo pipefail
+          TAG=$(git ls-remote --tags --refs https://github.com/nogamsung/claude-code-starter.git \
+                 | awk -F/ '{print $NF}' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+                 | sort -V | tail -1)
+          if [ -z "$TAG" ]; then
+            echo "ℹ️ prior 태그 없음 — skip"; exit 0
+          fi
+
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+          bash "$GITHUB_WORKSPACE/bootstrap.sh" --version "$TAG"
+          OLD=$(cat .claude/.starter-version)
+
+          bash "$GITHUB_WORKSPACE/bootstrap.sh"   # main HEAD 으로 update
+          NEW=$(cat .claude/.starter-version)
+          PREV=$(cat .claude/.starter-version-prev)
+
+          if [ "$PREV" != "$OLD" ]; then
+            echo "❌ .starter-version-prev mismatch: expected=$OLD got=$PREV"
+            exit 1
+          fi
+          echo "✅ rollback 메타 OK · prev=$PREV current=$NEW"
+
+  hooks-on-empty-project:
+    name: Hooks fail silently on empty project (no stacks.json)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: session-start.sh + post-edit-lint.sh + safety-guard.sh exit 0
+        run: |
+          set -euo pipefail
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+          bash "$GITHUB_WORKSPACE/bootstrap.sh"
+
+          # 빈 프로젝트 (stacks.json, git, lint 도구 모두 없음) 에서도 깨지지 않아야 함
+          bash .claude/hooks/session-start.sh
+          echo '{"tool_input":{"file_path":"random.py"}}' | bash .claude/hooks/post-edit-lint.sh
+          echo '{"tool_input":{"command":"ls"}}'           | bash .claude/hooks/safety-guard.sh
+          echo "✅ hooks all exited 0 on empty project"
+
+  claude-md-line-cap:
+    name: All CLAUDE.md ≤ 300 lines
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enforce 300-line cap
+        run: |
+          set -euo pipefail
+          FAIL=0
+          while IFS= read -r f; do
+            LINES=$(wc -l < "$f" | tr -d ' ')
+            if [ "$LINES" -gt 300 ]; then
+              echo "❌ $f: $LINES > 300"
+              FAIL=1
+            else
+              echo "✅ $f: $LINES"
+            fi
+          done < <(find . -name 'CLAUDE.md' -o -name 'CLAUDE.*.md' \
+                    | grep -v node_modules | grep -v .worktrees)
+          [ "$FAIL" = "0" ]

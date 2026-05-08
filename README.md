@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.18.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.19.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -57,9 +57,25 @@ curl -fsSL https://raw.githubusercontent.com/nogamsung/claude-code-starter/main/
 ```
 
 - `.claude/` 폴더가 **없으면** install 모드 — 새로 설치
-- `.claude/` 폴더가 **있으면** update 모드 — 백업 없이 전체 교체
+- `.claude/` 폴더가 **있으면** update 모드 — **사용자 custom 자산은 기본 보존** (v1.19.0+)
 
-> ⚠️ **기존 프로젝트 주의**: update 모드는 `.claude/` 내부의 수정한 agent / 추가한 command / hooks / `settings.local.json` 을 모두 교체합니다. `memory/` 폴더는 건드리지 않습니다.
+**옵션 (curl | bash 에 인자 전달):**
+
+```bash
+# 특정 버전으로 핀
+curl -fsSL ...bootstrap.sh | bash -s -- --version v1.18.0
+
+# custom 자산까지 모두 갈아엎기 (이전 동작)
+curl -fsSL ...bootstrap.sh | bash -s -- --no-preserve
+```
+
+**보존 디렉토리 규약** — update 시 다음은 자동 보존:
+```
+.claude/agents/custom/      .claude/commands/custom/
+.claude/hooks/custom/       .claude/skills/custom/
+.claude/settings.local.json
+```
+> ⚠️ 사용자가 직접 만든 agent/command/hook 은 **반드시** `custom/` 하위에 두세요. 루트 직속에 두면 update 시 사라집니다. `memory/` 폴더는 어떤 경우에도 영향 없습니다.
 
 **방법 B — 수동 복사**
 
@@ -70,11 +86,13 @@ cp -r claude-code-starter/.claude /path/to/your-project/
 rm -rf claude-code-starter
 ```
 
-**방법 C — Claude Code 안에서 업데이트** (이미 설치된 프로젝트)
+**방법 C — Claude Code 안에서 업데이트·롤백** (이미 설치된 프로젝트)
 
 ```
-/starter check     # 최신 버전 여부 확인
-/starter update    # 최신으로 재설치
+/starter check                      # 현재·최신·이전 버전 표시
+/starter update                     # 최신으로 (custom 자산 보존)
+/starter update --version v1.18.0   # 특정 태그로 핀
+/starter rollback                   # 직전 버전으로 되돌리기
 ```
 
 ### 2. Claude Code에서 스택 초기화
