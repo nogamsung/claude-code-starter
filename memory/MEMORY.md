@@ -6,6 +6,55 @@
 
 ---
 
+## 2026-05-08: v1.21.0 — P1 `/release` 커맨드 (SemVer + CHANGELOG 동기화 + PR 체인)
+
+**카테고리:** 결정
+
+### 배경
+v1.17.0 → v1.17.1 사고 (CHANGELOG 누락 + README 배지 미갱신) 가 **사람이 매 릴리스마다 동일 작업을 수동으로 하다 빠뜨린** 결과. v1.18.0 ~ v1.20.0 까지도 매번 VERSION + CHANGELOG + README + memory 4개 파일을 손으로 갱신. 한 단계 자동화 안 하면 같은 사고가 반복됨.
+
+### 결정
+
+**`/release [patch|minor|major]` 커맨드 신설** — 릴리스 단계를 한 번에:
+1. 사전 조건 검증 (브랜치 ≠ main, working tree 깨끗)
+2. SemVer bump 계산
+3. CHANGELOG 검증 (사용자가 미리 작성했어야 — 없으면 템플릿 안내 후 종료)
+4. CHANGELOG 헤더의 버전·날짜 자동 sync
+5. VERSION 갱신
+6. README 배지 갱신 (`version-X.Y.Z-blue`)
+7. `chore(release): vX.Y.Z` 커밋
+8. `/pr` 체인 (--no-pr 가 아니면)
+
+### 핵심 정책 결정
+
+**1. CHANGELOG 자동 작성 금지 — 검증만**
+- 자동 생성 시 의도 누락 가능성 (어떤 카테고리, 왜 변경했는지). v1.17.0 사고가 "사람의 누락" 이지 "자동화 부재" 가 아님.
+- 사용자가 작성 안 했으면 템플릿 보여주고 정중히 종료.
+
+**2. main 브랜치 호출 거부**
+- 우리 패턴은 별도 release PR 이 아니라 **기능 PR 에 VERSION/CHANGELOG 동시 bump** (v1.18.0~1.20.0 모두). `/release` 가 이 패턴을 강제.
+
+**3. 태그 push 안 함**
+- `auto-tag.yml` 이 main 의 VERSION 변경을 감지해 태그 자동 생성. `/release` 가 직접 태그하면 중복.
+
+### 의식적 배제
+
+- `/release --auto-changelog` 같은 자동 생성 옵션 — v1.17 사고 재발 방지를 위해 일부러 미제공
+- `/release` 가 main 으로 직접 push — 기능 PR 패턴 강제 (위 정책 2)
+- pre-release (`-rc.1` 등) 지원 — GitHub Actions 에서도 명시적으로 stable 만 latest 태그. `/release` 도 stable 만.
+
+### 변경 파일
+```
+.claude/commands/release.md      # 신규 (198줄)
+README.md                         # 빠른 시작에 /release 안내
+CHANGELOG.md, VERSION (1.20.0 → 1.21.0)
+```
+
+### Dogfooding 한계
+이번 v1.21.0 자체는 `/release` 가 도입되는 PR 이라 본인을 사용해 자기를 릴리스할 수 없음 (chicken-and-egg). v1.21.1 부터 본격 dogfood.
+
+---
+
 ## 2026-05-08: v1.20.0 — P1 `/upgrade` selective diff 커맨드
 
 **카테고리:** 결정

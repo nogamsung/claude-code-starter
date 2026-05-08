@@ -7,7 +7,7 @@
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.20.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.21.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>
@@ -97,9 +97,12 @@ rm -rf claude-code-starter
 /upgrade                            # 카테고리별 변경 통계 표시 (dry-run)
 /upgrade apply skills,hooks         # 일부 카테고리만 선택 갱신
 /upgrade --version v1.18.0          # 특정 버전 기준 비교
+
+/release patch                      # VERSION + CHANGELOG bump + commit + /pr 자동
+/release minor --dry-run            # 미리보기
 ```
 
-> `/starter` 는 all-or-nothing 갱신, `/upgrade` 는 `agents`/`commands`/`skills`/`templates`/`hooks`/`settings` 카테고리 단위 부분 갱신. 둘 다 `custom/` + `settings.local.json` 보존.
+> `/starter` 는 all-or-nothing 갱신, `/upgrade` 는 `agents`/`commands`/`skills`/`templates`/`hooks`/`settings` 카테고리 단위 부분 갱신. 둘 다 `custom/` + `settings.local.json` 보존. `/release` 는 maintainer 가 본인 프로젝트(또는 스타터 자체) 의 새 버전 릴리스 시 사용.
 
 ### 2. Claude Code에서 스택 초기화
 

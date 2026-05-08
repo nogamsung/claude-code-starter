@@ -12,6 +12,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.21.0] - 2026-05-08
+
+### Added (P1 — `/release` 커맨드)
+
+**`/release` 신설** (`.claude/commands/release.md`):
+- SemVer 룰로 VERSION bump (`patch`/`minor`/`major`)
+- CHANGELOG.md 의 가장 위 섹션 헤더를 새 버전·오늘 날짜로 동기화
+- README 배지 자동 갱신 (`version-X.Y.Z-blue` 패턴)
+- `chore(release): vX.Y.Z` 커밋 후 `/pr` 자동 체인
+- `--dry-run` / `--no-pr` 옵션
+
+**중요한 정책**:
+- **CHANGELOG 자동 작성 금지** — v1.17.0/1.17.1 사고(릴리스 누락) 의 교훈은 "검증" 이지 "자동 생성" 이 아님. 사용자가 의도를 직접 적게 하고, 작성 안 됐으면 템플릿 보여주고 종료.
+- **main 브랜치 거부** — feature/fix/chore 브랜치에서만 호출 (별도 release PR 패턴이 아니라 기능 PR 안에 묶음).
+- **태그 push 안 함** — `auto-tag.yml` 가 main 의 VERSION 변경을 감지해 태그 생성. `/release` 는 main 직전까지만.
+
+### Changed
+
+- README — 빠른 시작에 `/release` 안내 추가
+- 버전 배지 1.20.0 → 1.21.0
+
+### 사용 예시
+
+```bash
+/release patch              # 1.21.0 → 1.21.1
+/release minor              # 1.21.0 → 1.22.0
+/release major --dry-run    # 미리보기
+/release patch --no-pr      # commit 까지만, PR 은 수동
+```
+
+이유: P1 의 핵심 — 릴리스 사이클 자동화. 매 릴리스마다 VERSION/CHANGELOG/README 배지를 사람이 일관되게 갱신해야 했고, v1.17.0/1.17.1 사고가 그 부주의의 결과. `/release` 가 검증·동기화·커밋·PR 까지 일괄 처리.
+
+---
+
 ## [1.20.0] - 2026-05-08
 
 ### Added (P1 — `/upgrade` selective diff 커맨드)
