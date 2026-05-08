@@ -6,6 +6,73 @@
 
 ---
 
+## 2026-05-08: v1.29.0 — Dogfood 라운드 (/release commit message + plugin meta CI)
+
+**카테고리:** 결정
+
+### 배경
+직전 9 릴리스 (v1.19~v1.28) 회고 결과 두 격차 발견:
+
+**격차 A**: `/release` 도입 (v1.21.0) 후에도 7번 릴리스 모두 수동. 이유는 `/release.md` Step 6 의 commit message = `chore(release): vX.Y.Z` 가 우리 실제 패턴과 어긋남. 우리는 **기능 PR 안에 VERSION 동시 bump** 라 commit message 가 `feat(observability):` `feat(infra):` 같은 형태. `chore(release):` 으로 강제하면 PR 본문이 의미를 잃음.
+
+**격차 B**: v1.28.0 의 `.claude-plugin/marketplace.json` + `plugin.json` 메타가 main 에 있지만 검증 CI 없음. plugin.json version 이 VERSION 파일과 sync 안 되면 marketplace 사용자가 잘못된 버전 install. 검증 가드 부재.
+
+### 결정
+
+**A. `/release.md` Step 5 신설 — staged 파일 기반 commit message 자동 추론**:
+
+| staged 패턴 | type 추론 |
+|------------|----------|
+| `--message "<msg>"` 인자 | 그대로 사용 (override 우선) |
+| `agents/commands/skills/templates` 신규 | `feat` |
+| `hooks/workflows` 수정 | `fix` |
+| VERSION/CHANGELOG/README 만 | `chore(release): vX.Y.Z` |
+
+`--message` 가 가장 안전. 추론은 보조 — 사용자에게 1회 확인 권고.
+
+**B. CI plugin-meta-validation job 추가**:
+- JSON 유효성 + 필수 필드 (Anthropic schema 준수)
+- marketplace name kebab-case + 예약 이름 차단 (claude-plugins-official 등 8개)
+- **plugin.json version ↔ VERSION 파일 sync 가드** — 이게 핵심. 릴리스 시 plugin.json 갱신 누락하면 CI 실패. 자동 catch.
+
+### 핵심 정책 결정 사유
+
+**1. commit message 추론보다 `--message` 우선**
+- 추론은 거짓 positive 위험 (예: skill 갱신인데 hook 도 같이 staged 면 fix 추론). 사용자 의도 명시가 가장 안전.
+- 추론은 fallback. 결과를 사용자에게 1회 묻는 게 안전.
+
+**2. `chore(release):` 를 폐기 안 함**
+- 순수 release-only commit (VERSION/CHANGELOG/README 만 staged) 일 때는 여전히 적절.
+- 우리 패턴이 기능 동반 bump 가 디폴트일 뿐 — 둘 다 지원.
+
+**3. Anthropic 예약 이름 차단**
+- 8개 reserved name (`claude-code-marketplace` 등) 을 CI 에서 차단. 향후 marketplace 명을 잘못 변경할 때 즉시 catch.
+
+**4. version sync 가드의 가치**
+- 이번 PR 자체가 첫 적용 — plugin.json 1.28.0 → 1.29.0 bump 누락이면 CI 실패. dogfood 의 진짜 dogfood.
+
+### 변경 파일
+```
+.claude/commands/release.md            # Step 5 추가, 6/7/8/9 재번호 (198→230줄)
+.github/workflows/install-matrix.yml   # plugin-meta-validation job 추가 (7→8 jobs)
+.claude-plugin/plugin.json             # 1.28.0 → 1.29.0 (sync 가드 첫 적용)
+README.md / README.en.md               # 배지
+CHANGELOG.md, VERSION                  # 1.28.0 → 1.29.0
+```
+
+### 의식적 배제
+
+- **자동 commit message 추론에 100% 의존** — 거짓 positive 위험. `--message` 우선.
+- **chore(release): 폐기** — 순수 release-only 케이스엔 여전히 적절.
+- **/release 자체를 이 PR 에서 사용** — 자기 자신을 수정 중이라 dogfood 의 dogfood 무한 재귀. 이 PR 은 수동, 다음 릴리스부터 적용.
+
+### 다음 dogfood 후보
+
+- **v1.30.0 부터** `/release` 직접 호출 시도 — Step 5 추론 + `--message` override 동작 확인
+- agent model 다양화 (E1 — 단순 작업 haiku 분리)
+
+---
+
 ## 2026-05-08: v1.28.0 — P3 마지막 (Plugin marketplace 메타 + 한계 명시)
 
 **카테고리:** 결정

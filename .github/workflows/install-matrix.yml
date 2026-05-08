@@ -6,11 +6,13 @@ on:
     paths:
       - bootstrap.sh
       - .claude/**
+      - .claude-plugin/**
       - .github/workflows/install-matrix.yml
   pull_request:
     paths:
       - bootstrap.sh
       - .claude/**
+      - .claude-plugin/**
       - .github/workflows/install-matrix.yml
 
 jobs:
@@ -201,3 +203,77 @@ jobs:
           done < <(find . -name 'CLAUDE.md' -o -name 'CLAUDE.*.md' \
                     | grep -v node_modules | grep -v .worktrees)
           [ "$FAIL" = "0" ]
+
+  plugin-meta-validation:
+    name: .claude-plugin meta — JSON + required fields
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate marketplace.json + plugin.json
+        run: |
+          set -euo pipefail
+          MARKETPLACE=.claude-plugin/marketplace.json
+          PLUGIN=.claude-plugin/plugin.json
+
+          if [ ! -f "$MARKETPLACE" ] && [ ! -f "$PLUGIN" ]; then
+            echo "ℹ️ no .claude-plugin meta — skip"
+            exit 0
+          fi
+
+          # 1) JSON syntax
+          for f in "$MARKETPLACE" "$PLUGIN"; do
+            [ -f "$f" ] || continue
+            jq -e . "$f" >/dev/null && echo "✅ valid JSON: $f"
+          done
+
+          # 2) marketplace.json required fields (per Anthropic schema)
+          if [ -f "$MARKETPLACE" ]; then
+            jq -e '.name | type == "string" and length > 0' "$MARKETPLACE" >/dev/null \
+              || { echo "❌ marketplace.json: name required"; exit 1; }
+            jq -e '.owner.name | type == "string" and length > 0' "$MARKETPLACE" >/dev/null \
+              || { echo "❌ marketplace.json: owner.name required"; exit 1; }
+            jq -e '.plugins | type == "array" and length > 0' "$MARKETPLACE" >/dev/null \
+              || { echo "❌ marketplace.json: plugins[] non-empty required"; exit 1; }
+
+            # name kebab-case (no spaces, no uppercase)
+            NAME=$(jq -r '.name' "$MARKETPLACE")
+            if [[ ! "$NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+              echo "❌ marketplace.json: name '$NAME' must be kebab-case"
+              exit 1
+            fi
+
+            # reserved names check
+            for reserved in claude-code-marketplace claude-code-plugins claude-plugins-official anthropic-marketplace anthropic-plugins agent-skills knowledge-work-plugins life-sciences; do
+              if [ "$NAME" = "$reserved" ]; then
+                echo "❌ marketplace.json: name '$NAME' is reserved by Anthropic"
+                exit 1
+              fi
+            done
+            echo "✅ marketplace.json fields ok (name=$NAME)"
+
+            # each plugin entry: name + source required
+            jq -e '.plugins[] | (.name | type == "string") and (.source != null)' "$MARKETPLACE" >/dev/null \
+              || { echo "❌ marketplace.json: each plugin needs name + source"; exit 1; }
+            echo "✅ all plugin entries have name + source"
+          fi
+
+          # 3) plugin.json required fields
+          if [ -f "$PLUGIN" ]; then
+            jq -e '.name | type == "string" and length > 0' "$PLUGIN" >/dev/null \
+              || { echo "❌ plugin.json: name required"; exit 1; }
+            jq -e '.description | type == "string"' "$PLUGIN" >/dev/null \
+              || { echo "❌ plugin.json: description required"; exit 1; }
+            jq -e '.version | type == "string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+")' "$PLUGIN" >/dev/null \
+              || { echo "❌ plugin.json: version must be SemVer"; exit 1; }
+            echo "✅ plugin.json fields ok"
+
+            # version sync with VERSION file
+            PV=$(jq -r '.version' "$PLUGIN")
+            FV=$(cat VERSION | tr -d '[:space:]')
+            if [ "$PV" != "$FV" ]; then
+              echo "❌ plugin.json version=$PV out of sync with VERSION=$FV"
+              exit 1
+            fi
+            echo "✅ plugin.json version synced with VERSION ($FV)"
+          fi
