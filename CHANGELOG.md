@@ -12,6 +12,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.24.0] - 2026-05-08
+
+### Added (P2 — DevOps / Infrastructure 카테고리)
+
+**완전히 비어있던 인프라 영역에 한 세트 신설**:
+
+**3종 skill** (`.claude/skills/`):
+- `terraform-patterns.md` (129줄) — 모듈 vs root 분리 · S3+DynamoDB state · `{env}-{service}-{purpose}` naming · `terraform workspace` 배제 · drift 검출
+- `kubernetes-patterns.md` (147줄) — kustomize base/overlays 구조 · 필수 manifest (resources + liveness/readiness probe) · ExternalSecret/SOPS · NetworkPolicy · ResourceQuota
+- `helm-patterns.md` (138줄) — Helm vs kustomize 사용 기준 · Chart.yaml · values 계층 · `--atomic` upgrade · CRD 한계
+
+**`infra-generator` agent** (`.claude/agents/infra-generator.md`, 70줄):
+- Terraform 모듈 / K8s manifest / Helm chart 생성 단일 agent
+- modifier/tester 분리 안 함 — 인프라는 변경 빈도 낮고 generator/modifier 경계 모호
+
+**`/init infra` 모드 신설**:
+- `templates/CLAUDE.infra.md` (100줄) + `templates/settings.infra.json`
+- `init.md` 의 유지/제거 표에 infra 행 추가
+- 자동 감지 안 함 (`*.tf`, `Chart.yaml` 이 백엔드 프로젝트 부속일 수 있어) — 명시 선택만
+- 코드 스택 (kotlin/go/python/nextjs/flutter) generator/modifier/tester 및 코드 skills 자동 제거
+
+**settings.infra.json 권한**:
+- 허용: `terraform`, `kubectl`, `kustomize`, `kube-linter`, `helm`, `helmfile`, `aws`, `gcloud`, `az`, `sops`, `tflint`, `tfsec`
+- 차단: `terraform apply -auto-approve`, `kubectl delete namespace`, `helm uninstall`
+
+### Changed
+
+- 빠른 시작 README 에 `/init infra` 추가
+- 버전 배지 1.23.0 → 1.24.0
+
+이유: P2 후보 4건 중 가장 큰 공백 — 5개 코드 스택 외에는 클래스 자체가 없었음. terraform/k8s/helm 패턴 부재 + IaC 전담 모드 부재. 한 PR 로 카테고리 통째 신설.
+
+---
+
 ## [1.23.0] - 2026-05-08
 
 ### Added (P2 — Observability skill)
