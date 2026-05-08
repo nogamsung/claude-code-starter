@@ -6,6 +6,51 @@
 
 ---
 
+## 2026-05-08: v1.26.0 — P3 첫 번째 (i18n: English README)
+
+**카테고리:** 결정
+
+### 배경
+P0/P1/P2 의 핵심 격차는 정리됨. P3 후보 3건 (i18n / 텔레메트리 / plugin marketplace) 중 가장 영향 큰 i18n 부터.
+
+한국어 only 상태 → 글로벌 채택의 가장 큰 마찰. 영문 README 가 없으면 한국 외 사용자는 첫 페이지에서 이탈.
+
+### 결정
+
+**README 만 i18n, templates 는 그대로**:
+- `README.en.md` 신규 (402줄) — 한국어 README 와 동일 구조의 영문 번역
+- 양쪽 최상단에 언어 토글 (`[🇰🇷 한국어](README.md) · [🇬🇧 English](README.en.md)`)
+- `templates/CLAUDE.{stack}.md` 9개는 **한국어 그대로** — 사용자 프로젝트로 복사되는 자산이라 i18n 시 매 세션 토큰 ×2
+
+### 의식적 배제 (의도된 lazy translation)
+
+**1. templates/ i18n 거부**
+- 토큰 비용 ×2: `CLAUDE.kotlin.ko.md` + `CLAUDE.kotlin.en.md` 둘 다 유지하면 매 세션 어느 한쪽이 항상 dead weight
+- 사용자가 자기 프로젝트 언어에 맞게 번역하는 게 더 자연스러움 (`/init` 후 직접 편집)
+- 결정: README 만 i18n, templates 는 user-side i18n 위임
+
+**2. 자동 동기화 거부**
+- `README.en.md` 가 한국어 변경에 자동 따라가게 만드는 GHA 안 검토 → 거부
+- 이유: LLM 자동 번역은 뉘앙스 손실. "stale 해도 한국어가 source of truth" 명시 + 사용자가 PR 로 동기화
+- README.en.md 마지막 섹션에 명시: "Translations track the Korean source. If they ever drift, the Korean README is authoritative."
+
+**3. CLAUDE.md / CHANGELOG / 기타 i18n 거부**
+- README 가 entry point. 그 안에 들어온 사람은 영문 자료 없어도 코드 읽을 수 있음 (개발자).
+- README 만 i18n 하는 게 80/20.
+
+### 변경 파일
+```
+README.en.md             # 신규 (402줄)
+README.md                # 최상단 언어 토글 추가, 배지 갱신
+CHANGELOG.md, VERSION (1.25.0 → 1.26.0)
+```
+
+### 다음 P3 후보
+1. opt-in 텔레메트리 (사용량 집계 → 토큰 절감 의사결정 근거)
+2. 자체 plugin marketplace 등록 (Anthropic 승인 필요 — 큰 작업)
+
+---
+
 ## 2026-05-08: v1.25.0 — P2 세 번째 (AI prompt regression — ai-eval-patterns skill)
 
 **카테고리:** 결정
