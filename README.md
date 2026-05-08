@@ -4,10 +4,12 @@
 
 **새 프로젝트에 Claude Code 하네스를 10초 만에 구성하는 설정 모음**
 
+[**🇰🇷 한국어**](README.md) · [**🇬🇧 English**](README.en.md)
+
 <br/>
 
 [![Claude](https://img.shields.io/badge/Claude-Code-FF6B35?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/version-1.25.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.26.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <br/>

@@ -12,6 +12,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.26.0] - 2026-05-08
+
+### Added (P3 — i18n: English README)
+
+**`README.en.md`** (402줄) — 기존 한국어 README 의 영문 번역:
+- 동일 구조 + tone 유지 (Quick start · Workflow · Commands · Agents · Stack standards · Plugins · Hooks · v1.6.0 migration · Directory structure)
+- v1.18.0~v1.25.0 변경사항 영문 반영 (`/start`, `/upgrade`, `/release`, observability/infra/ai-eval skills)
+- 한국어 README 가 source of truth — 영문은 동기화
+
+**언어 토글 링크** (`README.md` + `README.en.md` 양쪽 최상단):
+```markdown
+[🇰🇷 한국어](README.md) · [🇬🇧 English](README.en.md)
+```
+
+### Scope
+
+- 의도적 배제: `templates/CLAUDE.{stack}.md` 9개는 한국어 그대로 유지 — 사용자 프로젝트로 복사되는 자산이라 i18n 시 토큰 ×2. 사용자가 자기 프로젝트 언어에 맞춰 직접 번역하면 됨.
+- 의도적 배제: 영문 자동 동기화 — `README.en.md` 가 stale 해도 한국어가 source of truth 임을 명시. Lazy translation.
+
+### Changed
+
+- 버전 배지 1.25.0 → 1.26.0
+- README.md 최상단에 언어 토글 추가
+
+이유: P3 첫 번째 — 한국어 only 가 글로벌 채택의 가장 큰 마찰. 영문 README 만 추가해도 진입 장벽 대폭 감소. 사용자 프로젝트 자산 (templates) 까지 i18n 하면 토큰 ×2 부담 + 유지보수 비용 ×2 라 README 만 우선.
+
+---
+
 ## [1.25.0] - 2026-05-08
 
 ### Added (P2 — AI prompt regression)
