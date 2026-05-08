@@ -6,6 +6,57 @@
 
 ---
 
+## 2026-05-08: v1.23.0 — P2 첫 번째 (observability-patterns skill)
+
+**카테고리:** 결정
+
+### 배경
+P1 5건 완료 → P2 카테고리 진입. P2 후보 4건 (observability / DevOps-Infra / 추가 스택 / AI prompt regression) 중 가장 영향 범위 넓은 observability 부터.
+
+### 결정
+
+**Observability 영역을 단일 skill 로 통합** — 스택별로 분산하지 않음:
+- 후보: 스택별 `observability-{kotlin,go,python,nextjs,flutter}.md` 5개로 쪼개기
+- 결정: **횡단 단일 skill** (`observability-patterns.md`) — 패턴 (logging, tracing, error tracking, SLO) 자체는 스택 무관. 스택별 라이브러리만 표 형태로 매핑.
+- 이유: 토큰 효율 (5번 로드보다 1번), 일관성 (필드 컨벤션 한 곳에 정의), 유지보수 비용 (5분의 1)
+
+### 핵심 정책 결정
+
+**1. structured logging 필드 컨벤션**
+- `ts`, `level`, `msg`, `trace_id`, `span_id`, `service`, `env` — 모든 스택 공통 필수
+- 이벤트 이름 = 스네이크케이스 명사 (`user.signup`)
+- PII 직접 로깅 금지 (ID 만)
+
+**2. OTel 환경변수 표준화**
+- `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_SERVICE_NAME` / `OTEL_RESOURCE_ATTRIBUTES`
+- 5개 스택 모두 동일 환경변수 — 인프라 한 곳에서 설정
+
+**3. Flutter OTel 한계 명시**
+- Dart SDK 미성숙 → Sentry 또는 Firebase Performance 권장. 거짓 약속 안 함.
+
+**4. SLO 3개 이내 권고**
+- Availability / Latency p99 / Error rate 만. "관리 가능 범위" 강조.
+
+### 의식적 배제
+
+- **모든 함수에 span** — 비용 폭증, 안티패턴
+- **개발 환경 OTLP 강제** — 로컬 노이즈 → `OTEL_SDK_DISABLED=true`
+- **4xx Sentry 전송** — 사용자 입력 오류는 알람 가치 없음
+
+### 변경 파일
+```
+.claude/skills/observability-patterns.md  # 신규 (122줄)
+.claude/commands/init.md                  # 5개 스택 + 모노레포 공통에 추가
+README.md, CHANGELOG.md, VERSION (1.22.0 → 1.23.0)
+```
+
+### 다음 P2 후보 우선순위
+1. DevOps/Infra (terraform/k8s/helm) — 완전 비어있는 영역
+2. 추가 코드 스택 (Rust/NestJS/Django) — 사용자 요청 누적되면
+3. AI prompt regression (snapshot/golden 테스트) — ai-tester 보강
+
+---
+
 ## 2026-05-08: v1.22.0 — P1 묶음 (MCP 프리셋 skill + session-start plugin 표시)
 
 **카테고리:** 결정
