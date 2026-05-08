@@ -6,6 +6,62 @@
 
 ---
 
+## 2026-05-08: v1.27.0 — P3 두 번째 (opt-in 사용량 텔레메트리)
+
+**카테고리:** 결정
+
+### 배경
+"어떤 command/agent 를 가장 많이 쓰는가" 데이터 없이 토큰 절감·UX 의사결정 진행 중. 어떤 자산을 더 다듬을지, 어떤 hook 을 더 무겁게 할지 모름. 익명·opt-in·로컬 누적으로 본인 작업 패턴 가시화.
+
+### 결정
+
+**3가지 핵심 정책**:
+
+1. **opt-in (디폴트 disabled)** — `.claude/settings.local.json` 의 `"telemetry": true` 명시해야 동작. 사용자 신뢰의 가장 큰 가치는 "묻지 않고 동작 안 함".
+2. **외부 전송 0** — 로컬 `.claude/.usage.json` 파일에만 누적. anonymous opt-in upload 옵션도 미제공 (남용 우려).
+3. **tool_name 만 수집** — `Bash`/`Edit`/`Read` 같은 카운트만. 명령 내용·파일 경로·입출력 모두 기록 안 함. PII 위험 0.
+
+**구현**:
+- `hooks/usage-counter.sh` (PostToolUse) — opt-in 게이팅 + jq 로 atomic 갱신
+- `hooks/session-start.sh` 에 top 5 tool 한 줄 출력
+- 14개 settings 템플릿 `hooks.PostToolUse` 에 일괄 등록
+- `.gitignore` 에 `.usage.json` + `settings.local.json` 추가 (기존 README 약속이었으나 누락)
+
+### 의식적 배제
+
+- **익명 업로드 옵션** — 한번 켜면 데이터 통제 어려워짐. 신뢰성 최우선.
+- **command 별 집계** — slash command 는 사용자 직접 입력이라 PostToolUse 에서 못 잡음. tool 카운트로 우회.
+- **input/output 기록** — PII 누출 위험. tool_name 만 충분.
+- **시간대별 집계** — 형식 단순화, 누적 카운트만.
+- **자동 활성화 안내** — settings.local.json 자동 생성·수정 안 함. 사용자가 의식적으로 활성화.
+
+### 사용자 흐름
+```bash
+echo '{"telemetry": true}' >> .claude/settings.local.json  # 활성화
+# ... 작업 ...
+cat .claude/.usage.json     # 직접 확인
+# 비활성화: telemetry 키 false 또는 제거
+rm .claude/.usage.json      # 누적 데이터 초기화
+```
+
+### 변경 파일
+```
+.claude/hooks/usage-counter.sh        # 신규 (32줄)
+.claude/hooks/session-start.sh        # +9줄 (Usage 표시)
+.claude/templates/settings.*.json     # 14개 (PostToolUse 에 hook 추가)
+.gitignore                            # .usage.json + settings.local.json 추가
+README.md, README.en.md (배지)
+CHANGELOG.md, VERSION (1.26.0 → 1.27.0)
+```
+
+### Dogfooding
+이 저장소도 opt-in 활성화하면 maintainer 자신의 작업 패턴 가시화 가능. README/CHANGELOG/skills 중 어느 카테고리가 토큰을 가장 많이 쓰는지 다음 결정의 데이터.
+
+### 다음 P3 후보
+- plugin marketplace 등록 (Anthropic 승인 필요 — 큰 작업)
+
+---
+
 ## 2026-05-08: v1.26.0 — P3 첫 번째 (i18n: English README)
 
 **카테고리:** 결정

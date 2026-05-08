@@ -45,4 +45,12 @@ if command -v jq &>/dev/null; then
   fi
 fi
 
+# 6) Telemetry 요약 (opt-in — settings.local.json 의 telemetry: true 일 때만)
+if command -v jq &>/dev/null && [ -f .claude/.usage.json ]; then
+  TOP5=$(jq -r '.tools | to_entries | sort_by(-.value) | .[:5] | .[] | "\(.key)=\(.value)"' \
+           .claude/.usage.json 2>/dev/null | paste -sd, -)
+  SINCE=$(jq -r '.since // "?"' .claude/.usage.json 2>/dev/null)
+  [ -n "$TOP5" ] && echo "[Usage] since=$SINCE · top5: $TOP5"
+fi
+
 exit 0
