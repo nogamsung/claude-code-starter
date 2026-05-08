@@ -12,6 +12,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.27.0] - 2026-05-08
+
+### Added (P3 — opt-in 사용량 텔레메트리)
+
+**`.claude/hooks/usage-counter.sh` 신규** — PostToolUse hook 으로 tool 호출 횟수만 로컬 집계:
+- **opt-in 게이팅** — `.claude/settings.local.json` 의 `"telemetry": true` 일 때만 동작 (디폴트 disabled)
+- **외부 전송 0** — `.claude/.usage.json` 로컬 파일에만 누적
+- **수집 대상 = tool_name 만** — input/output 내용 기록 안 함 (`Bash` `Edit` `Read` `Write` 등 카운트만)
+- 데이터 형식: `{"since":"2026-05-08","tools":{"Bash":142,"Edit":89,"Read":234}}`
+
+**`session-start.sh` 갱신** — `.usage.json` 있으면 top 5 tool 한 줄 요약:
+```
+[Usage] since=2026-05-08 · top5: Read=234,Bash=142,Edit=89,Write=21,Grep=15
+```
+
+**14개 settings 템플릿** (kotlin/go/python/nextjs/flutter × {single,multi} + infra/monorepo/marketing/sales/product) 의 `hooks.PostToolUse` 에 usage-counter 등록.
+
+**`.gitignore`** 갱신:
+- `.claude/.usage.json` 추가 (개인 사용 데이터)
+- `.claude/settings.local.json` 추가 (개인 설정 — 기존 약속이었으나 누락)
+
+### 사용 방법
+
+opt-in 활성화:
+```bash
+echo '{"telemetry": true}' > .claude/settings.local.json
+# 또는 기존 settings.local.json 에 "telemetry": true 추가
+```
+
+비활성화 (디폴트):
+- `.claude/settings.local.json` 에 telemetry 키 없거나 `false` → hook 즉시 exit 0
+- 기존 누적 데이터 삭제: `rm .claude/.usage.json`
+
+### Changed
+
+- 버전 배지 1.26.0 → 1.27.0 (한국어 + 영문 README 양쪽)
+
+이유: 토큰 절감·command UX 의사결정 근거 부재. "어떤 command/agent 를 가장 많이 쓰는가" 데이터 없이 우선순위 결정 중. 외부 전송 0 + opt-in 으로 사용자 신뢰 확보, 로컬 누적으로 자기 작업 패턴 가시화.
+
+---
+
 ## [1.26.0] - 2026-05-08
 
 ### Added (P3 — i18n: English README)
