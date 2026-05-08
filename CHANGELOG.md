@@ -12,6 +12,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.19.0] - 2026-05-07
+
+### Added (P0 — 안정성·신뢰 격차 해소)
+
+**bootstrap.sh 비파괴 update + 버전 핀** (`bootstrap.sh`):
+- 디폴트가 **보존 모드**로 전환 — `.claude/agents/custom/`, `commands/custom/`, `hooks/custom/`, `skills/custom/`, `settings.local.json` 은 update 시 자동 보존
+- `--version <tag|sha|branch>` 옵션 — 특정 git ref 로 핀 (예: `--version v1.17.0`)
+- `--no-preserve` 옵션 — 이전 동작(전체 교체) 유지용 escape hatch
+- `--preserve` 옵션 — 명시적 보존 (디폴트지만 의도 표시용)
+- update 시 직전 `.starter-version` 을 자동으로 `.starter-version-prev` 에 저장 → rollback 메타 확보
+- `curl | bash -s -- <flags>` 형식으로 인자 전달 가능
+
+**`/starter` 커맨드 확장** (`.claude/commands/starter.md`):
+- `check` — 현재 + 최신 + **이전(rollback 후보)** 버전 3개 표시
+- `update --version v1.x.x` — 특정 태그 핀 업데이트
+- `update --no-preserve` — 전체 교체 옵션
+- `rollback` — `.starter-version-prev` 기반 직전 버전 복원 (toggle 가능)
+- 보존 정책 (`custom/` 디렉토리 규약) 명시
+
+**CI install matrix** (`.github/workflows/install-matrix.yml`):
+- `fresh-install` — 빈 디렉토리 install + 필수 파일·hook 문법 검증
+- `update-preserve` — install → custom 자산 추가 → update → 보존 검증
+- `update-no-preserve` — `--no-preserve` 시 custom 제거 검증
+- `version-pin` — `--version` 옵션이 정확한 태그를 설치하는지
+- `rollback-meta` — update 시 `.starter-version-prev` 가 직전 버전을 정확히 기록하는지
+- `hooks-on-empty-project` — `stacks.json`/git/lint 도구 없는 빈 프로젝트에서 hook 모두 exit 0
+- `claude-md-line-cap` — 모든 `CLAUDE.md` ≤ 300줄 강제
+
+**CLAUDE.md 300줄 가드 hook** (`.claude/hooks/post-edit-lint.sh`):
+- `CLAUDE.md` 또는 `CLAUDE.*.md` 편집 시 줄 수 자동 검사
+- 300줄 초과 시 경고 + 이관 가이드 출력 (`.claude/skills/{topic}.md` 또는 `docs/{topic}.md`)
+- 정책만 있던 v1.17.0 의 캡을 자동 가드로 전환
+
+### Changed
+
+- README — 보존 정책 · `--version`/`--no-preserve` 옵션 · `/starter rollback` 안내 추가
+- 버전 배지 1.18.0 → 1.19.0
+
+### Migration
+
+- 기존 `bootstrap.sh` 사용자: **변경 불필요** — `curl | bash` 그대로 동작. update 시 사용자 custom 자산이 보존되므로, 일부러 갈아엎으려면 `--no-preserve` 명시.
+- 사용자가 만든 agent/command/hook/skill 은 update 후 사라지지 않게 **`custom/` 하위로 이동** 권장.
+- `.starter-version-prev` 가 첫 update 부터 자동 생성됨. 이전 설치본은 첫 update 후부터 rollback 가능.
+
+이유: P0 안정성 격차(custom 자산 손실 위험 · 버전 핀 부재 · CI 검증 부재 · CLAUDE.md 캡 자동화 부재) 4건을 한 번에 해소. 기존 사용자 흐름 비파괴 — 디폴트 동작이 더 안전해짐.
+
+---
+
 ## [1.18.0] - 2026-04-27
 
 ### Changed (Breaking)

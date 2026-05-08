@@ -33,6 +33,16 @@ fi
 REL=${FILE#$STACK_PATH/}
 
 case "$FILE" in
+  *CLAUDE.md|*CLAUDE.*.md)
+    if [ -f "$FILE" ]; then
+      LINES=$(wc -l < "$FILE" | tr -d ' ')
+      if [ "$LINES" -gt 300 ]; then
+        echo "[Harness] ⚠️ $FILE: $LINES 줄 (>300)"
+        echo "  → 상세 내용을 .claude/skills/{topic}.md 또는 docs/{topic}.md 로 이관하고"
+        echo "    CLAUDE.md 에는 \`상세: .claude/skills/{topic}.md\` 인덱스 한 줄만 남기세요."
+      fi
+    fi
+    ;;
   *.py)
     if [ -f "$STACK_PATH/pyproject.toml" ] && command -v uv &>/dev/null; then
       echo "[Harness] ruff $REL"

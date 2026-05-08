@@ -6,6 +6,64 @@
 
 ---
 
+## 2026-05-07: v1.19.0 — P0 안정성 패치 (bootstrap 비파괴 + 버전 핀 + CI 매트릭스 + 300줄 가드)
+
+**카테고리:** 결정
+
+### 배경
+v1.18.0 까지 `/start` 등 사용자 경험은 다듬어졌으나, **하네스 자체의 안정성 격차** 4건이 누적돼 있었음:
+1. `bootstrap.sh` update 가 사용자 custom agent/hook/`settings.local.json` 을 통째로 덮어씀 → 매 update 마다 사용자 자산 손실 위험.
+2. 버전 핀·롤백 불가 — 깨진 릴리스 발생 시 복구 수단 없음.
+3. README 가 "PR 전 `bootstrap.sh` 직접 실행" 을 약속하지만 CI 검증 없음.
+4. CLAUDE.md ≤ 300줄 캡 (v1.17.0) 이 정책으로만 존재, hook 가드 없음.
+
+### 결정
+
+**P0 4건 일괄 패치**:
+
+1. **`bootstrap.sh` 디폴트 보존 모드** — `agents/custom/`, `commands/custom/`, `hooks/custom/`, `skills/custom/`, `settings.local.json` 자동 보존. `--no-preserve` 가 escape hatch.
+2. **`--version <ref>` 핀 옵션** — `git fetch --depth=1 origin <ref>` 로 임의 태그/브랜치/SHA 체크아웃 후 sparse-checkout. `curl | bash -s -- --version v1.x.x` 형태.
+3. **`.starter-version-prev` 자동 기록** — update 시 직전 버전을 보존 디렉토리 경유로 기록 → `/starter rollback` 으로 toggle 복원 가능.
+4. **`/starter` 커맨드 확장** — `check` 가 3개 버전(현재/최신/이전) 표시, `update --version` 핀, `rollback` 신설.
+5. **CI install matrix** — fresh-install / update-preserve / update-no-preserve / version-pin / rollback-meta / hooks-on-empty-project / claude-md-line-cap 7개 job.
+6. **CLAUDE.md 300줄 가드 hook** — `post-edit-lint.sh` 의 case 에 `*CLAUDE.md|*CLAUDE.*.md` 추가, 초과 시 경고 + 이관 가이드.
+
+### 사용자 자산 디렉토리 규약 (신설)
+
+스타터 update 후에도 보존되는 영역:
+```
+.claude/agents/custom/     .claude/commands/custom/
+.claude/hooks/custom/      .claude/skills/custom/
+.claude/settings.local.json
+```
+
+루트 직속(`agents/`, `commands/` 등) 에 둔 사용자 파일은 update 시 사라짐. 이 정책을 README + `/starter` 커맨드에서 명시.
+
+### 영향
+- 사용자 update 시 자산 손실 위험 0
+- 깨진 릴리스 발생 시 30초 안에 rollback 가능
+- 매 PR 마다 install/update/preserve/pin/rollback 시나리오 자동 검증
+- CLAUDE.md 비대화 hook 으로 즉시 차단
+
+### 변경 파일
+```
+bootstrap.sh                                  # --version, --no-preserve, --preserve, 보존 로직, prev 기록
+.claude/commands/starter.md                   # check/update/rollback 재작성
+.claude/hooks/post-edit-lint.sh               # CLAUDE.md case 추가
+.github/workflows/install-matrix.yml          # 신규 (7 jobs)
+README.md                                     # 옵션 + 보존 규약 + rollback 안내
+CHANGELOG.md, VERSION (1.18.0 → 1.19.0)
+```
+
+### 검증
+로컬에서 fresh-install / update-preserve / update-no-preserve / `--version v1.17.0` 핀 / 빈 프로젝트 hook silent / 300줄 가드 트리거 — 6개 시나리오 모두 통과.
+
+### 마이그레이션
+- 기존 `bootstrap.sh` 사용자: 변경 불필요. 새 디폴트가 더 안전.
+- custom agent/command 가 있는 사용자는 `custom/` 하위로 이동 권장.
+
+---
+
 ## 2026-04-27: v1.18.0 — 신규 기능 시작 흐름 단순화 (`/start` 신설 + `/planner` → `/plan` 흡수)
 
 **카테고리:** 결정
