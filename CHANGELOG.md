@@ -12,6 +12,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.25.0] - 2026-05-08
+
+### Added (P2 — AI prompt regression)
+
+**`ai-eval-patterns` skill** (`.claude/skills/ai-eval-patterns.md`, 202줄):
+- LLM 출력 비결정성에 대응하는 4가지 검증 layer
+- **Golden snapshot** — 입력→기대출력 페어 + `UPDATE_GOLDEN=1` 환경변수로 갱신, PR 검토 강제
+- **LLM-as-judge** — rubric 기반 채점 (target ≠ judge 모델 분리, haiku 권장)
+- **메트릭 기반** (BLEU/ROUGE/embedding cosine) — 보조 용도, 단독 사용 금지
+- **RAG 품질** — retrieval recall + answer grounding 분리 평가
+- **CI 정책** — PR 마다 mocked + golden / nightly real LLM / weekly full eval set
+- **의식적 배제** — `assert ==` 직접 비교, temperature=0 결정성 강제, 자기 평가, 단일 케이스 합격, LLM 자동 생성 eval set, 매 PR 실 호출
+
+**ai-tester agent 갱신**:
+- 워크플로 step 3 에 `ai-eval-patterns.md` 우선 참조 명시
+- golden fixture 위치 (`tests/fixtures/prompts/`) 안내 추가
+
+**/init python 모드 통합**:
+- `python` / `python-multi` 행 + 모노레포 python backend 분기 모두 `ai-eval-patterns` 추가
+- infra 모드 제거 목록에도 추가 (코드 skill)
+
+### Changed
+
+- 버전 배지 1.24.0 → 1.25.0
+
+이유: P2 후보 4건 중 3번째 — AI/ML 코드 회귀 검증이 기존 ai-tester 에 누락. ai-patterns.md (530줄) 가 이미 비대해 별도 skill 분리. golden snapshot + LLM-as-judge 의 표준 프로세스 정립.
+
+---
+
 ## [1.24.0] - 2026-05-08
 
 ### Added (P2 — DevOps / Infrastructure 카테고리)
