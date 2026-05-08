@@ -12,6 +12,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.23.0] - 2026-05-08
+
+### Added (P2 — Observability skill)
+
+**`observability-patterns` skill** (`.claude/skills/observability-patterns.md`):
+- 5개 코드 스택 (Kotlin / Go / Python / Next.js / Flutter) 횡단 패턴 122줄
+- structured logging — 스택별 권장 라이브러리 + 공통 JSON 필드 컨벤션 (`trace_id`, `level`, `ts`, `msg`)
+- OpenTelemetry — 백엔드 자동 instrument + Next.js `@vercel/otel` + Flutter 한계 명시
+- 에러 추적 — Sentry 기본, DataDog 대안. 4xx 비전송 정책
+- SLO / SLI — Availability, Latency p99, Error rate 3개 표준 + PromQL 예시
+- 의식적 배제 — `println` 직접 사용 금지, span 폭증 금지, 모든 함수 추적 금지
+- 운영 체크리스트 7개
+
+**`/init` 통합** (`.claude/commands/init.md`):
+- 모든 코드 스택 (5개) + 모노레포 공통 유지 목록에 `observability-patterns` 추가
+- `/init` 후 자동 보존 (스택 무관 횡단 skill)
+
+### Changed
+
+- 버전 배지 1.22.0 → 1.23.0
+
+이유: P2 의 첫 번째 — Observability 가 5개 스택 모두 필요한 횡단 영역인데 패턴 부재. logging/tracing/error tracking/SLO 가 스택별로 흩어져 있어 일관성 없음. 한 skill 로 표준 정의.
+
+---
+
 ## [1.22.0] - 2026-05-08
 
 ### Added (P1 묶음 — MCP 프리셋 + plugin 표시)
