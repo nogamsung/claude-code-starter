@@ -85,11 +85,11 @@ if [ "$PRESERVE" = true ] && [ "$MODE" = "update" ]; then
   [ -f "$TARGET_DIR/.claude/settings.local.json" ] && cp "$TARGET_DIR/.claude/settings.local.json" "$PRESERVE_DIR/settings.local.json"
 fi
 
-# --- 다운로드 ---
-git clone --quiet --depth=1 --filter=blob:none --sparse "$REPO_URL" "$TMP_DIR" 2>/dev/null
+# --- 다운로드 (full depth=1 — sparse-checkout 은 cone 모드에서 파일을 거부) ---
+git clone --quiet --depth=1 "$REPO_URL" "$TMP_DIR" 2>/dev/null
 cd "$TMP_DIR"
 if [ -n "$VERSION_REF" ]; then
-  # depth=1 클론에선 임의 ref 가 없으므로 다시 fetch
+  # depth=1 클론엔 임의 ref 없으니 다시 fetch
   git fetch --quiet --depth=1 origin "$VERSION_REF" 2>/dev/null || {
     echo "❌ 버전 ref '$VERSION_REF' 를 origin 에서 찾지 못했습니다."
     echo "   사용 가능한 태그: https://github.com/nogamsung/claude-code-starter/tags"
@@ -98,7 +98,6 @@ if [ -n "$VERSION_REF" ]; then
   }
   git checkout --quiet FETCH_HEAD
 fi
-git sparse-checkout set .claude VERSION
 cd "$TARGET_DIR"
 
 # --- 이전 버전 기록 (rollback 용) ---
