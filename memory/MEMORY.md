@@ -6,6 +6,67 @@
 
 ---
 
+## 2026-05-08: v1.30.0 — Token audit (ui-designer description fix + CI lint 가드)
+
+**카테고리:** 결정
+
+### 배경
+v1.19~v1.29 11 릴리스 동안 26 agent + 16 commands 의 frontmatter `description` 한 번도 점검 안 했음. 측정 결과:
+- 26 agent description 합 ~2400자 = 매 세션 모든 사용자에게 600~800 토큰
+- **`ui-designer` 만 multi-line YAML block scalar (`|`)** 사용 — 14줄 ~300자, 다른 agent 의 3배
+- 나머지 26개는 single-line, 평균 95자
+
+### 결정
+
+**A. `ui-designer` description 1줄로 압축**:
+- 이전: `description: |` + 14줄 (이름 설명 + 6개 trigger 예시)
+- 변경: 230자 single-line description + 본문 markdown 의 `## 트리거 예시` 섹션 (Claude 가 agent 호출 결정 시 description 만 봄, trigger 예시는 사용자가 보는 docs)
+- 절감: ~70자/세션/사용자
+
+**B. CI agent-description-lint job 추가**:
+- multi-line YAML scalar 차단 (`description: |` 또는 `description: >`)
+- 길이 ≤ 250자 가드
+- description 필드 누락 차단
+
+미래에 새 agent 추가하면서 같은 안티패턴 반복하지 못하도록 자동 catch.
+
+### 핵심 정책 결정 사유
+
+**1. multi-line YAML 안티패턴**
+- Agent tool schema 의 description 필드는 single-line string. multi-line YAML 을 string 으로 변환하면 줄바꿈 문자(`\n`) 가 그대로 들어가 LLM 매칭 효율 저하 가능.
+- 다른 26개 agent 가 이미 single-line 이라 일관성 fix.
+
+**2. 길이 cap = 250자**
+- 측정상 현재 가장 긴 게 ui-designer 146자 (수정 후), 그 다음 ai-generator 135자
+- 250자는 충분한 여유 (실제 평균의 2.5배). 그래도 cap 있어야 향후 폭증 차단.
+
+**3. trigger 예시는 description 이 아닌 본문에**
+- description = LLM 이 agent 선택할 때 보는 한 줄 요약
+- trigger 예시 = 사용자가 docs 로 보는 자료
+- 둘은 다른 audience. multi-line description 으로 합치면 LLM 입장에선 noise.
+
+### 의식적 배제
+
+- **모든 agent description 일괄 단축** — 정보 손실 위험. 평균 95자 이미 적정.
+- **commands description audit 도 함께** — 16개 commands description 합 ~1100자, 평균 ~70자 이미 적정. 우선순위 낮음.
+- **agent model 다양화 (haiku 분리)** — 검토했으나 quality vs token 의 trade-off 명확하지 않음. 보안/리뷰 작업에 haiku = false negative 위험.
+
+### 변경 파일
+```
+.claude/agents/ui-designer.md          # description multi-line → single-line
+.github/workflows/install-matrix.yml   # agent-description-lint job (8→9 jobs)
+.claude-plugin/plugin.json             # 1.29.0 → 1.30.0 (sync 가드 통과)
+README.md / README.en.md               # 배지
+CHANGELOG.md, VERSION                  # 1.29.0 → 1.30.0
+```
+
+### 다음 token audit 후보
+1. `templates/CLAUDE.{stack}.md` 9개 — 사용자 프로젝트 매 세션 로드. 평균 ~85줄 (CLAUDE.product.md 가 172줄로 가장 큼)
+2. `templates/settings.{stack}.json` 의 enabledPlugins / permissions 중복 점검
+3. commands description (현재 평균 70자 — 후순위)
+
+---
+
 ## 2026-05-08: v1.29.0 — Dogfood 라운드 (/release commit message + plugin meta CI)
 
 **카테고리:** 결정

@@ -204,6 +204,51 @@ jobs:
                     | grep -v node_modules | grep -v .worktrees)
           [ "$FAIL" = "0" ]
 
+  agent-description-lint:
+    name: Agent description — single-line + length cap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enforce single-line + length ≤ 250 chars
+        run: |
+          set -euo pipefail
+          FAIL=0
+          MAX_LEN=250
+
+          for f in .claude/agents/*.md; do
+            # YAML frontmatter 추출 (첫 --- 부터 다음 --- 까지)
+            FM=$(awk '/^---$/{c++; if(c==1){next} if(c==2){exit}} c==1' "$f")
+
+            # description: 다음 줄이 multi-line scalar (`|` 또는 `>`) 인지 검사
+            DESC_LINE=$(echo "$FM" | grep -E '^description:' || echo "")
+            if [ -z "$DESC_LINE" ]; then
+              echo "❌ $f: description field missing"
+              FAIL=1
+              continue
+            fi
+
+            # multi-line scalar 차단 (`description: |` 또는 `description: >`)
+            if echo "$DESC_LINE" | grep -qE '^description:\s*[|>]\s*$'; then
+              echo "❌ $f: multi-line YAML scalar (| or >) — Agent tool schema 는 1줄 string 권장"
+              echo "   → 트리거 예시는 본문 markdown 으로 옮기세요"
+              FAIL=1
+              continue
+            fi
+
+            # 길이 검사 (description: 접두 제거)
+            DESC=$(echo "$DESC_LINE" | sed 's/^description:\s*//')
+            LEN=${#DESC}
+            if [ "$LEN" -gt "$MAX_LEN" ]; then
+              echo "❌ $f: $LEN chars > $MAX_LEN"
+              FAIL=1
+            else
+              printf "✅ %4d chars  %s\n" "$LEN" "$(basename "$f")"
+            fi
+          done
+
+          [ "$FAIL" = "0" ]
+
   plugin-meta-validation:
     name: .claude-plugin meta — JSON + required fields
     runs-on: ubuntu-latest
