@@ -12,6 +12,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.22.0] - 2026-05-08
+
+### Added (P1 묶음 — MCP 프리셋 + plugin 표시)
+
+**MCP 권장 프리셋 skill** (`.claude/skills/mcp-presets.md`):
+- 5개 코드 스택 (kotlin/go/python/nextjs/flutter) + marketing/sales/product 별 권장 `mcpServers` JSON snippet
+- `postgres` / `filesystem` / `github` / `puppeteer` / `fetch` 5종 커버
+- `${DATABASE_URL}`, `${GITHUB_PERSONAL_ACCESS_TOKEN}` 환경변수 컨벤션
+- 자동 활성화 안 함 — 잘못된 MCP 가 세션을 깰 수 있어 사용자 명시 선택
+- 개인용은 `settings.local.json` 권장, 팀 공유는 `settings.json`
+
+**Plugin 표시 (`.claude/hooks/session-start.sh`)**:
+- 세션 시작 시 `enabledPlugins` 의 활성 plugin 한 줄 요약
+- 미설치 안내 (`/plugin install <name>`) + 토글 안내 (`/plugin`)
+- `settings.json` + `settings.local.json` 합집합 (개인 plugin 도 표시)
+
+### Changed
+
+- 버전 배지 1.21.0 → 1.22.0
+
+### 결정 사유
+
+**MCP 자동 활성화 배제** — `settings.{stack}.json` 의 `mcpServers` 를 디폴트로 채우면 사용자가 의도하지 않은 외부 프로세스 (npx 자동 다운로드) 가 매 세션 시작. 잘못된 환경변수 (`DATABASE_URL` 미설정) 로 세션이 깨질 수도 있음. **skill 로 snippet 만 제공**, 사용자가 `settings.local.json` 에 직접 붙여넣는 흐름.
+
+**Plugin 자동 검증 배제** — Claude Code 의 plugin 설치 여부는 외부 bash hook 에서 알 수 없음. `/plugin list` 같은 CLI 도 없음 (현재). 따라서 **표시만** + 사용자가 `/plugin` 으로 직접 확인.
+
+이유: P1 카테고리 (사용자 흐름의 미싱 링크) 5건 중 마지막 2건 처리. 보수적 디폴트 + 사용자 의도 존중.
+
+---
+
 ## [1.21.0] - 2026-05-08
 
 ### Added (P1 — `/release` 커맨드)

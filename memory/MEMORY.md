@@ -6,6 +6,52 @@
 
 ---
 
+## 2026-05-08: v1.22.0 — P1 묶음 (MCP 프리셋 skill + session-start plugin 표시)
+
+**카테고리:** 결정
+
+### 배경
+P1 카테고리 5건 중 3건 (`/upgrade`, `/release`, P0 4건) 완료. 남은 2건 (MCP 프리셋, plugin health check) 둘 다 작은 작업이라 한 PR 에 묶음.
+
+### 결정
+
+**MCP 프리셋 — skill 로만 제공, 자동 활성화 X**:
+- `settings.{stack}.json` 에 `mcpServers` 디폴트 채우는 안을 검토 → 배제.
+- 이유: 잘못된 환경변수 (`${DATABASE_URL}` 미설정) 로 매 세션이 npx 다운로드 또는 connection error 로 깨질 수 있음. 사용자가 의식적으로 활성화하는 것이 안전.
+- 결정: `.claude/skills/mcp-presets.md` 에 스택별 snippet 만. 사용자가 `settings.local.json` (개인) 또는 `settings.json` (팀 공유) 에 직접 붙여넣음.
+- 5개 MCP 커버: postgres, filesystem, github, puppeteer (Next.js), fetch (marketing).
+
+**Plugin health check — 표시만, 검증 X**:
+- session-start.sh 가 enabledPlugins 의 plugin 키를 `claude plugin list` 로 검증 가능한지 검토 → 그런 CLI 명령 없음.
+- Claude Code 내부 plugin 설치 상태는 외부 bash hook 에서 알 수 없음.
+- 결정: enabledPlugins 키 한 줄 표시 + `/plugin install` 안내. 사용자가 `/plugin` 으로 직접 확인.
+- settings.json + settings.local.json 합집합 — 개인 plugin 도 표시 (jq -s `.[]` 가 아닌 `to_entries[]` 로 두 파일 union 처리).
+
+### 의식적 배제
+
+- **mcpServers 디폴트 활성화** — 파괴 위험 vs 편의성. 안전 우선.
+- **plugin 자동 설치** — `/plugin install` 은 사용자 동의 필요. hook 에서 자동 호출 부적절.
+- **enabledPlugins 미설치 plugin 강제 제거** — 사용자가 임시로 비활성화한 것일 수 있음.
+
+### 변경 파일
+```
+.claude/skills/mcp-presets.md         # 신규 (~140줄)
+.claude/hooks/session-start.sh        # +10줄 (Plugins 표시)
+README.md, CHANGELOG.md, VERSION (1.21.0 → 1.22.0)
+```
+
+### P1 카테고리 마무리
+| P1 항목 | 버전 | 상태 |
+|---------|------|------|
+| /upgrade selective diff | v1.20.0 | ✅ |
+| /release 자동화 | v1.21.0 | ✅ |
+| MCP 프리셋 | v1.22.0 | ✅ |
+| Plugin health check | v1.22.0 | ✅ (표시만) |
+
+P1 5건 (#5–#8 + P0) 모두 완료. 다음은 P2 (DevOps/Infra, Observability, 추가 스택, AI prompt regression) 또는 P3 (i18n, 텔레메트리, plugin marketplace).
+
+---
+
 ## 2026-05-08: v1.21.0 — P1 `/release` 커맨드 (SemVer + CHANGELOG 동기화 + PR 체인)
 
 **카테고리:** 결정
