@@ -12,6 +12,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.35.0] - 2026-05-11
+
+### Added (보안 강화 — secret commit 차단 + dependency audit 알림)
+
+**A. `safety-guard.sh` — secret commit 차단**:
+- `git commit` 실행 시 staged 파일 검사 (`git diff --cached --name-only`)
+- 다음 patterns 매치 시 **차단 + 안내**:
+  - `.env`, `.env.local`, `.env.production`, `.env.development`, `.env.staging`
+  - `*.pem`, `*.key`, `*.p12`, `*.pfx`
+  - `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519` (SSH private keys)
+  - `credentials.json`, `.npmrc`, `.pypirc` (token 보유)
+- 명시적 예외: `.env.example`, `*.pub` 등 (예시·공개 파일은 OK)
+- 모든 브랜치 적용 (보호 브랜치 무관 — secret 은 어디든 위험)
+
+**B. `post-edit-lint.sh` — dependency 파일 변경 시 audit 알림**:
+- 다음 파일 편집 감지 시 **스택별 audit 명령 + security-reviewer agent 권장 출력**:
+  - npm: `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock` → `npm audit` / `pnpm audit` / `yarn audit`
+  - Go: `go.mod`, `go.sum` → `govulncheck ./...`
+  - Python: `pyproject.toml`, `uv.lock`, `poetry.lock`, `requirements.txt` → `uv pip audit` / `pip-audit` / `safety check`
+  - Rust: `Cargo.toml`, `Cargo.lock` → `cargo audit`
+  - Flutter: `pubspec.yaml`, `pubspec.lock` → `dart pub outdated`
+  - Ruby: `Gemfile`, `Gemfile.lock` → `bundler-audit check`
+  - JVM: `pom.xml`, `build.gradle`, `build.gradle.kts` → `./gradlew dependencyCheckAnalyze`
+
+### Why
+기존 `security-reviewer` agent 가 `/pr` 단계에서만 자동 호출 — dependency 추가 시점엔 silent. 새 dependency 가 CVE 가지고 PR 까지 가야 발견. **편집 시점에 즉시 audit 알림** 으로 발견 cycle 단축.
+
+Secret commit 은 한 번 push 되면 git history 에 영구 (rewrite 비용 큼). PreToolUse hook 으로 commit **이전** 단계에서 차단이 가장 안전.
+
+### 의식적 배제
+- **main 브랜치 commit 자체 차단** — 사용자 의도된 commit (release 등) 도 막음. push 차단으로 충분.
+- **자동 `npm audit` 실행** — hook 자체에서 audit 돌리면 매 dep 변경마다 수십초 지연. 알림만, 실행은 사용자.
+- **`.env` 내용 스캔 (heuristic)** — 파일명만 검사. 내용 스캔은 false positive 위험 + 별도 도구 (gitleaks, trufflehog) 영역.
+
+### 변경 파일
+- `.claude/hooks/safety-guard.sh`: `git commit` case + secret pattern 추가 (~20줄)
+- `.claude/hooks/post-edit-lint.sh`: 의존성 파일 case + 스택별 audit 명령 (~20줄)
+- `.claude-plugin/plugin.json`: 1.34.0 → 1.35.0 (sync)
+- README.md / README.en.md: 배지
+- CHANGELOG.md, VERSION, MEMORY.md
+
+### Test
+로컬 4 시나리오 통과:
+- 정상 파일 commit → 통과 (exit 0)
+- `.env` staged commit → 차단 (exit 2 + 안내)
+- `.env.example` staged commit → 통과 (예시 파일은 OK)
+- `id_rsa` staged commit → 차단 (exit 2 + 안내)
+- 7개 dependency 파일 모두 정확한 스택별 audit 명령 출력
+
+---
+
 ## [1.34.0] - 2026-05-11
 
 ### Changed (Onboarding — `bootstrap.sh` 안내 강화)

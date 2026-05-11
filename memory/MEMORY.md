@@ -6,6 +6,80 @@
 
 ---
 
+## 2026-05-11: v1.35.0 — 보안 강화 (secret commit 차단 + dep audit 알림)
+
+**카테고리:** 결정
+
+### 배경
+이전 추천의 C 카테고리. 두 영역:
+1. dependency 변경 시 즉시 보안 검토 권장
+2. main 브랜치 또는 secret 파일 안전장치
+
+기존 상태:
+- `security-reviewer` agent 는 `/pr` 단계에서만 자동 호출 → dep 변경이 PR 까지 가야 발견
+- `safety-guard.sh` 는 보호 브랜치 force push / reset --hard / amend 차단 — secret commit 은 통과
+
+### 결정
+
+**A. Secret commit 차단** (`safety-guard.sh`):
+- `git commit` 실행 직전 `git diff --cached --name-only` 검사
+- secret 파일명 (`.env`, `*.pem`, `*.key`, `id_rsa`, `credentials.json`, `.npmrc` 등) 매치 시 exit 2
+- 모든 브랜치 적용 — secret 은 어디든 위험
+- `.env.example` 같은 예시 파일은 정확 매치 X (통과)
+
+**B. Dependency 파일 audit 알림** (`post-edit-lint.sh`):
+- 7개 스택의 dep 파일 편집 시 스택별 audit 명령 출력 + `security-reviewer` agent 권장
+- npm/go/python/rust/flutter/ruby/jvm 커버
+
+### 핵심 정책 결정
+
+**1. main commit 자체 차단 거부**
+- 검토 → 거부. 사용자 의도된 commit (release) 도 막음.
+- push 차단으로 충분 (이미 force push 차단 + PR 워크플로 권장).
+
+**2. 자동 audit 실행 거부**
+- hook 에서 `npm audit` 직접 실행 안 함 — 매 dep 변경마다 수십초 지연.
+- 알림만, 실행은 사용자 결정.
+
+**3. 파일명만 검사, 내용 스캔 X**
+- secret pattern (e.g., `AWS_SECRET_KEY=`) 내용 스캔은 false positive + 별도 도구 (gitleaks, trufflehog) 영역.
+- 파일명만으로도 80% 의 secret 누출 catch.
+
+**4. 보호 브랜치 무관**
+- secret 은 main 이든 feature 든 어디 commit 해도 위험 (git history 영구).
+- 보호 브랜치 한정 X, 모든 브랜치 적용.
+
+### 의식적 배제
+
+- main commit 차단 — 너무 엄격
+- 자동 audit 실행 — 시간 비용
+- 내용 스캔 — false positive
+- secret rewrite 자동화 — 위험 (git history 변경)
+- `.env*` 전체 차단 — `.env.example`, `.env.template` 등 예시 파일 정당
+
+### 변경 파일
+```
+.claude/hooks/safety-guard.sh        # git commit case + secret patterns (~20줄)
+.claude/hooks/post-edit-lint.sh      # dep 파일 case + 스택별 audit 명령 (~20줄)
+.claude-plugin/plugin.json           # 1.34.0 → 1.35.0
+README.md / README.en.md             # 배지
+CHANGELOG.md, VERSION                # 1.34.0 → 1.35.0
+```
+
+### 측정 — 보안 catch cycle
+| 시나리오 | 이전 | 변경 후 |
+|---------|------|--------|
+| `.env` staged commit | git push → GitHub 누출 | commit 시점 차단 |
+| 신규 dep CVE | `/pr` 의 security-reviewer | edit 시 즉시 알림 |
+| SSH key (`id_rsa`) accidental commit | 사용자가 인지 못 하면 push | commit 차단 + 가이드 |
+
+### 다음 보안 후보 (낮은 우선순위)
+1. `git push` (non-force) 보호 브랜치 차단 — PR 워크플로 강제
+2. CI 에 gitleaks 또는 trufflehog 통합 — 내용 스캔
+3. dependency-review-action 의 GitHub Actions 통합
+
+---
+
 ## 2026-05-11: v1.34.0 — Onboarding 강화 (bootstrap.sh 안내 풍부화)
 
 **카테고리:** 결정
