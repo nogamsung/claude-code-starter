@@ -204,6 +204,71 @@ jobs:
                     | grep -v node_modules | grep -v .worktrees)
           [ "$FAIL" = "0" ]
 
+  settings-consistency-lint:
+    name: settings.{stack}.json — common base must be present in all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enforce common plugins/allow/deny across all stacks
+        run: |
+          set -euo pipefail
+
+          # 14 settings.{stack}.json 이 반드시 가져야 할 base.
+          # 누락 시 maintainer 가 새 stack 추가 또는 기존 변경에서 빠뜨린 것 — 즉시 catch.
+          REQUIRED_PLUGINS='[
+            "claude-md-management@claude-plugins-official",
+            "commit-commands@claude-plugins-official",
+            "github@claude-plugins-official",
+            "hookify@claude-plugins-official"
+          ]'
+          REQUIRED_ALLOW='[
+            "Bash(cp *)",
+            "Bash(git *)",
+            "Bash(mkdir *)",
+            "Bash(mv *)",
+            "Bash(touch *)"
+          ]'
+          REQUIRED_DENY='[
+            "Bash(git push --force *)",
+            "Bash(git push -f *)",
+            "Bash(rm -rf /)",
+            "Bash(rm -rf ~*)"
+          ]'
+
+          FAIL=0
+          for f in .claude/templates/settings.*.json; do
+            STACK=$(basename "$f" .json | sed 's/^settings\.//')
+
+            # plugins
+            MISSING_P=$(jq --argjson req "$REQUIRED_PLUGINS" \
+              '$req - (.enabledPlugins // {} | keys)' "$f")
+            if [ "$(echo "$MISSING_P" | jq 'length')" -gt 0 ]; then
+              echo "❌ $STACK: missing plugins: $(echo "$MISSING_P" | jq -c .)"
+              FAIL=1
+            fi
+
+            # allow
+            MISSING_A=$(jq --argjson req "$REQUIRED_ALLOW" \
+              '$req - (.permissions.allow // [])' "$f")
+            if [ "$(echo "$MISSING_A" | jq 'length')" -gt 0 ]; then
+              echo "❌ $STACK: missing allow: $(echo "$MISSING_A" | jq -c .)"
+              FAIL=1
+            fi
+
+            # deny
+            MISSING_D=$(jq --argjson req "$REQUIRED_DENY" \
+              '$req - (.permissions.deny // [])' "$f")
+            if [ "$(echo "$MISSING_D" | jq 'length')" -gt 0 ]; then
+              echo "❌ $STACK: missing deny: $(echo "$MISSING_D" | jq -c .)"
+              FAIL=1
+            fi
+
+            [ "$FAIL" = "0" ] && printf "✅ %-15s plugins/allow/deny base ok\n" "$STACK"
+          done
+
+          [ "$FAIL" = "0" ]
+
   template-line-cap:
     name: Stack templates — CLAUDE.{stack}.md ≤ 120 lines
     runs-on: ubuntu-latest

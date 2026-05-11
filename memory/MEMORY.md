@@ -6,6 +6,73 @@
 
 ---
 
+## 2026-05-11: v1.32.0 — Maintainer 가드 (settings.{stack}.json consistency lint)
+
+**카테고리:** 결정
+
+### 배경
+v1.30.0/v1.31.0 의 token-audit 라운드 후속. 이번엔 사용자 토큰 절감이 아닌 **maintainer 측 누락 catch**.
+
+측정: 14개 `settings.{stack}.json` 중 13개 항목이 모두 동일 = 4 plugins + 5 allow + 4 deny.
+
+문제: v1.27.0 (텔레메트리 hook) 같이 14 settings 동시 편집이 필요한 PR 에서 1~2개 누락 시 silent 통과 → 일부 사용자만 hook 미설치 → 발견 후 hot-fix 비용 큼.
+
+### 결정
+
+**`settings-consistency-lint` CI job (11번째)** — 14 settings 가 다음 base 누락 시 fail:
+- enabledPlugins: claude-md-management, commit-commands, github, hookify (4)
+- permissions.allow: cp, git, mkdir, mv, touch (5)
+- permissions.deny: rm -rf /, rm -rf ~*, git push --force, git push -f (4)
+
+총 13개 base 항목. 각 stack 은 추가 항목 자유, base 누락만 차단.
+
+### 핵심 정책 결정 사유
+
+**1. 공통 추출 + merge 시스템 거부**
+- `_common.json` + deep-merge 안 검토 → 거부
+- 이유: bootstrap.sh 의 단순함이 핵심 가치 — install 흐름 복잡화 안 됨
+- lint 만으로 maintainer 누락 충분히 catch
+
+**2. base 13개만 강제, hooks 등 다양성 인정**
+- 코드 stack (kotlin/go/python/nextjs/flutter) 은 PostToolUse 에 lint hook 필요
+- marketing/sales/product 는 코드 없으니 lint hook 불필요
+- 공통 강제 = base 13개만, stack 별 차이는 그대로
+
+**3. v1.27.0 시나리오 재발 방지**
+- 텔레메트리 hook 14 settings 동시 추가 — 만약 1개 누락했으면? 일부 사용자만 텔레메트리 작동 안 함 → 데이터 편향. CI 가 catch 했어야.
+- 이번 가드가 그 클래스의 누락을 자동화.
+
+### 의식적 배제
+
+- **공통 base 자동 채우기** — 의도 없는 자동 수정. lint 만 (read-only)
+- **stack 별 hook 검증** — 다양성 인정 (marketing/sales/product 는 lint hook 없음)
+- **enabledPlugins 의 stack-specific plugin 강제** (kotlin-lsp, typescript-lsp 등) — stack 마다 다르므로 stack 별 추가 가드는 부담. base 만.
+
+### 변경 파일
+```
+.github/workflows/install-matrix.yml    # settings-consistency-lint job (10→11 jobs)
+.claude-plugin/plugin.json              # 1.31.0 → 1.32.0 (sync)
+README.md / README.en.md                # 배지
+CHANGELOG.md, VERSION                   # 1.31.0 → 1.32.0
+```
+
+### 다음 audit 후보
+1. agents body 의 워크플로 중복 (5 stack generator 가 워크플로 90% 공유) — on-invoke 라 우선순위 낮음
+2. commands description (평균 70자) — 후순위
+3. CLAUDE.md 의 sub-CLAUDE.md (모노레포) consistency 검증
+
+### Token-audit 시리즈 정리
+
+| 버전 | audit 영역 | 결과 |
+|------|----------|------|
+| v1.30.0 | agents/*.md frontmatter description | ui-designer 만 multi-line 안티패턴 → 1줄 fix + lint |
+| v1.31.0 | templates/CLAUDE.{stack}.md | product 만 폭증 (172→72) + ≤120 cap |
+| v1.32.0 | templates/settings.{stack}.json 공통 base | 모두 통과, 누락 catch CI |
+
+3 라운드 모두 측정 → 이상치 fix → CI 가드 패턴 일관.
+
+---
+
 ## 2026-05-11: v1.31.0 — Token audit 라운드 2 (CLAUDE.product.md + template cap)
 
 **카테고리:** 결정
