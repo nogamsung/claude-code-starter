@@ -12,6 +12,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.33.0] - 2026-05-11
+
+### Added (Maintainer 가드 — `settings-hooks-lint` CI job)
+
+**14 `settings.{stack}.json` 의 hook 계약 검증** (`install-matrix.yml`):
+- 12번째 job (이번 PR 부터 12 jobs)
+- 측정 결과 두 layer 발견:
+  - **모든 14 stack 공통 (3 hooks)**: SessionStart `session-start.sh`, PreToolUse `safety-guard.sh`, PostToolUse `usage-counter.sh`
+  - **코드 stack 11개만 (2 추가)**: PreToolUse `pre-push.sh`, PostToolUse `post-edit-lint.sh` (marketing/sales/product 는 코드 없으니 제외)
+- 누락 시 즉시 fail. v1.27.0 (텔레메트리 hook 14개 동시 추가) 같은 PR 의 누락 catch.
+
+### Why
+v1.32.0 의 `settings-consistency-lint` (plugin/allow/deny 13개) 에 이은 hook contract 검증. settings.json 의 두 영역 (data: plugin/allow/deny + behavior: hooks) 모두 maintainer 누락 가드 완비.
+
+### 의식적 배제
+
+- **PostToolUse 의 matcher 검증** — `Edit|Write|MultiEdit` 같은 matcher 패턴은 hook 별 차이 정당. command 명령만 검증.
+- **Stop hook 강제** — 코드 stack 만 Stop 정의되지만 명령 패턴이 stack 별 매우 다름 (`./gradlew test`, `go test ./...`, etc.) — 별도 lint 부담 큼. 우선순위 낮음.
+- **자동 hook 추가** — 의도 없는 수정. read-only lint 만.
+
+### Changed
+
+- `.github/workflows/install-matrix.yml`: 11 jobs → **12 jobs**
+- 버전 배지 1.32.0 → 1.33.0 (한국어 + 영문 README + plugin.json)
+
+### Token-audit + maintainer-guard 시리즈 (v1.30.0~v1.33.0 4 라운드)
+
+| 버전 | 영역 | 결과 |
+|------|------|------|
+| v1.30.0 | agents description | ui-designer 안티패턴 fix + lint |
+| v1.31.0 | templates/CLAUDE.md | product 폭증 fix (172→72) + ≤120 cap |
+| v1.32.0 | settings.json data (plugin/allow/deny) | 누락 catch CI |
+| **v1.33.0** | **settings.json behavior (hooks)** | **누락 catch CI** |
+
+이유: v1.32.0 가 settings 의 data layer 가드, 이번이 behavior layer 가드. 두 영역 완성.
+
+---
+
 ## [1.32.0] - 2026-05-11
 
 ### Added (Maintainer 가드 — `settings-consistency-lint` CI job)
