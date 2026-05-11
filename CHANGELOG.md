@@ -12,6 +12,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.32.0] - 2026-05-11
+
+### Added (Maintainer 가드 — `settings-consistency-lint` CI job)
+
+**14 `settings.{stack}.json` 의 공통 base 일관성 검증** (`install-matrix.yml`):
+- 11번째 job (이번 PR 부터 11 jobs)
+- 측정 결과 14개 모두 다음 13개 항목을 동일하게 포함:
+  - **enabledPlugins 4개**: `claude-md-management`, `commit-commands`, `github`, `hookify` (모두 `@claude-plugins-official`)
+  - **permissions.allow 5개**: `Bash(cp *)`, `Bash(git *)`, `Bash(mkdir *)`, `Bash(mv *)`, `Bash(touch *)`
+  - **permissions.deny 4개**: `Bash(rm -rf /)`, `Bash(rm -rf ~*)`, `Bash(git push --force *)`, `Bash(git push -f *)`
+- CI 가 14개 settings 중 하나라도 위 base 항목 누락 시 즉시 fail
+
+### Why
+v1.27.0 (텔레메트리 hook) 같이 14 settings 동시 변경이 필요한 PR 에서 누락 발생 시 silent → 일부 사용자만 hook 미설치. 발견 후 hot-fix 비용 큼. **maintainer 측 누락을 PR 단계에서 catch**.
+
+### 의식적 배제
+- **공통 항목 추출 + merge 시스템** (e.g., `_common.json` + deep-merge) — install 흐름 복잡화. 우리 가치 (10초 setup) 와 충돌. lint 만으로 충분.
+- **stack 별 hook (PostToolUse 등) consistency** — stack 별 다양성 인정 (marketing/sales/product 는 lint hook 불필요). 공통 base 만 강제.
+- **plugin / allow / deny 의 정확한 13개 fix** — 사용자가 추가 항목 자유. 공통 13개만 누락 차단.
+
+### Changed
+
+- `install-matrix.yml`: 10 jobs → 11 jobs
+- 버전 배지 1.31.0 → 1.32.0 (한국어 + 영문 README + plugin.json)
+
+이유: v1.30.0 (agent description) + v1.31.0 (template line cap) 에 이은 token-audit 라운드 3 — 이번엔 maintainer 측 일관성 가드. 13 릴리스 동안 14개 settings 동시 편집 시 누락 catch 메커니즘 부재였음. 자동화로 해소.
+
+---
+
 ## [1.31.0] - 2026-05-11
 
 ### Fixed (Token audit — `templates/CLAUDE.{stack}.md`)
