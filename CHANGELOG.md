@@ -12,6 +12,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.31.0] - 2026-05-11
+
+### Fixed (Token audit — `templates/CLAUDE.{stack}.md`)
+
+**`CLAUDE.product.md` 압축 — 172 → 72줄 (100줄 / 58% 절감)**:
+- 이전: pm-skills 의 모든 plugin command 를 카테고리별 7개 섹션 (53줄) + 8개 플러그인 설치 명령 (15줄)
+- 변경:
+  - plugin command 나열 제거 — Claude Code 가 plugin command 를 자동 인식. CLAUDE.md 에 다시 적을 필요 없음. 인덱스 1줄로 압축.
+  - 플러그인 설치 명령 제거 — README 와 `init.md` 에 이미 명시. CLAUDE.md 는 "README 참고" 한 줄.
+  - 디렉토리 구조 압축 — 35줄 → 14줄 (sub 디렉토리 컴멘트만 유지)
+- MUST/NEVER 정책은 그대로 (정보 손실 0)
+
+### Added (CI 가드 — `template-line-cap` job)
+
+`install-matrix.yml` 에 10번째 job (이번 PR 부터 10 jobs):
+- 모든 `.claude/templates/CLAUDE.*.md` ≤ **120줄** (전체 ≤300 보다 엄격)
+- 사용자 프로젝트 매 세션 로드되는 자산이라 더 엄격 cap 정당화
+- 현재 14개 template 평균 78줄, 최대 100줄 (CLAUDE.infra.md). 여유 20% 두고 cap.
+
+### Changed
+
+- `.github/workflows/install-matrix.yml`: 9 jobs → 10 jobs
+- 버전 배지 1.30.0 → 1.31.0 (한국어 + 영문 README + plugin.json 동기)
+
+### 토큰 절감 측정 (사용자 프로젝트 매 세션)
+| 모드 | 이전 | 변경 후 | 절감 |
+|------|------|--------|------|
+| product | 172줄 | 72줄 | 100줄 / 58% |
+| 그 외 13개 | 평균 78줄 | 그대로 | — |
+
+`/init product` 사용자에 한정되지만 매 세션 ~250 토큰 절감 (대략 줄당 2.5 토큰).
+
+이유: 12 릴리스 동안 `templates/CLAUDE.{stack}.md` token audit 0회. 측정 결과 product 만 다른 9개 평균 80줄의 2.15배. plugin command 자동 인식 사실을 고려 안 한 nested duplication 이 원인. 단축 + CI 가드로 향후 동일 패턴 차단.
+
+---
+
 ## [1.30.0] - 2026-05-08
 
 ### Fixed (Token audit — agent description)

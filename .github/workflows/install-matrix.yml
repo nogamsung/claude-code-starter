@@ -204,6 +204,29 @@ jobs:
                     | grep -v node_modules | grep -v .worktrees)
           [ "$FAIL" = "0" ]
 
+  template-line-cap:
+    name: Stack templates — CLAUDE.{stack}.md ≤ 120 lines
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enforce per-stack template cap (stricter than 300)
+        run: |
+          set -euo pipefail
+          MAX=120
+          FAIL=0
+          for f in .claude/templates/CLAUDE.*.md; do
+            LINES=$(wc -l < "$f" | tr -d ' ')
+            if [ "$LINES" -gt "$MAX" ]; then
+              echo "❌ $f: $LINES > $MAX"
+              echo "   → 사용자 프로젝트 매 세션 토큰. 상세는 .claude/skills/ 로 이관."
+              FAIL=1
+            else
+              printf "✅ %3d lines  %s\n" "$LINES" "$(basename "$f")"
+            fi
+          done
+          [ "$FAIL" = "0" ]
+
   agent-description-lint:
     name: Agent description — single-line + length cap
     runs-on: ubuntu-latest
