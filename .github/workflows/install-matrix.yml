@@ -204,6 +204,67 @@ jobs:
                     | grep -v node_modules | grep -v .worktrees)
           [ "$FAIL" = "0" ]
 
+  settings-hooks-lint:
+    name: settings.{stack}.json — required hooks present in all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enforce common + code-stack hook contracts
+        run: |
+          set -euo pipefail
+
+          # 모든 14 stack 공통 hook 계약
+          REQUIRED_ALL='session-start.sh safety-guard.sh usage-counter.sh'
+
+          # 코드 stack 만 (marketing/sales/product 제외) 추가 hook
+          REQUIRED_CODE='pre-push.sh post-edit-lint.sh'
+
+          NON_CODE_STACKS='marketing sales product'
+
+          FAIL=0
+          for f in .claude/templates/settings.*.json; do
+            STACK=$(basename "$f" .json | sed 's/^settings\.//')
+
+            # stack 의 모든 hook 명령에서 *.sh 추출 → 공백 분리 단일 문자열
+            HOOKS=$(jq -r '
+              [.hooks // {}] | map(to_entries[]) | .[].value | map(.hooks[]?.command // empty) | .[]
+            ' "$f" 2>/dev/null | grep -oE '[a-z-]+\.sh' | sort -u | tr '\n' ' ')
+
+            STACK_FAIL=0
+
+            # 1) 공통 hook 검증 (substring 매칭)
+            for required in $REQUIRED_ALL; do
+              case " $HOOKS " in
+                *" $required "*) ;;
+                *) echo "❌ $STACK: missing required hook (all stacks): $required"; STACK_FAIL=1 ;;
+              esac
+            done
+
+            # 2) 코드 stack 추가 hook 검증
+            IS_NON_CODE=false
+            for nc in $NON_CODE_STACKS; do
+              [ "$STACK" = "$nc" ] && IS_NON_CODE=true && break
+            done
+
+            if [ "$IS_NON_CODE" = "false" ]; then
+              for required in $REQUIRED_CODE; do
+                case " $HOOKS " in
+                  *" $required "*) ;;
+                  *) echo "❌ $STACK: missing required hook (code stack): $required"; STACK_FAIL=1 ;;
+                esac
+              done
+            fi
+
+            if [ "$STACK_FAIL" = "0" ]; then
+              printf "✅ %-15s %s\n" "$STACK" "$HOOKS"
+            else
+              FAIL=1
+            fi
+          done
+
+          [ "$FAIL" = "0" ]
+
   settings-consistency-lint:
     name: settings.{stack}.json — common base must be present in all
     runs-on: ubuntu-latest

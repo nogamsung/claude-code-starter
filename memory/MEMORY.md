@@ -6,6 +6,74 @@
 
 ---
 
+## 2026-05-11: v1.33.0 — Maintainer 가드 라운드 2 (settings hooks contract lint)
+
+**카테고리:** 결정
+
+### 배경
+v1.32.0 (settings-consistency-lint) 가 settings.json 의 **data layer** (plugin/allow/deny) 누락 catch. 이번엔 **behavior layer** (hooks) 도 같은 패턴으로.
+
+측정: 14 settings 의 hooks 패턴 — 두 layer 발견:
+1. 모든 14 stack 공통 (3 hooks): session-start, safety-guard, usage-counter
+2. 코드 stack 11개만 (2 추가): pre-push, post-edit-lint
+
+### 결정
+
+**`settings-hooks-lint` CI job (12번째)**:
+- 모든 14 stack 의 hooks 에서 *.sh 명령 추출
+- 공통 3개 hook 누락 시 fail
+- 코드 stack (marketing/sales/product 제외 11개) 의 추가 2개 hook 누락 시 fail
+
+### 핵심 정책 결정
+
+**1. 코드 stack 분류 = 파일명 기반**
+- `marketing`/`sales`/`product` = 비코드 (3개)
+- 그 외 11개 = 코드 (kotlin/kotlin-multi/go/go-multi/python/python-multi/nextjs/nextjs-multi/flutter/infra/monorepo)
+- 단순하고 명확. permissions.allow 의 `Bash(./gradlew *)` 같은 마커로 추론할 수도 있지만 unnecessary complexity.
+
+**2. matcher 강제 X**
+- PostToolUse 의 `matcher: "Edit|Write|MultiEdit"` 패턴은 hook 별 정당한 차이.
+- command (실행 sh) 만 강제, matcher 는 자유.
+
+**3. Stop hook 강제 X**
+- 코드 stack 만 Stop 정의 (test/lint 명령). 명령 패턴이 매우 stack 별 (./gradlew test, go test, npm test, ...).
+- 별도 lint 가드 부담 vs 가치 — 보류. 우선순위 낮음.
+
+### 의식적 배제
+
+- **자동 hook 채우기** — 의도 없는 수정 위험. read-only lint 만.
+- **stack 별 Stop hook 명령 검증** — 다양성 인정. 별도 작업으로 분리.
+- **monorepo 의 hooks 가 11개 코드 stack 의 union 인지** — 매우 복잡. 일단 base 만.
+
+### 로컬 검증 시 zsh 함정
+
+`for r in $REQUIRED_ALL` 가 zsh 에서는 word splitting 안 됨 (zsh 디폴트 X). 검증 시 명시적 `bash -c "..."` 또는 array `("${REQUIRED_ALL[@]}")` 사용.
+
+CI 의 ubuntu bash 는 IFS=' ' 디폴트라 정상 동작. 이 함정은 **검증 환경 차이가 silent 통과 일으킬 수 있다** 는 교훈.
+
+### 변경 파일
+```
+.github/workflows/install-matrix.yml    # settings-hooks-lint job (11→12 jobs)
+.claude-plugin/plugin.json              # 1.32.0 → 1.33.0 (sync)
+README.md / README.en.md                # 배지
+CHANGELOG.md, VERSION                   # 1.32.0 → 1.33.0
+```
+
+### Maintainer-guard 시리즈 (v1.32.0 + v1.33.0)
+| 버전 | settings layer | 결과 |
+|------|----------|------|
+| v1.32.0 | data (plugin/allow/deny 13) | 모두 통과, 누락 catch |
+| v1.33.0 | behavior (hooks: 공통 3 + 코드 2) | 모두 통과, 누락 catch |
+
+settings.json 의 두 layer 가드 완비. v1.27.0 같은 14 settings 동시 편집 PR 누락 catch 자동화.
+
+### 다음 audit 후보 (낮은 우선순위)
+1. agents body 워크플로 중복 (5 stack generator 90% 공유) — on-invoke
+2. commands description (평균 70자 — 후순위)
+3. monorepo hooks union 검증 — 복잡
+
+---
+
 ## 2026-05-11: v1.32.0 — Maintainer 가드 (settings.{stack}.json consistency lint)
 
 **카테고리:** 결정
