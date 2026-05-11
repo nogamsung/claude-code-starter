@@ -6,6 +6,66 @@
 
 ---
 
+## 2026-05-11: v1.31.0 — Token audit 라운드 2 (CLAUDE.product.md + template cap)
+
+**카테고리:** 결정
+
+### 배경
+v1.30.0 에서 agent description audit. 다음 후보로 **`templates/CLAUDE.{stack}.md` 14개** 측정. `CLAUDE.product.md` 가 172줄로 다른 9개 평균 80줄의 2.15배. 12 릴리스 동안 점검 0회.
+
+### 결정
+
+**A. CLAUDE.product.md 172 → 72줄 (100줄 / 58% 절감)**:
+- pm-skills plugin command 카테고리별 53줄 나열 → 인덱스 1줄
+  - **핵심 통찰**: Claude Code 는 plugin command 를 자동 인식한다. CLAUDE.md 에 다시 나열하면 nested duplication.
+- 플러그인 설치 명령 15줄 → "README 참고" 1줄
+- 디렉토리 구조 35줄 → 14줄 (sub 디렉토리 코멘트만 유지)
+
+**B. CI template-line-cap job (10번째 job)**:
+- `templates/CLAUDE.*.md` ≤ 120줄 (전체 CLAUDE.md ≤ 300 의 40%)
+- 사용자 프로젝트 매 세션 로드되는 자산이라 더 엄격
+- 현재 14개 평균 78줄, 최대 100줄 (CLAUDE.infra.md)
+
+### 핵심 정책 결정
+
+**1. plugin command 자동 인식 활용**
+- Claude Code 가 marketplace 등록된 plugin 의 command 를 자동 인식. CLAUDE.md 에 다시 적는 건 stale 위험 + 토큰 낭비.
+- 다른 모드 (marketing, sales) 도 같은 패턴 점검 필요했으나 product 만 폭증. 다른 건 이미 압축됨 (76, 81줄).
+
+**2. ≤120줄 cap (≤300 보다 엄격)**
+- templates 는 사용자 프로젝트 루트에 복사되어 매 세션 로드. ≤300 가드만으로 부족.
+- 현재 평균 78줄 → 120줄 = 50% 여유. 미래 확장도 가능하면서 안티패턴은 차단.
+
+**3. MUST/NEVER 는 그대로**
+- 정책 문구는 정보 손실 가치 큼 — 압축 대상 X. 디렉토리 구조 / 명령어 나열만 압축.
+
+### 의식적 배제
+
+- **다른 13개 template 도 일괄 단축** — 이미 평균 78줄 적정 수준. 정보 손실 위험.
+- **CLAUDE.product.md 의 7개 카테고리 이름 (Discovery/Strategy/.../Research) 도 제거** — 사용자가 mental model 잡는 구조이므로 유지.
+- **CLAUDE.md ≤ 300 가드 폐기** — templates 외 사용자 직접 작성 CLAUDE.md (모노레포의 sub-CLAUDE.md 등) 에 여전히 ≤300 가드 필요. 이중 가드.
+
+### 토큰 절감 측정
+- `/init product` 사용자 ~250 토큰/세션 (줄당 2.5 토큰 추정)
+- 다른 모드 영향 없음
+- 향후 추가될 template 의 폭증 차단 (CI 가드 효과)
+
+### 변경 파일
+```
+.claude/templates/CLAUDE.product.md     # 172 → 72줄
+.github/workflows/install-matrix.yml    # template-line-cap job (9→10 jobs)
+.claude-plugin/plugin.json              # 1.30.0 → 1.31.0 (sync)
+README.md / README.en.md                # 배지
+CHANGELOG.md, VERSION                   # 1.30.0 → 1.31.0
+```
+
+### 다음 audit 후보
+1. `templates/settings.{stack}.json` 의 enabledPlugins / permissions 중복
+2. commands description (현재 평균 70자 — 후순위)
+3. agents body 의 워크플로 정의 중복 (예: 5개 stack 의 generator agent 가 같은 워크플로 90% 공유)
+
+---
+
 ## 2026-05-08: v1.30.0 — Token audit (ui-designer description fix + CI lint 가드)
 
 **카테고리:** 결정
