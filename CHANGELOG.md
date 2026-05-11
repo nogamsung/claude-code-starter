@@ -12,6 +12,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.34.0] - 2026-05-11
+
+### Changed (Onboarding — `bootstrap.sh` 안내 강화)
+
+**install 모드 메시지 풍부화**:
+- 이전: 4줄 `/init` 옵션 나열만 — 사용자가 `/init` 후 무엇을 할지 모름
+- 변경: **첫 PR 까지의 4단계 워크플로** + 문서 링크 + 갱신/롤백 + 모드별 plugin 설치 안내
+
+```
+🚀 첫 사용자 5분 가이드:
+  1. /init                      # 스택 자동 감지 + 하네스 구성
+  2. /start <기능 이름>         # worktree + PRD + 자동 구현
+  3. /commit                    # 작업 후 → /pr 자동 제안
+  4. /pr → /merge               # 머지·태그·정리 자동 체인
+
+📚 자세히: README.md / README.en.md / "방법 A" 섹션
+🔧 갱신: /starter check  ·  /upgrade
+💬 모드별 plugin 설치: marketing/sales/product 안내
+```
+
+**update 모드 메시지 명확화**:
+- 이전: 2줄 (재시작 + `/starter check`)
+- 변경: 4줄 (현재→이전 버전 명시 + `/upgrade` 제안 + `/init` 재실행 안내 + rollback hot-fix 경로)
+
+### Why
+첫 install 사용자의 가장 큰 마찰은 "`/init` 다음에 뭐?" 였음. 4단계 워크플로 (`/init` → `/start` → `/commit` → `/pr+/merge`) 가 README 에는 있지만 bootstrap.sh 안내에는 빠져 있어 사용자가 README 를 읽어야 알 수 있었음. 직접 출력으로 단축.
+
+### Changed
+
+- `bootstrap.sh`: install/update 안내 heredoc 으로 재작성 (echo 라인 13 → cat heredoc 두 블록)
+- 버전 배지 1.33.0 → 1.34.0 (한국어 + 영문 README + plugin.json)
+
+### 의식적 배제
+- **모드별 자동 분기 (예: kotlin install 시 kotlin 안내만)** — bootstrap 시점엔 사용자가 어떤 모드 쓸지 모름. `/init` 이 분기 담당.
+- **rich text / 색상 강조** — 일부 터미널 미지원 (Windows cmd 등). emoji 만 사용.
+- **5단계 이상 가이드** — 5분 안에 못 읽음. 핵심 4단계 + 링크.
+
+이유: D 카테고리 (onboarding 강화) 첫 작업. 사용자 첫 경험의 마찰 감소가 채택률에 가장 큰 영향. 추가 자산 0, 텍스트만 변경.
+
+---
+
 ## [1.33.0] - 2026-05-11
 
 ### Added (Maintainer 가드 — `settings-hooks-lint` CI job)

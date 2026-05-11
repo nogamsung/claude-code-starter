@@ -6,6 +6,70 @@
 
 ---
 
+## 2026-05-11: v1.34.0 — Onboarding 강화 (bootstrap.sh 안내 풍부화)
+
+**카테고리:** 결정
+
+### 배경
+15 릴리스 동안 bootstrap.sh 의 install 안내가 4줄 `/init` 옵션 나열만. 사용자가 `/init` 후 다음 단계 모름 → README 읽으러 가야 함. 첫 사용자 마찰의 가장 큰 원인.
+
+### 결정
+
+**install 안내 → 4단계 워크플로 + 문서 링크 + 갱신/롤백 + plugin 설치 안내**:
+1. `/init` (스택 감지)
+2. `/start <기능>` (worktree + PRD + 자동 구현)
+3. `/commit` (→ `/pr` 자동 제안)
+4. `/pr → /merge` (머지·태그·정리)
+
+**update 안내 → 버전 변동 명시 + rollback 경로**:
+- `v$PREV → v$NEW` 표시
+- `/upgrade` 부분 갱신 확인 옵션
+- `/starter rollback` hot-fix 경로
+
+### 핵심 정책 결정
+
+**1. echo 라인 → cat heredoc**
+- 13줄 echo → cat <<'EOF' 한 블록. 가독성 + 단일 source.
+- 한글 + emoji 가 echo 에선 escape 필요 (heredoc 은 그냥 통과).
+
+**2. 모드별 자동 분기 X**
+- bootstrap 시점엔 사용자가 어떤 모드 쓸지 모름. `/init` 이 분기 담당.
+- 9개 모드 옵션은 한 줄 가로 나열로 압축 (이전 9줄 → 1줄).
+
+**3. 색상 강조 X**
+- ANSI 색상은 일부 터미널 미지원 (Windows cmd 등).
+- emoji 만 사용 (모든 모던 터미널 호환).
+
+### 의식적 배제
+
+- **rich text formatting** — 호환성 우선
+- **5단계 이상 가이드** — 5분 안에 못 읽음. 핵심 4 + 링크.
+- **mode-specific 안내 자동 출력** — 사용자 의도 모름. plugin 설치는 README 위임.
+
+### 변경 파일
+```
+bootstrap.sh                   # install/update 안내 (echo → cat heredoc)
+.claude-plugin/plugin.json     # 1.33.0 → 1.34.0 (sync)
+README.md / README.en.md       # 배지
+CHANGELOG.md, VERSION          # 1.33.0 → 1.34.0
+```
+
+### 측정 — onboarding 마찰 변화
+| 측면 | 이전 | 변경 후 |
+|------|------|--------|
+| install 안내 줄 수 | 13줄 (옵션만) | 22줄 (4단계 + 링크 + 갱신 + plugin) |
+| 첫 사용자 mental load | "/init 다음 뭐?" → README 검색 | 직접 출력에 4단계 명시 |
+| update 안내 줄 수 | 2줄 | 7줄 (버전 변동 + 옵션) |
+
+bootstrap 메시지는 install 시 1회만 출력 (매 세션 토큰 아님) → 늘려도 토큰 비용 0.
+
+### 다음 D 후보
+- ~~install 후 5분 가이드~~ → 이번 PR 으로 충족
+- bootstrap.sh 가 `--help` 옵션 출력 (현재 sed 로 헤더 추출, 출력 형식 비일관) — 후순위
+- `/init` 후 첫 PR 까지의 sample tutorial — 별도 docs/tutorial.md (선택)
+
+---
+
 ## 2026-05-11: v1.33.0 — Maintainer 가드 라운드 2 (settings hooks contract lint)
 
 **카테고리:** 결정

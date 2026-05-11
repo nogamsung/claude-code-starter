@@ -134,19 +134,38 @@ echo "✅ .claude/ 설치 완료 (버전: $NEW_VERSION)"
 echo ""
 
 if [ "$MODE" = "install" ]; then
-  echo "다음 단계:"
-  echo "  1. Claude Code에서 이 프로젝트를 여세요"
-  echo "  2. /init              # 스택 자동 감지"
-  echo "     /init kotlin       # Kotlin Spring Boot"
-  echo "     /init nextjs       # Next.js"
-  echo "     /init flutter      # Flutter"
-  echo "     /init go           # Go Gin"
-  echo "     /init python       # Python FastAPI"
-  echo "     /init marketing    # 코드 없는 마케팅 전담"
-  echo "     /init sales        # 코드 없는 세일즈 전담"
-  echo "     /init product      # 코드 없는 Product Management 전담 (pm-skills)"
+  cat <<'EOF'
+🚀 첫 사용자 5분 가이드 — Claude Code 에서 이 디렉토리를 연 뒤:
+
+  1. /init                      # 스택 자동 감지 + 하네스 구성
+                                # 또는 명시: /init {kotlin|go|python|nextjs|flutter|infra|marketing|sales|product}[-multi]
+  2. /start <기능 이름>         # worktree + PRD + 자동 구현 (한 번에)
+  3. /commit                    # 작업 후 — feature 브랜치면 /pr 자동 제안
+  4. /pr → /merge               # 머지·태그·worktree 정리 자동 체인
+
+📚 자세히:
+  • 빠른 시작 / 스택 표 / Agent 목록 → README.md
+  • English documentation     → README.en.md
+  • 보존 정책 (custom/) / 옵션 → README.md 의 "방법 A" 섹션
+
+🔧 갱신 / 롤백:
+  /starter check                # 현재·최신·이전 버전 표시
+  /upgrade                      # 카테고리별 변경 통계 (skills, agents 등 부분 갱신)
+
+💬 모드별 plugin 설치 알림 (필요 시):
+  marketing/sales — /plugin install marketing-skills@marketingskills
+  product         — /plugin marketplace add phuryn/pm-skills 후 8개 pm-* 설치
+EOF
 else
-  echo "다음 단계:"
-  echo "  1. Claude Code를 재시작하세요 (새 커맨드 인식)"
-  echo "  2. /starter check     # 버전 확인"
+  cat <<EOF
+🔄 갱신 완료 (v$([ -f "$TARGET_DIR/.claude/.starter-version-prev" ] && cat "$TARGET_DIR/.claude/.starter-version-prev" || echo unknown) → v$NEW_VERSION)
+
+다음 단계:
+  1. Claude Code 재시작                # 새 커맨드·hook·skill 인식
+  2. /upgrade                          # 변경 통계 확인 (선택)
+  3. /init                             # 스택 설정이 변경됐다면 재실행
+
+문제 발견 시:
+  /starter rollback                    # 직전 버전으로 즉시 복원 (toggle)
+EOF
 fi
