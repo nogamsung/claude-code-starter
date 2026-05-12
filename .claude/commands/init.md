@@ -144,13 +144,38 @@ my-project/
 - **mobile (flutter)** 감지 → flutter-{gen,mod,test}, ui-designer, flutter-patterns, ui-design-impl, CLAUDE.flutter, settings.flutter
 - **공통 유지**: code-reviewer, **security-reviewer**, github-actions-designer, **planner**, github-actions-patterns, **security-patterns**, **observability-patterns**, CLAUDE.monorepo.md, settings.monorepo.json, memory.md, **prd.md**, **role-prompt.md**
 
-### 제거 대상
+### 제거 — `init-cleanup.sh` 스크립트 호출 (v1.36.0+)
 
-유지 목록에 없는 `.claude/agents/`, `.claude/skills/`, `.claude/templates/` 하위 파일 제거. `.github/assets/` (스타터 대표 이미지) 제거.
+위 "유지 대상" 표는 **참조용 명세**일 뿐, 실제 제거는 `.claude/scripts/init-cleanup.sh` 가 deterministic 하게 수행:
+
+**Step 2a — 사용자에게 보여줄 dry-run**:
+```bash
+# 단일 스택 (예: kotlin)
+bash .claude/scripts/init-cleanup.sh kotlin
+
+# 모노레포 (감지된 stack 인자 전달)
+bash .claude/scripts/init-cleanup.sh monorepo kotlin nextjs flutter
+```
+
+dry-run 결과(예상 제거 파일 목록 + 보존 목록) 가 그대로 사용자 확인용. 자연어 추론 안 함.
+
+**Step 2b — 사용자 확인 후 실 제거**:
+```bash
+bash .claude/scripts/init-cleanup.sh kotlin --apply
+```
+
+**보존 (스크립트 강제)**:
+- `agents/custom/`, `commands/custom/`, `hooks/custom/`, `skills/custom/`
+- `settings.local.json`, `.starter-version*`
+- `commands/` 전체 (디스패처는 모든 모드에서 사용)
+
+**제거 대상** (스크립트 자동 계산):
+- 위 유지 목록에 없는 `agents/*.md`, `skills/*.md`, `templates/*` 파일
+- `.github/assets/` 디렉토리 (스타터 대표 이미지)
 
 > **커맨드는 전부 유지**합니다. `/new`, `/plan`, `/review` 는 역할 prefix 로 스택 분기를 내부 처리합니다.
 
-사용자에게 유지/제거 목록을 보여주고 확인을 받습니다.
+> ⚠️ **자연어 인스트럭션으로 직접 `rm` 실행 금지** — 스크립트 사용. 14 mode 각각 deterministic 보장 + custom/ 보존 + 권한 1회 수락 (`Bash(bash .claude/scripts/*)`).
 
 ---
 
