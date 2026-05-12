@@ -24,7 +24,8 @@
       "Bash(touch *)",
       "Bash(jq *)",
       "Bash(cat *)",
-      "Bash(ls *)"
+      "Bash(ls *)",
+      "Bash(bash .claude/scripts/*)"
     ],
     "deny": [
       "Bash(rm -rf /)",

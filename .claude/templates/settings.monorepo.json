@@ -39,7 +39,8 @@
       "Bash(cp *)",
       "Bash(mv *)",
       "Bash(touch *)",
-      "Bash(jq *)"
+      "Bash(jq *)",
+      "Bash(bash .claude/scripts/*)"
     ],
     "deny": [
       "Bash(rm -rf /)",

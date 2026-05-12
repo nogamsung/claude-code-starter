@@ -6,6 +6,104 @@
 
 ---
 
+## 2026-05-12: v1.36.0 — Critical fix (/init cleanup 동작 안 함)
+
+**카테고리:** 결정 (사고 회고 포함)
+
+### 사고
+사용자 보고: "/init 을 해도 불필요한 agents, skills 등이 제대로 제거가 안 됨".
+
+**18 릴리스 (v1.19~v1.35) 동안 발견 안 됨**. 이유: 우리 (maintainer) 가 자체 .claude/ 에 풀 자산 다 필요해서 /init 안 함. 사용자가 실제 install 후 /init 시도해야 발견되는 버그.
+
+### 5가지 근본 원인
+
+1. **자연어 인스트럭션 의존** (init.md:149):
+   - "유지 목록에 없는 .claude/agents/, .claude/skills/, .claude/templates/ 하위 파일 제거"
+   - Claude 가 표 → 매핑 → 차집합 → rm 흐름을 직접 추론
+   - deterministic X
+
+2. **Agent 이름 brace expansion**:
+   - 표에 `kotlin-{gen,mod,test}` 약어 → Claude 가 `kotlin-generator`/`kotlin-modifier`/`kotlin-tester` 풀어야
+   - 잘못 풀면 매칭 실패 (`kotlin-gen.md` 찾으려 함)
+
+3. **`custom/` 보존 정책 미반영**:
+   - v1.19.0 에서 bootstrap update 의 custom/ 보존 정책 도입 (PR #23)
+   - **init.md 에는 반영 안 됨** — `/init` 이 `agents/custom/my-agent.md` 도 제거 위험
+
+4. **모노레포 union 계산 추론 의존**:
+   - "감지된 스택들의 합집합" — Claude 가 3-5개 stack 의 유지 목록 union 직접 계산
+   - 35+ 파일 결정 부담
+
+5. **`Bash(rm *)` 권한 부재 — 가장 결정적**:
+   - 14 settings 중 단 하나도 rm 권한 허용 안 함
+   - Claude 가 rm 시도 시 매번 permission prompt → 사용자가 수십 회 confirm 부담 → skip
+   - 측정: `jq '.permissions.allow' | grep rm` → 모두 (none)
+
+### 결정: 별도 스크립트 분리
+
+**`.claude/scripts/init-cleanup.sh`** — 모든 5건 deterministic 해소:
+- 자연어 → bash 함수 (`keep_for_stack` 의 14 mode case)
+- brace expansion → 풀 이름 명시
+- `custom/` 보존 강제 (case glob)
+- monorepo → 인자로 명시 (`monorepo kotlin nextjs flutter`)
+- **1회 권한** (`Bash(bash .claude/scripts/*)`) → permission prompt 1회
+
+### 핵심 정책 결정
+
+**1. 스크립트 vs 명시적 bash 코드 블록**
+- init.md 안에 bash 블록 인라인 vs 별도 스크립트 분리
+- 스크립트 분리 선택 — testable + CI 가드 가능 + 재사용
+- 단점: 추가 자산 1개. 가치 > 비용 (deterministic 자체가 가치)
+
+**2. dry-run 디폴트**
+- `--apply` 명시 안 하면 dry-run. 사용자 확인 후 적용
+- /init 도 이 패턴 — dry-run 결과 보여주고 확인 → --apply
+
+**3. 1회 권한 모델**
+- 개별 rm 권한 추가 (예: `Bash(rm .claude/agents/*)`) → fine-grained 부담 + 사용자 매번 prompt
+- 스크립트 1회 권한 → 깔끔 + 보안 (스크립트 내용은 우리가 보장)
+
+**4. CI 가드의 expected count 모델**
+- 14 mode 의 정확한 제거 카운트를 CI 에 hardcode
+- 향후 stock 자산 추가 시 카운트 변화 → CI fail → expected 갱신 강제
+- 즉 자산 변화가 cleanup 카운트와 sync 되도록 자동 catch
+
+### 의식적 배제
+
+- **개별 rm 권한 추가** — 14 mode × 평균 20개 = ~280 권한. settings 폭증.
+- **자연어 인스트럭션 유지하며 안내 강화** — 근본 원인 (추론 의존) 해소 안 됨
+- **/init 의 다른 step 도 스크립트화** — Step 3 (CLAUDE.md 설치), Step 4 (모노레포) 는 자연어 충분. Step 2 만 critical.
+
+### 변경 파일
+```
+.claude/scripts/init-cleanup.sh        # 신규 (~180줄)
+.claude/commands/init.md               # Step 2 자연어 → 스크립트 호출
+.claude/templates/settings.*.json      # 14개 × allow 에 Bash(bash .claude/scripts/*) 추가
+.github/workflows/install-matrix.yml   # init-cleanup-smoke job (12→13 jobs)
+.claude-plugin/plugin.json             # 1.35.0 → 1.36.0 (sync)
+README.md / README.en.md               # 배지
+CHANGELOG.md, VERSION                  # 1.35.0 → 1.36.0
+```
+
+### 검증
+- 9 single-stack mode × dry-run → 정확한 카운트 (e.g., kotlin → 18 agents 제거, 9 유지)
+- --apply + 4 custom 자산 (agents/skills/hooks/commands) 모두 보존
+- monorepo 3-stack union 정상 (extra 인자로 명시)
+
+### 사고 회고 — Maintainer dogfooding 한계
+
+이 버그는 **maintainer 가 자체 .claude/ 에서 /init 안 함** 때문에 18 릴리스 동안 잠재. 비슷한 한계:
+- /release (v1.21.0 도입 후 7 릴리스 동안 미사용 → v1.29.0 dogfood 라운드)
+- 텔레메트리 (v1.27.0 도입 후 maintainer 자체 활성 안 함)
+
+**교훈**: 사용자 흐름 자체를 dogfood 안 하는 자산은 잠재 bug 위험. 향후 critical 기능 (`/init` 같은 entry point) 은 CI 가드로 사용자 시나리오 시뮬레이션 필수.
+
+### 다음 dogfood 후보
+- `/init` 자체를 CI 에서 시뮬레이션 (claude code 없이는 어렵지만 init-cleanup.sh 부분은 검증 완료)
+- /release 우리 자체 dogfood 첫 시도 (v1.37.0+)
+
+---
+
 ## 2026-05-11: v1.35.0 — 보안 강화 (secret commit 차단 + dep audit 알림)
 
 **카테고리:** 결정

@@ -204,6 +204,96 @@ jobs:
                     | grep -v node_modules | grep -v .worktrees)
           [ "$FAIL" = "0" ]
 
+  init-cleanup-smoke:
+    name: init-cleanup.sh — 14 mode dry-run + apply + custom preservation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 9 single-stack modes — dry-run expected counts
+        run: |
+          set -euo pipefail
+          # 예상 제거 카운트 (fresh install 후 27 agents / 19 skills / 34 templates 기준)
+          # 변경 시 이 표 갱신
+          declare -A EXPECT=(
+            [kotlin]="18 11 29"
+            [go]="19 11 29"
+            [python]="15 9 29"
+            [nextjs]="19 12 29"
+            [flutter]="19 14 29"
+            [infra]="22 12 29"
+            [marketing]="23 17 27"
+            [sales]="23 17 27"
+            [product]="23 17 26"
+          )
+
+          FAIL=0
+          for MODE in "${!EXPECT[@]}"; do
+            TARGET=$(mktemp -d)
+            (cd "$TARGET" && bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null 2>&1)
+            RESULT=$(cd "$TARGET" && bash "$GITHUB_WORKSPACE/.claude/scripts/init-cleanup.sh" "$MODE" 2>&1)
+            A=$(echo "$RESULT" | grep "agents:" | head -1 | grep -oE '[0-9]+')
+            S=$(echo "$RESULT" | grep "skills:" | head -1 | grep -oE '[0-9]+')
+            T=$(echo "$RESULT" | grep "templates:" | head -1 | grep -oE '[0-9]+')
+            EXPECTED="${EXPECT[$MODE]}"
+            ACTUAL="$A $S $T"
+            if [ "$ACTUAL" = "$EXPECTED" ]; then
+              printf "✅ %-12s expected=%s\n" "$MODE" "$EXPECTED"
+            else
+              printf "❌ %-12s expected=[%s] actual=[%s]\n" "$MODE" "$EXPECTED" "$ACTUAL"
+              FAIL=1
+            fi
+            rm -rf "$TARGET"
+          done
+          [ "$FAIL" = "0" ]
+
+      - name: --apply + custom preservation
+        run: |
+          set -euo pipefail
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+          bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null 2>&1
+
+          mkdir -p .claude/agents/custom .claude/skills/custom .claude/hooks/custom .claude/commands/custom
+          echo "my agent"   > .claude/agents/custom/my-agent.md
+          echo "my skill"   > .claude/skills/custom/my-skill.md
+          echo "my hook"    > .claude/hooks/custom/my-hook.sh
+          echo "my cmd"     > .claude/commands/custom/my-cmd.md
+
+          bash "$GITHUB_WORKSPACE/.claude/scripts/init-cleanup.sh" kotlin --apply > /dev/null
+
+          # 4 custom 자산 모두 보존 검증
+          for f in agents/custom/my-agent.md skills/custom/my-skill.md hooks/custom/my-hook.sh commands/custom/my-cmd.md; do
+            if [ ! -f ".claude/$f" ]; then
+              echo "❌ LOST: .claude/$f"
+              exit 1
+            fi
+            echo "✅ preserved: .claude/$f"
+          done
+
+          # 유지된 stock 카운트 (kotlin 모드 = 27-18=9 agents, 19-11=8 skills)
+          A_KEEP=$(ls .claude/agents/*.md | wc -l | tr -d ' ')
+          S_KEEP=$(ls .claude/skills/*.md | wc -l | tr -d ' ')
+          [ "$A_KEEP" = "9" ] || { echo "❌ stock agents kept=$A_KEEP, expected=9"; exit 1; }
+          [ "$S_KEEP" = "8" ] || { echo "❌ stock skills kept=$S_KEEP, expected=8"; exit 1; }
+          echo "✅ stock kept correctly (agents=9, skills=8)"
+          rm -rf "$TARGET"
+
+      - name: monorepo (3 stacks) — extra args
+        run: |
+          set -euo pipefail
+          TARGET=$(mktemp -d)
+          cd "$TARGET"
+          bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null 2>&1
+          RESULT=$(bash "$GITHUB_WORKSPACE/.claude/scripts/init-cleanup.sh" monorepo kotlin nextjs flutter 2>&1)
+          # monorepo 는 유지 union 이라 single-stack 보다 적게 제거
+          A=$(echo "$RESULT" | grep "agents:" | head -1 | grep -oE '[0-9]+')
+          # kotlin + nextjs + flutter 유지 = 3 stack 의 union
+          # 제거 = 27 - (공통 4 + 코드 stack 합집합) → ai-*, go-*, python-*, infra-generator, gtm-planner 등
+          [ "$A" -ge 5 ] && [ "$A" -le 15 ] || { echo "❌ monorepo agents removal=$A, expected 5~15"; exit 1; }
+          echo "✅ monorepo cleanup ok (agents remove=$A)"
+          rm -rf "$TARGET"
+
   settings-hooks-lint:
     name: settings.{stack}.json — required hooks present in all
     runs-on: ubuntu-latest

@@ -12,6 +12,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.36.0] - 2026-05-12
+
+### Fixed (Critical — `/init` cleanup 동작 안 함 버그)
+
+**버그**: `/init` 이 불필요한 agent/skill/template 을 제대로 제거 안 함. 18 릴리스 동안 잠재한 5가지 원인 발견:
+
+| # | 원인 | 영향 |
+|---|------|------|
+| 1 | 자연어 인스트럭션 ("유지 목록에 없는 파일 제거") | Claude 추론 의존, 비결정적 |
+| 2 | Agent 이름 brace expansion (`kotlin-{gen,mod,test}`) | 약어 오해석 시 매칭 실패 |
+| 3 | `custom/` 보존 정책이 `init.md` 에 없음 (v1.19.0 의 bootstrap 정책과 불일치) | 사용자 custom 자산 손실 |
+| 4 | 모노레포 union 계산 추론 의존 | 35+ 파일 결정 부담 |
+| 5 | **`Bash(rm *)` 권한 부재** (14 settings 모두) | permission prompt × 수십회 → 사용자 skip |
+
+### Fix: `.claude/scripts/init-cleanup.sh` 신설 (deterministic)
+
+**스크립트가 모든 5건 해소**:
+1. 자연어 → bash 함수 (`keep_for_stack` 의 14 mode hardcode)
+2. brace expansion → 풀 이름 명시 (`kotlin-generator kotlin-modifier kotlin-tester`)
+3. `custom/` 보존 강제 (`case "$f" in */custom/*) continue ;;`)
+4. 모노레포 union → 인자로 명시 (`monorepo kotlin nextjs flutter`)
+5. **1회 권한** — `Bash(bash .claude/scripts/*)` 한 줄로 cleanup 전체 처리
+
+**사용**:
+```bash
+bash .claude/scripts/init-cleanup.sh kotlin           # dry-run (디폴트)
+bash .claude/scripts/init-cleanup.sh kotlin --apply   # 실 제거
+bash .claude/scripts/init-cleanup.sh monorepo kotlin nextjs flutter --apply
+```
+
+**보존 (스크립트 강제)**:
+- `agents/custom/`, `commands/custom/`, `hooks/custom/`, `skills/custom/`
+- `settings.local.json`, `.starter-version*`
+- `commands/` 전체
+
+### Added
+
+**`init-cleanup-smoke` CI job** (13번째, install-matrix.yml):
+- 9 single-stack mode × dry-run 예상 제거 카운트 검증 (e.g., kotlin → agents=18, skills=11, templates=29)
+- `--apply` + 4 custom 자산 보존 검증 (agents/commands/hooks/skills custom)
+- monorepo 3-stack union 동작 검증
+
+**14 `settings.{stack}.json`** 의 `permissions.allow` 에 `Bash(bash .claude/scripts/*)` 추가.
+
+### Changed
+
+- `.claude/commands/init.md` Step 2 — 자연어 인스트럭션 → 스크립트 호출 한 줄
+- `install-matrix.yml`: 12 jobs → **13 jobs**
+- 버전 배지 1.35.0 → 1.36.0 (한국어 + 영문 README + plugin.json)
+
+### Migration
+
+기존 사용자 (v1.35.0 이하 install) — 두 가지 옵션:
+1. `/starter update` 또는 `bash bootstrap.sh` 로 갱신 (`.claude/scripts/` 자동 추가 + 14 settings 권한 업데이트)
+2. `/upgrade apply settings` 으로 settings.json 만 갱신 후 `/init` 재실행
+
+이유: 18 릴리스 동안 보고되지 않은 critical bug. `/init` 의 핵심 기능 (불필요 자산 제거) 가 작동 안 한 것 → 사용자 프로젝트에 27 agents / 19 skills 가 그대로 남아 매 세션 큰 토큰 비용. 5건 원인 한 PR 으로 해소.
+
+---
+
 ## [1.35.0] - 2026-05-11
 
 ### Added (보안 강화 — secret commit 차단 + dependency audit 알림)
