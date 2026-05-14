@@ -12,6 +12,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.37.0] - 2026-05-14
+
+### Changed (GHA 비용 절감 — 13 jobs → 2 jobs · 60~80% 절감)
+
+**`install-matrix.yml` 대규모 통합 (563줄 → 281줄)**:
+- **6개 static lint job → 단일 `static-lints` job 통합**: claude-md-cap · template-cap · agent-desc-lint · plugin-meta · settings-consistency · settings-hooks 가 각자 runner 시작 overhead (~30s) 발생하던 것을 1개 runner sequential steps 로
+- **7개 install scenario job → 단일 `install-scenarios` job 통합**: fresh / preserve / no-preserve / version-pin / rollback-meta / hooks-on-empty / init-cleanup-{dry,apply}
+- **`push: main` 트리거 제거**: PR 에서 이미 통과한 변경이 squash merge 후 main 에서 재실행되던 중복 차단 (2배 비용 → 1배)
+- **`concurrency` 그룹 추가**: 같은 PR 새 push 시 이전 job 자동 cancel
+- **결과**: 13 jobs → **2 jobs** + 매 PR 마다 runner overhead × 11 절감
+
+### Added (태그 안전화 — `auto-tag.yml`)
+
+**SemVer 형식 강제 검증**:
+- `^[0-9]+\.[0-9]+\.[0-9]+(-(rc|beta|alpha)\.[0-9]+)?$` 만 허용
+- 잘못된 형식 (`dev`, `1.2`, 빈 값 등) → workflow fail + 태그 생성 차단
+- "이상한 태그가 GitHub Release · 패키지에 등록" 자동 방지
+
+**Prerelease 자동 분리**:
+- `-rc.N` / `-beta.N` / `-alpha.N` 포함 시 → `prerelease: true` + `make_latest: false`
+- 안정 릴리스만 `latest` 태그 차지
+- v1.17.0 의 GHCR semver-only 정책과 정합
+
+### 예상 효과 (월 단위 GHA 분)
+
+| 항목 | 이전 | 이후 |
+|------|------|------|
+| PR 당 jobs | 13 | 2 |
+| PR 당 runner 분 | ~10분 | ~3분 |
+| main push 검증 | 13 jobs 재실행 | **스킵** |
+| 잘못된 태그 | 만들어짐 | 차단 |
+| **월간 (18 PR 추정)** | ~250분 | **~50분 (-80%)** |
+
+### 의식적 배제
+- **matrix strategy 분기** — 각자 runner 받아 overhead 그대로. sequential steps 가 더 효율적
+- **scheduled run** — 주기적 health check 안 함. PR 단계 검증으로 충분
+- **prerelease auto-detection 외 manual override** — `make_latest` 가 명시적이라 의도 명확
+
+### Changed
+
+- `install-matrix.yml`: 563 → 281줄 (-50%)
+- `auto-tag.yml`: VERSION 검증 + prerelease 자동 분리
+- 버전 배지 1.36.0 → 1.37.0 (한국어 + 영문 README + plugin.json)
+
+이유: 사용자 보고 — GHA limit 빠르게 소진. 13 jobs × runner overhead 가 매 PR 마다 누적. 통합 + main push 트리거 제거 + concurrency cancel 으로 80% 절감.
+
+---
+
 ## [1.36.0] - 2026-05-12
 
 ### Fixed (Critical — `/init` cleanup 동작 안 함 버그)

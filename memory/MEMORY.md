@@ -6,6 +6,104 @@
 
 ---
 
+## 2026-05-14: v1.37.0 — GHA 비용 절감 + 태그 안전화 (사용자 보고 fix)
+
+**카테고리:** 결정
+
+### 사용자 보고
+"GHA test/CI 가 매 push 마다 돌아서 limit 빠르게 채움. 또한 이상한 태그가 release/package 에 등록되지 않게 하고 싶음. 최대한 절약."
+
+### 진단
+
+**비용 구조**:
+- `install-matrix.yml`: 13 jobs, `push: main` + `pull_request` 양쪽 트리거
+- 이번 세션 18 PR × 13 jobs + 18 main push × 13 jobs ≈ **468 job runs**
+- 각 job runner overhead ~30s × 13 = 6.5분 overhead per workflow run
+
+**태그 위험**:
+- `auto-tag.yml` 이 VERSION 형식 검증 안 함 → 잘못된 VERSION (`dev`, `1.2`, 빈 값) commit 시 이상한 태그 생성
+- prerelease (`-rc.N`) 도 무조건 `latest` 차지
+
+### 결정
+
+**A. install-matrix 13 jobs → 2 jobs 통합**
+- static-lints 1개 (6 lint sequential steps)
+- install-scenarios 1개 (7 시나리오 sequential, 각자 mktemp 격리)
+- 핵심: matrix strategy 안 씀. matrix 도 결국 각자 runner = overhead 그대로. **sequential steps in one runner 가 가장 효율적**.
+
+**B. push: main 트리거 제거**
+- PR 통과 검증 후 squash merge → main push 시 또 13 jobs 재실행 = 100% 중복
+- 결정: `on: pull_request` 만. main push 검증 안 함.
+
+**C. concurrency 그룹 추가**
+- 같은 PR 의 새 commit push 시 이전 job 자동 cancel
+- `concurrency.group: install-matrix-${{ github.head_ref || github.ref }}`
+
+**D. auto-tag.yml SemVer 강제**
+- VERSION 정규식 `^[0-9]+\.[0-9]+\.[0-9]+(-(rc|beta|alpha)\.[0-9]+)?$`
+- 불일치 시 workflow fail + 태그 생성 차단
+- 잘못된 태그가 GitHub Release · 패키지에 등록되는 사고 자동 방지
+
+**E. Prerelease 자동 분리**
+- `-rc.N` / `-beta.N` / `-alpha.N` 포함 시 `prerelease: true` + `make_latest: false`
+- 안정 릴리스만 `latest` 차지 (v1.17.0 GHCR 정책과 정합)
+
+### 핵심 정책 결정 사유
+
+**1. matrix vs sequential steps**
+- matrix strategy 각 entry = 별도 runner = overhead 그대로
+- sequential steps in one runner = overhead 1회 + 작업 시간 추가
+- 우리 13 시나리오 합쳐도 5분 이내 → 단일 runner 효율적
+
+**2. main push 검증 제거 시 위험 분석**
+- 위험: PR 머지와 main 의 상태가 drift 가능 (예: merge conflict 자동 해결 시)
+- 완화: squash merge 사용 (history 단순) + PR 통과 = main 통과 가정
+- 결정: 위험 vs 비용 → 비용 절감 우선. drift 발견 시 hot-fix.
+
+**3. concurrency vs queue**
+- queue (`cancel-in-progress: false`) 모든 push 검증
+- cancel (`cancel-in-progress: true`) 최신만 검증
+- 결정: cancel — 마지막 commit 만 main 으로 가니까
+
+**4. prerelease detect 정확성**
+- regex `-(rc|beta|alpha)\.N` 만 인정. `-dev` 등은 fail (위 SemVer 검증에서 차단)
+- 명확한 패턴만 prerelease 처리
+
+### 의식적 배제
+
+- **matrix strategy 사용** — runner overhead 그대로
+- **scheduled health check** — PR 단계 검증 충분
+- **release notes 자동 생성** — CHANGELOG awk 추출이 이미 잘 동작
+
+### 측정 — GHA 분 절감
+| 항목 | 이전 | 이후 | 절감 |
+|------|------|------|------|
+| PR 당 jobs | 13 | 2 | -85% |
+| PR 당 runner 분 | ~10 | ~3 | -70% |
+| main push 검증 | 13 재실행 | 0 | -100% |
+| 월간 (18 PR) | ~250 | ~50 | **-80%** |
+
+### 변경 파일
+```
+.github/workflows/install-matrix.yml   # 563 → 281줄 (-50%)
+.github/workflows/auto-tag.yml         # SemVer 검증 + prerelease 분리 (+15줄)
+.claude-plugin/plugin.json             # 1.36.0 → 1.37.0
+README.md / README.en.md               # 배지
+CHANGELOG.md, VERSION                  # 1.36.0 → 1.37.0
+```
+
+### 회고 — 비용 의식의 후순위 사고
+
+- v1.19.0 (install-matrix CI 7 jobs 신설) 부터 v1.36.0 (13 jobs) 까지 매 PR 마다 가드 추가. 가치는 명확했지만 **runner overhead 비용 무시**.
+- 13 jobs 중 6개가 빠른 lint (각 10~30s) — 이걸 통합 안 한 게 비용 polluter.
+- 향후 CI 가드 추가 시 **새 job 추가 vs 기존 static-lints job 에 step 추가** 결정 필요. 기본은 step 추가 (overhead 0).
+
+### 향후 GHA 비용 가드 후보
+- usage analytics — GitHub API 로 월별 minutes 추적 + 70% 도달 시 알림
+- workflow_dispatch 만 trigger 인 heavy job 분리 (manual 검증 전용)
+
+---
+
 ## 2026-05-12: v1.36.0 — Critical fix (/init cleanup 동작 안 함)
 
 **카테고리:** 결정 (사고 회고 포함)

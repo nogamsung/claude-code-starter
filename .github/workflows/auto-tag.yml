@@ -18,12 +18,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read VERSION
+      - name: Read VERSION + SemVer 검증
         id: version
         run: |
+          set -euo pipefail
           VERSION=$(cat VERSION | tr -d '[:space:]')
+
+          # SemVer 형식 강제: X.Y.Z 또는 X.Y.Z-{rc|beta|alpha}.N
+          # 잘못된 형식 (빈 값 / "dev" / "1.2" 등) 차단해 이상한 태그·릴리스 안 만들어짐
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(rc|beta|alpha)\.[0-9]+)?$ ]]; then
+            echo "❌ VERSION='$VERSION' 형식 오류 — 'X.Y.Z' 또는 'X.Y.Z-rc.N' 만 허용"
+            echo "    잘못된 태그가 GitHub Release · 패키지에 등록되지 않도록 차단."
+            exit 1
+          fi
+
+          # prerelease 판정 (`-rc.x` / `-beta.x` / `-alpha.x` 포함 여부)
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE=true
+          else
+            PRERELEASE=false
+          fi
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "✅ VERSION='$VERSION' (prerelease=$PRERELEASE)"
 
       - name: Check if tag already exists
         id: check
@@ -78,4 +97,5 @@ jobs:
           name: ${{ steps.version.outputs.tag }}
           body_path: .release-notes.md
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          make_latest: ${{ steps.version.outputs.prerelease == 'false' }}

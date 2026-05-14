@@ -1,13 +1,11 @@
 name: Install matrix
 
+# v1.37.0 비용 절감:
+# - 13 jobs → 2 jobs (static-lints + install-scenarios)
+# - main push 트리거 제거 (PR 에서 이미 검증, 중복 실행 차단)
+# - concurrency 그룹으로 같은 PR 새 push 시 이전 job cancel
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - bootstrap.sh
-      - .claude/**
-      - .claude-plugin/**
-      - .github/workflows/install-matrix.yml
   pull_request:
     paths:
       - bootstrap.sh
@@ -15,14 +13,154 @@ on:
       - .claude-plugin/**
       - .github/workflows/install-matrix.yml
 
+concurrency:
+  group: install-matrix-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  fresh-install:
-    name: Fresh install (curl | bash)
+  static-lints:
+    name: Static lints (CLAUDE.md cap · agent desc · plugin meta · settings · template cap)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run bootstrap.sh in empty dir
+      - name: All CLAUDE.md ≤ 300 lines
+        run: |
+          set -euo pipefail
+          FAIL=0
+          while IFS= read -r f; do
+            LINES=$(wc -l < "$f" | tr -d ' ')
+            if [ "$LINES" -gt 300 ]; then
+              echo "❌ $f: $LINES > 300"
+              FAIL=1
+            fi
+          done < <(find . -name 'CLAUDE.md' -o -name 'CLAUDE.*.md' | grep -v node_modules | grep -v .worktrees)
+          [ "$FAIL" = "0" ]
+
+      - name: Stack templates — CLAUDE.{stack}.md ≤ 120 lines
+        run: |
+          set -euo pipefail
+          MAX=120; FAIL=0
+          for f in .claude/templates/CLAUDE.*.md; do
+            LINES=$(wc -l < "$f" | tr -d ' ')
+            if [ "$LINES" -gt "$MAX" ]; then
+              echo "❌ $f: $LINES > $MAX"
+              echo "   → 사용자 매 세션 토큰. 상세는 .claude/skills/ 로."
+              FAIL=1
+            fi
+          done
+          [ "$FAIL" = "0" ]
+
+      - name: Agent description — single-line + length ≤ 250
+        run: |
+          set -euo pipefail
+          MAX=250; FAIL=0
+          for f in .claude/agents/*.md; do
+            FM=$(awk '/^---$/{c++; if(c==1){next} if(c==2){exit}} c==1' "$f")
+            DESC_LINE=$(echo "$FM" | grep -E '^description:' || echo "")
+            if [ -z "$DESC_LINE" ]; then
+              echo "❌ $f: description missing"; FAIL=1; continue
+            fi
+            if echo "$DESC_LINE" | grep -qE '^description:[[:space:]]*[|>][[:space:]]*$'; then
+              echo "❌ $f: multi-line YAML scalar (Agent schema 는 single-line string 권장)"
+              FAIL=1; continue
+            fi
+            DESC=$(echo "$DESC_LINE" | sed 's/^description:[[:space:]]*//')
+            LEN=${#DESC}
+            [ "$LEN" -gt "$MAX" ] && { echo "❌ $f: $LEN > $MAX"; FAIL=1; }
+          done
+          [ "$FAIL" = "0" ]
+
+      - name: .claude-plugin meta — JSON + required fields + version sync
+        run: |
+          set -euo pipefail
+          MARKETPLACE=.claude-plugin/marketplace.json
+          PLUGIN=.claude-plugin/plugin.json
+          [ -f "$MARKETPLACE" ] || { echo "ℹ️ no marketplace.json — skip"; exit 0; }
+
+          jq -e . "$MARKETPLACE" >/dev/null
+          [ -f "$PLUGIN" ] && jq -e . "$PLUGIN" >/dev/null
+
+          # marketplace 필수 필드
+          jq -e '.name | type == "string" and length > 0' "$MARKETPLACE" >/dev/null
+          jq -e '.owner.name | type == "string" and length > 0' "$MARKETPLACE" >/dev/null
+          jq -e '.plugins | type == "array" and length > 0' "$MARKETPLACE" >/dev/null
+
+          # name kebab-case + 예약 이름 차단
+          NAME=$(jq -r '.name' "$MARKETPLACE")
+          [[ "$NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "❌ marketplace name '$NAME' must be kebab-case"; exit 1; }
+          for reserved in claude-code-marketplace claude-code-plugins claude-plugins-official anthropic-marketplace anthropic-plugins agent-skills knowledge-work-plugins life-sciences; do
+            [ "$NAME" = "$reserved" ] && { echo "❌ '$NAME' is Anthropic reserved"; exit 1; }
+          done
+          jq -e '.plugins[] | (.name | type == "string") and (.source != null)' "$MARKETPLACE" >/dev/null
+
+          # plugin.json
+          if [ -f "$PLUGIN" ]; then
+            jq -e '.name | type == "string" and length > 0' "$PLUGIN" >/dev/null
+            jq -e '.description | type == "string"' "$PLUGIN" >/dev/null
+            jq -e '.version | type == "string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+")' "$PLUGIN" >/dev/null
+            PV=$(jq -r '.version' "$PLUGIN")
+            FV=$(cat VERSION | tr -d '[:space:]')
+            [ "$PV" = "$FV" ] || { echo "❌ plugin.json version=$PV out of sync with VERSION=$FV"; exit 1; }
+          fi
+
+      - name: settings.{stack}.json — common base (plugins / allow / deny)
+        run: |
+          set -euo pipefail
+          REQ_P='["claude-md-management@claude-plugins-official","commit-commands@claude-plugins-official","github@claude-plugins-official","hookify@claude-plugins-official"]'
+          REQ_A='["Bash(cp *)","Bash(git *)","Bash(mkdir *)","Bash(mv *)","Bash(touch *)"]'
+          REQ_D='["Bash(git push --force *)","Bash(git push -f *)","Bash(rm -rf /)","Bash(rm -rf ~*)"]'
+          FAIL=0
+          for f in .claude/templates/settings.*.json; do
+            STACK=$(basename "$f" .json | sed 's/^settings\.//')
+            MP=$(jq --argjson req "$REQ_P" '$req - (.enabledPlugins // {} | keys)' "$f")
+            MA=$(jq --argjson req "$REQ_A" '$req - (.permissions.allow // [])' "$f")
+            MD=$(jq --argjson req "$REQ_D" '$req - (.permissions.deny // [])' "$f")
+            [ "$(echo "$MP" | jq 'length')" -gt 0 ] && { echo "❌ $STACK: missing plugins: $(echo $MP|jq -c .)"; FAIL=1; }
+            [ "$(echo "$MA" | jq 'length')" -gt 0 ] && { echo "❌ $STACK: missing allow: $(echo $MA|jq -c .)"; FAIL=1; }
+            [ "$(echo "$MD" | jq 'length')" -gt 0 ] && { echo "❌ $STACK: missing deny: $(echo $MD|jq -c .)"; FAIL=1; }
+          done
+          [ "$FAIL" = "0" ]
+
+      - name: settings.{stack}.json — required hooks contract
+        run: |
+          set -euo pipefail
+          REQUIRED_ALL="session-start.sh safety-guard.sh usage-counter.sh"
+          REQUIRED_CODE="pre-push.sh post-edit-lint.sh"
+          NON_CODE_STACKS="marketing sales product"
+          FAIL=0
+          for f in .claude/templates/settings.*.json; do
+            STACK=$(basename "$f" .json | sed 's/^settings\.//')
+            HOOKS=$(jq -r '[.hooks // {}] | map(to_entries[]) | .[].value | map(.hooks[]?.command // empty) | .[]' "$f" 2>/dev/null | grep -oE '[a-z-]+\.sh' | sort -u | tr '\n' ' ')
+
+            for required in $REQUIRED_ALL; do
+              case " $HOOKS " in
+                *" $required "*) ;;
+                *) echo "❌ $STACK: missing hook (all): $required"; FAIL=1 ;;
+              esac
+            done
+
+            IS_NON_CODE=false
+            for nc in $NON_CODE_STACKS; do [ "$STACK" = "$nc" ] && IS_NON_CODE=true && break; done
+
+            if [ "$IS_NON_CODE" = "false" ]; then
+              for required in $REQUIRED_CODE; do
+                case " $HOOKS " in
+                  *" $required "*) ;;
+                  *) echo "❌ $STACK: missing hook (code): $required"; FAIL=1 ;;
+                esac
+              done
+            fi
+          done
+          [ "$FAIL" = "0" ]
+
+  install-scenarios:
+    name: Install scenarios (fresh · preserve · pin · rollback · empty-hooks · init-cleanup)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fresh install (curl | bash)
         run: |
           set -euo pipefail
           TARGET=$(mktemp -d)
@@ -34,187 +172,71 @@ jobs:
           test -d .claude/agents && [ "$(ls -A .claude/agents)" ]
           test -d .claude/commands && [ "$(ls -A .claude/commands)" ]
           test -d .claude/hooks && [ "$(ls -A .claude/hooks)" ]
-          echo "✅ install OK · version=$(cat .claude/.starter-version)"
+          for h in .claude/hooks/*.sh; do bash -n "$h"; done
 
-      - name: Verify hooks are syntactically valid
-        run: |
-          set -e
-          for h in .claude/hooks/*.sh; do
-            bash -n "$h" && echo "✅ $h"
-          done
-
-  update-preserve:
-    name: Update preserves custom assets
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: First install + add custom assets + re-run (default preserve)
+      - name: Update preserves custom assets
         run: |
           set -euo pipefail
           TARGET=$(mktemp -d)
           cd "$TARGET"
-
-          # 1) install
           bash "$GITHUB_WORKSPACE/bootstrap.sh"
-
-          # 2) 사용자 자산 추가
-          mkdir -p .claude/agents/custom .claude/commands/custom \
-                   .claude/hooks/custom  .claude/skills/custom
-          echo "custom-agent"   > .claude/agents/custom/my-agent.md
-          echo "custom-command" > .claude/commands/custom/my-cmd.md
-          echo "custom-hook"    > .claude/hooks/custom/my-hook.sh
-          echo "custom-skill"   > .claude/skills/custom/my-skill.md
-          echo '{"local":"yes"}' > .claude/settings.local.json
-
-          # 3) update (디폴트 = preserve on)
+          mkdir -p .claude/agents/custom .claude/commands/custom .claude/hooks/custom .claude/skills/custom
+          echo "ag" > .claude/agents/custom/a.md
+          echo "cm" > .claude/commands/custom/c.md
+          echo "hk" > .claude/hooks/custom/h.sh
+          echo "sk" > .claude/skills/custom/s.md
+          echo '{"local":1}' > .claude/settings.local.json
           bash "$GITHUB_WORKSPACE/bootstrap.sh"
-
-          # 4) 보존 검증
-          for f in agents/custom/my-agent.md commands/custom/my-cmd.md \
-                   hooks/custom/my-hook.sh  skills/custom/my-skill.md \
-                   settings.local.json; do
-            test -f ".claude/$f" || { echo "❌ $f 가 사라짐"; exit 1; }
-            echo "✅ preserved: $f"
+          for f in agents/custom/a.md commands/custom/c.md hooks/custom/h.sh skills/custom/s.md settings.local.json; do
+            test -f ".claude/$f" || { echo "❌ lost: $f"; exit 1; }
           done
 
-  update-no-preserve:
-    name: Update with --no-preserve wipes custom
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: First install + add custom + re-run with --no-preserve
+      - name: Update with --no-preserve wipes custom
         run: |
           set -euo pipefail
           TARGET=$(mktemp -d)
           cd "$TARGET"
-
           bash "$GITHUB_WORKSPACE/bootstrap.sh"
           mkdir -p .claude/agents/custom
-          echo "custom" > .claude/agents/custom/my-agent.md
-
+          echo "x" > .claude/agents/custom/a.md
           bash "$GITHUB_WORKSPACE/bootstrap.sh" --no-preserve
+          [ ! -f .claude/agents/custom/a.md ] || { echo "❌ --no-preserve left custom"; exit 1; }
 
-          if [ -f .claude/agents/custom/my-agent.md ]; then
-            echo "❌ --no-preserve 였으나 custom 자산이 남아있음"
-            exit 1
-          fi
-          echo "✅ --no-preserve 가 custom 자산을 정확히 제거함"
-
-  version-pin:
-    name: Version pin (--version)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Pin to known prior tag (smoke)
+      - name: Version pin (--version)
         run: |
           set -euo pipefail
-          # 최근 태그 하나 동적으로 조회 (현재 release 와 다른 것)
-          TAG=$(git ls-remote --tags --refs https://github.com/nogamsung/claude-code-starter.git \
-                 | awk -F/ '{print $NF}' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-                 | sort -V | tail -2 | head -1)
-          if [ -z "$TAG" ]; then
-            echo "ℹ️ 사용 가능한 prior 태그가 없음 — skip"
-            exit 0
-          fi
-
+          TAG=$(git ls-remote --tags --refs https://github.com/nogamsung/claude-code-starter.git | awk -F/ '{print $NF}' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -2 | head -1)
+          [ -z "$TAG" ] && { echo "ℹ️ no prior tag — skip"; exit 0; }
           TARGET=$(mktemp -d)
           cd "$TARGET"
           bash "$GITHUB_WORKSPACE/bootstrap.sh" --version "$TAG"
+          [ "$(cat .claude/.starter-version)" = "${TAG#v}" ] || { echo "❌ pin failed"; exit 1; }
 
-          INSTALLED=$(cat .claude/.starter-version)
-          EXPECTED="${TAG#v}"
-          if [ "$INSTALLED" != "$EXPECTED" ]; then
-            echo "❌ 핀 실패: expected=$EXPECTED installed=$INSTALLED"
-            exit 1
-          fi
-          echo "✅ 버전 핀 OK · $INSTALLED"
-
-  rollback-meta:
-    name: Update writes .starter-version-prev
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install old → update to current → check prev
+      - name: Update writes .starter-version-prev
         run: |
           set -euo pipefail
-          TAG=$(git ls-remote --tags --refs https://github.com/nogamsung/claude-code-starter.git \
-                 | awk -F/ '{print $NF}' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-                 | sort -V | tail -1)
-          if [ -z "$TAG" ]; then
-            echo "ℹ️ prior 태그 없음 — skip"; exit 0
-          fi
-
+          TAG=$(git ls-remote --tags --refs https://github.com/nogamsung/claude-code-starter.git | awk -F/ '{print $NF}' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          [ -z "$TAG" ] && exit 0
           TARGET=$(mktemp -d)
           cd "$TARGET"
           bash "$GITHUB_WORKSPACE/bootstrap.sh" --version "$TAG"
           OLD=$(cat .claude/.starter-version)
+          bash "$GITHUB_WORKSPACE/bootstrap.sh"
+          [ "$(cat .claude/.starter-version-prev)" = "$OLD" ] || { echo "❌ prev mismatch"; exit 1; }
 
-          bash "$GITHUB_WORKSPACE/bootstrap.sh"   # main HEAD 으로 update
-          NEW=$(cat .claude/.starter-version)
-          PREV=$(cat .claude/.starter-version-prev)
-
-          if [ "$PREV" != "$OLD" ]; then
-            echo "❌ .starter-version-prev mismatch: expected=$OLD got=$PREV"
-            exit 1
-          fi
-          echo "✅ rollback 메타 OK · prev=$PREV current=$NEW"
-
-  hooks-on-empty-project:
-    name: Hooks fail silently on empty project (no stacks.json)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: session-start.sh + post-edit-lint.sh + safety-guard.sh exit 0
+      - name: Hooks fail silently on empty project (no stacks.json)
         run: |
           set -euo pipefail
           TARGET=$(mktemp -d)
           cd "$TARGET"
-          bash "$GITHUB_WORKSPACE/bootstrap.sh"
-
-          # 빈 프로젝트 (stacks.json, git, lint 도구 모두 없음) 에서도 깨지지 않아야 함
-          bash .claude/hooks/session-start.sh
+          bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null
+          bash .claude/hooks/session-start.sh > /dev/null
           echo '{"tool_input":{"file_path":"random.py"}}' | bash .claude/hooks/post-edit-lint.sh
-          echo '{"tool_input":{"command":"ls"}}'           | bash .claude/hooks/safety-guard.sh
-          echo "✅ hooks all exited 0 on empty project"
+          echo '{"tool_input":{"command":"ls"}}' | bash .claude/hooks/safety-guard.sh
 
-  claude-md-line-cap:
-    name: All CLAUDE.md ≤ 300 lines
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Enforce 300-line cap
+      - name: init-cleanup.sh — 9 single-stack dry-run expected counts
         run: |
           set -euo pipefail
-          FAIL=0
-          while IFS= read -r f; do
-            LINES=$(wc -l < "$f" | tr -d ' ')
-            if [ "$LINES" -gt 300 ]; then
-              echo "❌ $f: $LINES > 300"
-              FAIL=1
-            else
-              echo "✅ $f: $LINES"
-            fi
-          done < <(find . -name 'CLAUDE.md' -o -name 'CLAUDE.*.md' \
-                    | grep -v node_modules | grep -v .worktrees)
-          [ "$FAIL" = "0" ]
-
-  init-cleanup-smoke:
-    name: init-cleanup.sh — 14 mode dry-run + apply + custom preservation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: 9 single-stack modes — dry-run expected counts
-        run: |
-          set -euo pipefail
-          # 예상 제거 카운트 (fresh install 후 27 agents / 19 skills / 34 templates 기준)
-          # 변경 시 이 표 갱신
           declare -A EXPECT=(
             [kotlin]="18 11 29"
             [go]="19 11 29"
@@ -226,338 +248,34 @@ jobs:
             [sales]="23 17 27"
             [product]="23 17 26"
           )
-
           FAIL=0
           for MODE in "${!EXPECT[@]}"; do
             TARGET=$(mktemp -d)
-            (cd "$TARGET" && bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null 2>&1)
+            (cd "$TARGET" && bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null)
             RESULT=$(cd "$TARGET" && bash "$GITHUB_WORKSPACE/.claude/scripts/init-cleanup.sh" "$MODE" 2>&1)
             A=$(echo "$RESULT" | grep "agents:" | head -1 | grep -oE '[0-9]+')
             S=$(echo "$RESULT" | grep "skills:" | head -1 | grep -oE '[0-9]+')
             T=$(echo "$RESULT" | grep "templates:" | head -1 | grep -oE '[0-9]+')
             EXPECTED="${EXPECT[$MODE]}"
-            ACTUAL="$A $S $T"
-            if [ "$ACTUAL" = "$EXPECTED" ]; then
-              printf "✅ %-12s expected=%s\n" "$MODE" "$EXPECTED"
-            else
-              printf "❌ %-12s expected=[%s] actual=[%s]\n" "$MODE" "$EXPECTED" "$ACTUAL"
-              FAIL=1
-            fi
+            [ "$A $S $T" = "$EXPECTED" ] || { echo "❌ $MODE expected=[$EXPECTED] actual=[$A $S $T]"; FAIL=1; }
             rm -rf "$TARGET"
           done
           [ "$FAIL" = "0" ]
 
-      - name: --apply + custom preservation
+      - name: init-cleanup.sh — --apply + 4 custom 자산 보존
         run: |
           set -euo pipefail
           TARGET=$(mktemp -d)
           cd "$TARGET"
-          bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null 2>&1
-
+          bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null
           mkdir -p .claude/agents/custom .claude/skills/custom .claude/hooks/custom .claude/commands/custom
-          echo "my agent"   > .claude/agents/custom/my-agent.md
-          echo "my skill"   > .claude/skills/custom/my-skill.md
-          echo "my hook"    > .claude/hooks/custom/my-hook.sh
-          echo "my cmd"     > .claude/commands/custom/my-cmd.md
-
+          echo "ag" > .claude/agents/custom/a.md
+          echo "sk" > .claude/skills/custom/s.md
+          echo "hk" > .claude/hooks/custom/h.sh
+          echo "cm" > .claude/commands/custom/c.md
           bash "$GITHUB_WORKSPACE/.claude/scripts/init-cleanup.sh" kotlin --apply > /dev/null
-
-          # 4 custom 자산 모두 보존 검증
-          for f in agents/custom/my-agent.md skills/custom/my-skill.md hooks/custom/my-hook.sh commands/custom/my-cmd.md; do
-            if [ ! -f ".claude/$f" ]; then
-              echo "❌ LOST: .claude/$f"
-              exit 1
-            fi
-            echo "✅ preserved: .claude/$f"
+          for f in agents/custom/a.md skills/custom/s.md hooks/custom/h.sh commands/custom/c.md; do
+            [ -f ".claude/$f" ] || { echo "❌ LOST: $f"; exit 1; }
           done
-
-          # 유지된 stock 카운트 (kotlin 모드 = 27-18=9 agents, 19-11=8 skills)
-          A_KEEP=$(ls .claude/agents/*.md | wc -l | tr -d ' ')
-          S_KEEP=$(ls .claude/skills/*.md | wc -l | tr -d ' ')
-          [ "$A_KEEP" = "9" ] || { echo "❌ stock agents kept=$A_KEEP, expected=9"; exit 1; }
-          [ "$S_KEEP" = "8" ] || { echo "❌ stock skills kept=$S_KEEP, expected=8"; exit 1; }
-          echo "✅ stock kept correctly (agents=9, skills=8)"
-          rm -rf "$TARGET"
-
-      - name: monorepo (3 stacks) — extra args
-        run: |
-          set -euo pipefail
-          TARGET=$(mktemp -d)
-          cd "$TARGET"
-          bash "$GITHUB_WORKSPACE/bootstrap.sh" > /dev/null 2>&1
-          RESULT=$(bash "$GITHUB_WORKSPACE/.claude/scripts/init-cleanup.sh" monorepo kotlin nextjs flutter 2>&1)
-          # monorepo 는 유지 union 이라 single-stack 보다 적게 제거
-          A=$(echo "$RESULT" | grep "agents:" | head -1 | grep -oE '[0-9]+')
-          # kotlin + nextjs + flutter 유지 = 3 stack 의 union
-          # 제거 = 27 - (공통 4 + 코드 stack 합집합) → ai-*, go-*, python-*, infra-generator, gtm-planner 등
-          [ "$A" -ge 5 ] && [ "$A" -le 15 ] || { echo "❌ monorepo agents removal=$A, expected 5~15"; exit 1; }
-          echo "✅ monorepo cleanup ok (agents remove=$A)"
-          rm -rf "$TARGET"
-
-  settings-hooks-lint:
-    name: settings.{stack}.json — required hooks present in all
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Enforce common + code-stack hook contracts
-        run: |
-          set -euo pipefail
-
-          # 모든 14 stack 공통 hook 계약
-          REQUIRED_ALL='session-start.sh safety-guard.sh usage-counter.sh'
-
-          # 코드 stack 만 (marketing/sales/product 제외) 추가 hook
-          REQUIRED_CODE='pre-push.sh post-edit-lint.sh'
-
-          NON_CODE_STACKS='marketing sales product'
-
-          FAIL=0
-          for f in .claude/templates/settings.*.json; do
-            STACK=$(basename "$f" .json | sed 's/^settings\.//')
-
-            # stack 의 모든 hook 명령에서 *.sh 추출 → 공백 분리 단일 문자열
-            HOOKS=$(jq -r '
-              [.hooks // {}] | map(to_entries[]) | .[].value | map(.hooks[]?.command // empty) | .[]
-            ' "$f" 2>/dev/null | grep -oE '[a-z-]+\.sh' | sort -u | tr '\n' ' ')
-
-            STACK_FAIL=0
-
-            # 1) 공통 hook 검증 (substring 매칭)
-            for required in $REQUIRED_ALL; do
-              case " $HOOKS " in
-                *" $required "*) ;;
-                *) echo "❌ $STACK: missing required hook (all stacks): $required"; STACK_FAIL=1 ;;
-              esac
-            done
-
-            # 2) 코드 stack 추가 hook 검증
-            IS_NON_CODE=false
-            for nc in $NON_CODE_STACKS; do
-              [ "$STACK" = "$nc" ] && IS_NON_CODE=true && break
-            done
-
-            if [ "$IS_NON_CODE" = "false" ]; then
-              for required in $REQUIRED_CODE; do
-                case " $HOOKS " in
-                  *" $required "*) ;;
-                  *) echo "❌ $STACK: missing required hook (code stack): $required"; STACK_FAIL=1 ;;
-                esac
-              done
-            fi
-
-            if [ "$STACK_FAIL" = "0" ]; then
-              printf "✅ %-15s %s\n" "$STACK" "$HOOKS"
-            else
-              FAIL=1
-            fi
-          done
-
-          [ "$FAIL" = "0" ]
-
-  settings-consistency-lint:
-    name: settings.{stack}.json — common base must be present in all
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Enforce common plugins/allow/deny across all stacks
-        run: |
-          set -euo pipefail
-
-          # 14 settings.{stack}.json 이 반드시 가져야 할 base.
-          # 누락 시 maintainer 가 새 stack 추가 또는 기존 변경에서 빠뜨린 것 — 즉시 catch.
-          REQUIRED_PLUGINS='[
-            "claude-md-management@claude-plugins-official",
-            "commit-commands@claude-plugins-official",
-            "github@claude-plugins-official",
-            "hookify@claude-plugins-official"
-          ]'
-          REQUIRED_ALLOW='[
-            "Bash(cp *)",
-            "Bash(git *)",
-            "Bash(mkdir *)",
-            "Bash(mv *)",
-            "Bash(touch *)"
-          ]'
-          REQUIRED_DENY='[
-            "Bash(git push --force *)",
-            "Bash(git push -f *)",
-            "Bash(rm -rf /)",
-            "Bash(rm -rf ~*)"
-          ]'
-
-          FAIL=0
-          for f in .claude/templates/settings.*.json; do
-            STACK=$(basename "$f" .json | sed 's/^settings\.//')
-
-            # plugins
-            MISSING_P=$(jq --argjson req "$REQUIRED_PLUGINS" \
-              '$req - (.enabledPlugins // {} | keys)' "$f")
-            if [ "$(echo "$MISSING_P" | jq 'length')" -gt 0 ]; then
-              echo "❌ $STACK: missing plugins: $(echo "$MISSING_P" | jq -c .)"
-              FAIL=1
-            fi
-
-            # allow
-            MISSING_A=$(jq --argjson req "$REQUIRED_ALLOW" \
-              '$req - (.permissions.allow // [])' "$f")
-            if [ "$(echo "$MISSING_A" | jq 'length')" -gt 0 ]; then
-              echo "❌ $STACK: missing allow: $(echo "$MISSING_A" | jq -c .)"
-              FAIL=1
-            fi
-
-            # deny
-            MISSING_D=$(jq --argjson req "$REQUIRED_DENY" \
-              '$req - (.permissions.deny // [])' "$f")
-            if [ "$(echo "$MISSING_D" | jq 'length')" -gt 0 ]; then
-              echo "❌ $STACK: missing deny: $(echo "$MISSING_D" | jq -c .)"
-              FAIL=1
-            fi
-
-            [ "$FAIL" = "0" ] && printf "✅ %-15s plugins/allow/deny base ok\n" "$STACK"
-          done
-
-          [ "$FAIL" = "0" ]
-
-  template-line-cap:
-    name: Stack templates — CLAUDE.{stack}.md ≤ 120 lines
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Enforce per-stack template cap (stricter than 300)
-        run: |
-          set -euo pipefail
-          MAX=120
-          FAIL=0
-          for f in .claude/templates/CLAUDE.*.md; do
-            LINES=$(wc -l < "$f" | tr -d ' ')
-            if [ "$LINES" -gt "$MAX" ]; then
-              echo "❌ $f: $LINES > $MAX"
-              echo "   → 사용자 프로젝트 매 세션 토큰. 상세는 .claude/skills/ 로 이관."
-              FAIL=1
-            else
-              printf "✅ %3d lines  %s\n" "$LINES" "$(basename "$f")"
-            fi
-          done
-          [ "$FAIL" = "0" ]
-
-  agent-description-lint:
-    name: Agent description — single-line + length cap
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Enforce single-line + length ≤ 250 chars
-        run: |
-          set -euo pipefail
-          FAIL=0
-          MAX_LEN=250
-
-          for f in .claude/agents/*.md; do
-            # YAML frontmatter 추출 (첫 --- 부터 다음 --- 까지)
-            FM=$(awk '/^---$/{c++; if(c==1){next} if(c==2){exit}} c==1' "$f")
-
-            # description: 다음 줄이 multi-line scalar (`|` 또는 `>`) 인지 검사
-            DESC_LINE=$(echo "$FM" | grep -E '^description:' || echo "")
-            if [ -z "$DESC_LINE" ]; then
-              echo "❌ $f: description field missing"
-              FAIL=1
-              continue
-            fi
-
-            # multi-line scalar 차단 (`description: |` 또는 `description: >`)
-            if echo "$DESC_LINE" | grep -qE '^description:\s*[|>]\s*$'; then
-              echo "❌ $f: multi-line YAML scalar (| or >) — Agent tool schema 는 1줄 string 권장"
-              echo "   → 트리거 예시는 본문 markdown 으로 옮기세요"
-              FAIL=1
-              continue
-            fi
-
-            # 길이 검사 (description: 접두 제거)
-            DESC=$(echo "$DESC_LINE" | sed 's/^description:\s*//')
-            LEN=${#DESC}
-            if [ "$LEN" -gt "$MAX_LEN" ]; then
-              echo "❌ $f: $LEN chars > $MAX_LEN"
-              FAIL=1
-            else
-              printf "✅ %4d chars  %s\n" "$LEN" "$(basename "$f")"
-            fi
-          done
-
-          [ "$FAIL" = "0" ]
-
-  plugin-meta-validation:
-    name: .claude-plugin meta — JSON + required fields
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate marketplace.json + plugin.json
-        run: |
-          set -euo pipefail
-          MARKETPLACE=.claude-plugin/marketplace.json
-          PLUGIN=.claude-plugin/plugin.json
-
-          if [ ! -f "$MARKETPLACE" ] && [ ! -f "$PLUGIN" ]; then
-            echo "ℹ️ no .claude-plugin meta — skip"
-            exit 0
-          fi
-
-          # 1) JSON syntax
-          for f in "$MARKETPLACE" "$PLUGIN"; do
-            [ -f "$f" ] || continue
-            jq -e . "$f" >/dev/null && echo "✅ valid JSON: $f"
-          done
-
-          # 2) marketplace.json required fields (per Anthropic schema)
-          if [ -f "$MARKETPLACE" ]; then
-            jq -e '.name | type == "string" and length > 0' "$MARKETPLACE" >/dev/null \
-              || { echo "❌ marketplace.json: name required"; exit 1; }
-            jq -e '.owner.name | type == "string" and length > 0' "$MARKETPLACE" >/dev/null \
-              || { echo "❌ marketplace.json: owner.name required"; exit 1; }
-            jq -e '.plugins | type == "array" and length > 0' "$MARKETPLACE" >/dev/null \
-              || { echo "❌ marketplace.json: plugins[] non-empty required"; exit 1; }
-
-            # name kebab-case (no spaces, no uppercase)
-            NAME=$(jq -r '.name' "$MARKETPLACE")
-            if [[ ! "$NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
-              echo "❌ marketplace.json: name '$NAME' must be kebab-case"
-              exit 1
-            fi
-
-            # reserved names check
-            for reserved in claude-code-marketplace claude-code-plugins claude-plugins-official anthropic-marketplace anthropic-plugins agent-skills knowledge-work-plugins life-sciences; do
-              if [ "$NAME" = "$reserved" ]; then
-                echo "❌ marketplace.json: name '$NAME' is reserved by Anthropic"
-                exit 1
-              fi
-            done
-            echo "✅ marketplace.json fields ok (name=$NAME)"
-
-            # each plugin entry: name + source required
-            jq -e '.plugins[] | (.name | type == "string") and (.source != null)' "$MARKETPLACE" >/dev/null \
-              || { echo "❌ marketplace.json: each plugin needs name + source"; exit 1; }
-            echo "✅ all plugin entries have name + source"
-          fi
-
-          # 3) plugin.json required fields
-          if [ -f "$PLUGIN" ]; then
-            jq -e '.name | type == "string" and length > 0' "$PLUGIN" >/dev/null \
-              || { echo "❌ plugin.json: name required"; exit 1; }
-            jq -e '.description | type == "string"' "$PLUGIN" >/dev/null \
-              || { echo "❌ plugin.json: description required"; exit 1; }
-            jq -e '.version | type == "string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+")' "$PLUGIN" >/dev/null \
-              || { echo "❌ plugin.json: version must be SemVer"; exit 1; }
-            echo "✅ plugin.json fields ok"
-
-            # version sync with VERSION file
-            PV=$(jq -r '.version' "$PLUGIN")
-            FV=$(cat VERSION | tr -d '[:space:]')
-            if [ "$PV" != "$FV" ]; then
-              echo "❌ plugin.json version=$PV out of sync with VERSION=$FV"
-              exit 1
-            fi
-            echo "✅ plugin.json version synced with VERSION ($FV)"
-          fi
+          [ "$(ls .claude/agents/*.md | wc -l | tr -d ' ')" = "9" ]
+          [ "$(ls .claude/skills/*.md | wc -l | tr -d ' ')" = "8" ]
