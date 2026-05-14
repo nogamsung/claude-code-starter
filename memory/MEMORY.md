@@ -6,6 +6,65 @@
 
 ---
 
+## 2026-05-14: v1.39.0 — Orphan + mapping CI 가드 (mcp-presets 재발 자동 catch)
+
+**카테고리:** 결정
+
+### 배경
+v1.38.0 에서 mcp-presets 가 모든 mode keep 목록에서 누락된 1회성 사고 fix. 같은 클래스 사고 (skill/agent 가 어디에도 매핑 안 됨) 가 향후 발생할 수 있는 영구 가드 필요.
+
+### 결정
+
+**두 CI 가드 추가** (install-matrix.yml static-lints job 안 step):
+
+**A. orphan check**
+- 19 skills + 27 agents 각자 9 mode 에서 dry-run
+- 모든 mode 에서 제거 대상이면 = orphan = fail
+- 향후 새 skill 추가 시 init-cleanup.sh 갱신 강제
+
+**B. mapping check**
+- init-cleanup.sh 의 keep 목록 이름 추출 + 실제 파일 존재 검증
+- typo 잡기 (`kotline-patterns` 같은 오타)
+- 동적 인자 `${1}` skip (kotlin-multi 등으로 풀려서 사용)
+
+### 핵심 정책 결정
+
+**1. 새 job 신설 X — 기존 static-lints job 에 step 추가**
+- v1.37.0 의 교훈: 새 job = runner overhead 30s. step 추가 = 0
+- 두 가드 모두 빠른 정적 검증 → step 으로 적합
+
+**2. 자동 keep 목록 갱신 X**
+- orphan 발견 시 자동으로 KEEP_SKILLS_COMMON 에 추가 안 함
+- maintainer 가 의도 (common 인지 stack 별 인지) 명시해야
+
+**3. dynamic 인자 ${1} skip**
+- keep_for_stack 함수의 `CLAUDE.${1}.md` 같은 동적 patterns
+- false positive 방지 위해 grep -v
+
+### 의식적 배제
+
+- **stack 별 매핑 비율 강제** — 예: 모든 stack 에 docker-patterns keep 강제. stack 별 자유 유지.
+- **자동 fix 모드** — read-only lint 만. 의도 없는 수정 위험.
+
+### 변경 파일
+```
+.github/workflows/install-matrix.yml   # static-lints 에 orphan + mapping step 추가
+.claude-plugin/plugin.json             # 1.38.0 → 1.39.0
+README.md / README.en.md               # 배지
+CHANGELOG.md, VERSION                  # 1.38.0 → 1.39.0
+```
+
+### Critical fix → Permanent guard 패턴
+
+| 사고 (1회성 fix) | 영구 가드 |
+|----------------|----------|
+| v1.36.0 (/init 5 원인) | init-cleanup-smoke (9 mode 카운트) |
+| v1.38.0 (mcp-presets 누락) | **v1.39.0 orphan + mapping** |
+
+발견 → fix → 가드 → 재발 catch 패턴 정착.
+
+---
+
 ## 2026-05-14: v1.38.0 — Skill audit (mcp-presets 모든 mode 제거되던 버그 fix)
 
 **카테고리:** 결정
