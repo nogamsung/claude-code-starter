@@ -12,6 +12,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.38.0] - 2026-05-14
+
+### Fixed (Skill audit — `mcp-presets` 모든 mode 에서 제거되던 버그)
+
+**버그**: v1.36.0 의 `init-cleanup.sh` 작성 시 `skills/mcp-presets.md` 가 어느 mode keep 목록에도 안 들어가 있어, `/init kotlin` (또는 다른 모든 모드) 실행 후 **mcp-presets 가 항상 제거됨**.
+
+→ 사용자가 v1.22.0 (MCP 프리셋) 의 의도 ("settings.local.json 에 snippet 직접 복사") 실행 불가. 가이드 자료 자체가 없어짐.
+
+### Fix
+
+`KEEP_SKILLS_COMMON` 에 `mcp-presets` 추가:
+```bash
+KEEP_SKILLS_COMMON="security-patterns observability-patterns mcp-presets"
+```
+
+이제 14 mode 모두에서 `/init` 후 `mcp-presets.md` 보존됨. MCP 서버 권장 설정이 어디서나 참조 가능.
+
+### Changed
+
+**CI `init-cleanup-smoke` job expected count 갱신** (9 mode skills 카운트 -1):
+- kotlin: 11 → **10**
+- go: 11 → **10**
+- python: 9 → **8**
+- nextjs: 12 → **11**
+- flutter: 14 → **13**
+- infra: 12 → **11**
+- marketing: 17 → **16**
+- sales: 17 → **16**
+- product: 17 → **16**
+
+**--apply + custom 검증의 stock skills 카운트**: 8 → 9 (mcp-presets 포함)
+
+### Audit 회고 — Skill consistency 가드 부재
+
+이 버그는 **init-cleanup.sh 의 keep 목록이 skills/ 디렉토리와 sync 되는지 검증 없음** 때문. 향후 같은 패턴 방지:
+- 모든 19 skill 이 어느 mode 에서든 keep 목록에 등장하는지 CI 가드 검토 후순위
+- 현재는 `init-cleanup-smoke` 의 expected count 갱신만으로 catch (정확한 카운트 변하면 fail)
+
+### Changed
+
+- `.claude/scripts/init-cleanup.sh`: KEEP_SKILLS_COMMON 에 mcp-presets 추가
+- `.github/workflows/install-matrix.yml`: 9 mode expected count + stock 카운트 갱신
+- 버전 배지 1.37.0 → 1.38.0 (한국어 + 영문 README + plugin.json)
+
+이유: v1.36.0 fix 직후 추가 audit 라운드에서 발견. 측정 → 9 mode 모두에서 mcp-presets 제거됨 확인 → KEEP_SKILLS_COMMON 으로 승격. v1.22.0 의 의도된 사용자 워크플로 복구.
+
+---
+
 ## [1.37.0] - 2026-05-14
 
 ### Changed (GHA 비용 절감 — 13 jobs → 2 jobs · 60~80% 절감)

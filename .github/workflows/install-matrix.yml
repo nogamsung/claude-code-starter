@@ -238,15 +238,15 @@ jobs:
         run: |
           set -euo pipefail
           declare -A EXPECT=(
-            [kotlin]="18 11 29"
-            [go]="19 11 29"
-            [python]="15 9 29"
-            [nextjs]="19 12 29"
-            [flutter]="19 14 29"
-            [infra]="22 12 29"
-            [marketing]="23 17 27"
-            [sales]="23 17 27"
-            [product]="23 17 26"
+            [kotlin]="18 10 29"
+            [go]="19 10 29"
+            [python]="15 8 29"
+            [nextjs]="19 11 29"
+            [flutter]="19 13 29"
+            [infra]="22 11 29"
+            [marketing]="23 16 27"
+            [sales]="23 16 27"
+            [product]="23 16 26"
           )
           FAIL=0
           for MODE in "${!EXPECT[@]}"; do
@@ -278,4 +278,4 @@ jobs:
             [ -f ".claude/$f" ] || { echo "❌ LOST: $f"; exit 1; }
           done
           [ "$(ls .claude/agents/*.md | wc -l | tr -d ' ')" = "9" ]
-          [ "$(ls .claude/skills/*.md | wc -l | tr -d ' ')" = "8" ]
+          [ "$(ls .claude/skills/*.md | wc -l | tr -d ' ')" = "9" ]   # 8 + mcp-presets (v1.38.0)
