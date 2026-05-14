@@ -6,6 +6,63 @@
 
 ---
 
+## 2026-05-14: v1.38.0 — Skill audit (mcp-presets 모든 mode 제거되던 버그 fix)
+
+**카테고리:** 결정
+
+### 사고
+v1.36.0 (init-cleanup.sh) 직후 추가 audit 라운드에서 발견:
+- 19 skills 중 **mcp-presets 만** 어느 mode keep 목록에도 안 들어감
+- 측정: `/init kotlin --apply` 후 `ls .claude/skills/mcp-presets.md` → "No such file"
+- v1.22.0 (MCP 프리셋) 의 사용자 워크플로 (snippet 직접 복사) 가 불가능했던 것
+
+### 결정
+
+**`KEEP_SKILLS_COMMON` 에 mcp-presets 추가**:
+- 14 mode 모두에서 keep
+- 이유: MCP 서버 권장 설정은 stack 무관 (postgres / filesystem / github MCP 등 모든 stack 에서 유용)
+
+CI `init-cleanup-smoke` job 의 9 mode expected count 모두 skills -1 갱신.
+
+### 핵심 결정 사유
+
+**1. mcp-presets 를 COMMON 으로 (stack 별 옵션 X)**
+- MCP 서버는 stack 무관 (postgres MCP 는 kotlin/go/python 모두 유용)
+- common 으로 두는 게 단순 + 정합
+
+**2. CI 가드 갱신 패턴**
+- expected count 가 hardcode 라 변경 시 명시적 갱신 — 자동 catch
+- 향후 skill 추가/삭제 시 expected count 변하면 CI fail → 명시 갱신 강제
+
+### 의식적 배제
+
+- **전 skill consistency 가드 신설** — 19 skill 각자 어느 mode 든 keep 목록에 있는지 매핑 검증. 가치 있지만 복잡 → 후순위. 현재 expected count 변화로 부분 catch.
+- **mcp-presets 를 stack 별로 분기** — kotlin 만 keep 같이 — 의미 없음 (모든 stack 에서 유용)
+
+### 변경 파일
+```
+.claude/scripts/init-cleanup.sh         # KEEP_SKILLS_COMMON 에 mcp-presets 추가
+.github/workflows/install-matrix.yml    # 9 mode expected count + stock 카운트 갱신
+.claude-plugin/plugin.json              # 1.37.0 → 1.38.0
+README.md / README.en.md                # 배지
+CHANGELOG.md, VERSION                   # 1.37.0 → 1.38.0
+```
+
+### 회고 — Audit 패턴의 가치
+
+v1.36.0 → v1.38.0 의 2-step audit:
+1. v1.36.0: /init 자체가 동작 안 함 (5 critical 원인)
+2. v1.38.0: 동작은 하지만 mcp-presets 자료 누락 (1 skill 매핑 누락)
+
+**측정 → 이상치 발견 → fix → CI 가드 갱신** 패턴이 v1.30~v1.33 의 token-audit 시리즈에 이어 또 효과. 일관된 패턴.
+
+### 다음 audit 후보 (낮은 우선순위)
+- 전 skill / agent 가 어느 mode 든 매핑되는지 union 가드 신설
+- agents body 길이 측정 (ai-tester 285줄, security-reviewer 266줄 등) — 정보 손실 평가 후
+- commands body 길이 (init.md 636줄, new.md 626줄) — 자주 호출되는 명령이라 가치 평가
+
+---
+
 ## 2026-05-14: v1.37.0 — GHA 비용 절감 + 태그 안전화 (사용자 보고 fix)
 
 **카테고리:** 결정

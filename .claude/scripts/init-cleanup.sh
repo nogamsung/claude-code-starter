@@ -43,7 +43,7 @@ fi
 
 # 모든 모드 공통
 KEEP_AGENTS_COMMON="code-reviewer security-reviewer planner"
-KEEP_SKILLS_COMMON="security-patterns observability-patterns"
+KEEP_SKILLS_COMMON="security-patterns observability-patterns mcp-presets"
 KEEP_TEMPLATES_COMMON="prd.md role-prompt.md memory.md"
 
 # stack 별 유지 목록 (한 줄에 type:vals 형식)
