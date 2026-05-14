@@ -12,6 +12,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.39.0] - 2026-05-14
+
+### Added (Maintainer 가드 — orphan + mapping CI)
+
+v1.38.0 의 `mcp-presets` 누락 같은 사고를 자동 catch 하는 두 가드 추가 (`install-matrix.yml` static-lints job 의 step):
+
+**A. `orphan check` — 19 skills + 27 agents 모두 최소 1 mode 에서 keep**
+- 9 mode (kotlin/go/python/nextjs/flutter/infra/marketing/sales/product) × 모든 skill/agent dry-run
+- 어느 mode 에서도 keep 안 되는 자산 → fail + "init-cleanup.sh 의 KEEP_*_COMMON 또는 keep_for_stack 에 추가" 가이드 출력
+- **v1.38.0 의 mcp-presets 누락 재발 방지**
+
+**B. `mapping check` — keep 목록의 이름이 실제 파일과 일치**
+- `init-cleanup.sh` 의 `keep_for_stack` 함수 + `KEEP_*_COMMON` 변수에서 모든 이름 추출
+- 각 이름이 `.claude/agents/`, `.claude/skills/`, `.claude/templates/` 중 하나에 실재하는지 검증
+- 동적 인자 (`${1}`) 는 skip
+- **typo 사고 catch** — 예: `kotline-patterns` (오타) → CI fail
+
+### Why
+v1.38.0 fix 직후 추가 audit 라운드. mcp-presets 발견 패턴 (`측정 → 이상치 → fix`) 의 시스템적 일반화. 향후 새 skill/agent 추가 시 자동으로 keep 목록 동기화 강제.
+
+### 의식적 배제
+- **자동 keep 목록 채우기** — 의도 없는 수정 위험. read-only lint 만, 사용자/maintainer 가 명시 추가.
+- **mode 별 keep 비율 검증** (예: kotlin 에 ai-* 도 keep 강제) — stack 별 자유. 누락만 catch.
+
+### Changed
+
+- `.github/workflows/install-matrix.yml`: static-lints job 에 orphan + mapping step 2개 추가 (8 steps → 10 steps, jobs 수는 그대로 2)
+- 버전 배지 1.38.0 → 1.39.0 (한국어 + 영문 README + plugin.json)
+
+### Token-audit + Maintainer-guard 시리즈 정리 (v1.30.0~v1.39.0)
+| 버전 | 카테고리 | 검증 영역 |
+|------|---------|----------|
+| v1.30.0 | Token | agents description |
+| v1.31.0 | Token | templates/CLAUDE.md cap |
+| v1.32.0 | Maintainer | settings data (plugin/allow/deny) |
+| v1.33.0 | Maintainer | settings behavior (hooks) |
+| v1.36.0 | Critical fix | /init cleanup 5 원인 |
+| v1.38.0 | Critical fix | mcp-presets 누락 |
+| **v1.39.0** | **Maintainer** | **orphan + mapping (재발 catch)** |
+
+이유: critical fix 후 같은 클래스 사고를 시스템적으로 차단하는 maintainer 가드 신설. v1.38.0 의 1회성 fix → v1.39.0 의 영구 CI 가드. 패턴 정착.
+
+---
+
 ## [1.38.0] - 2026-05-14
 
 ### Fixed (Skill audit — `mcp-presets` 모든 mode 에서 제거되던 버그)

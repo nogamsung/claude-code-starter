@@ -122,6 +122,92 @@ jobs:
           done
           [ "$FAIL" = "0" ]
 
+      - name: orphan check — 모든 skill / agent 가 최소 1 mode 에서 keep
+        run: |
+          set -euo pipefail
+          # v1.38.0 의 mcp-presets 누락 같은 사고 자동 catch:
+          # init-cleanup.sh 의 어느 mode keep 목록에도 없는 skill/agent → fail
+
+          MODES="kotlin go python nextjs flutter infra marketing sales product"
+          ORPHAN_S=""
+          for skill in $(ls .claude/skills/*.md 2>/dev/null | xargs -n1 basename | sed 's/\.md$//'); do
+            KEPT=false
+            for MODE in $MODES; do
+              if ! bash .claude/scripts/init-cleanup.sh $MODE 2>&1 | grep -q "skills/$skill.md"; then
+                KEPT=true; break
+              fi
+            done
+            [ "$KEPT" = "false" ] && ORPHAN_S="$ORPHAN_S $skill"
+          done
+          if [ -n "$ORPHAN_S" ]; then
+            echo "❌ orphan skills (어느 mode 에도 keep 안 됨):$ORPHAN_S"
+            echo "   → init-cleanup.sh 의 KEEP_SKILLS_COMMON 또는 stack 별 keep_for_stack 에 추가"
+            exit 1
+          fi
+
+          ORPHAN_A=""
+          for agent in $(ls .claude/agents/*.md 2>/dev/null | xargs -n1 basename | sed 's/\.md$//'); do
+            KEPT=false
+            for MODE in $MODES; do
+              if ! bash .claude/scripts/init-cleanup.sh $MODE 2>&1 | grep -q "agents/$agent.md"; then
+                KEPT=true; break
+              fi
+            done
+            [ "$KEPT" = "false" ] && ORPHAN_A="$ORPHAN_A $agent"
+          done
+          if [ -n "$ORPHAN_A" ]; then
+            echo "❌ orphan agents (어느 mode 에도 keep 안 됨):$ORPHAN_A"
+            echo "   → init-cleanup.sh 의 KEEP_AGENTS_COMMON 또는 keep_for_stack 에 추가"
+            exit 1
+          fi
+
+          echo "✅ orphan check: 모든 skill/agent 가 최소 1 mode 에서 keep"
+
+      - name: mapping check — init-cleanup.sh keep 목록이 실제 파일과 일치
+        run: |
+          set -euo pipefail
+          # init-cleanup.sh 안의 keep 이름이 실제 파일 존재와 일치하는지 검증
+          # (typo "kotline-patterns" 같은 사고 catch)
+
+          # init-cleanup.sh 에서 KEEP_* 및 keep_for_stack 에서 사용된 모든 이름 추출
+          NAMES=$(grep -E '"(agents|skills|templates): ' .claude/scripts/init-cleanup.sh \
+            | sed -E 's/^[[:space:]]*echo "(agents|skills|templates): //' \
+            | sed 's/"$//' \
+            | tr ' ' '\n' \
+            | grep -E '\S' \
+            | sort -u)
+          # COMMON 변수에서도 추출
+          COMMON=$(grep -E '^KEEP_(AGENTS|SKILLS|TEMPLATES)_COMMON=' .claude/scripts/init-cleanup.sh \
+            | sed 's/^KEEP_[A-Z]*_COMMON="//' \
+            | sed 's/"$//' \
+            | tr ' ' '\n' \
+            | grep -E '\S' \
+            | sort -u)
+          ALL_NAMES=$(echo "$NAMES"$'\n'"$COMMON" | sort -u | grep -v '^$')
+
+          FAIL=0
+          while IFS= read -r name; do
+            # keep_for_stack 의 동적 인자 (`${1}`) 는 skip — kotlin-multi/python-multi 등으로 풀려서 사용
+            case "$name" in *'${1}'*) continue ;; esac
+
+            if echo "$name" | grep -qE '\.(md|json)$'; then
+              # template 파일
+              if [ ! -f ".claude/templates/$name" ]; then
+                echo "❌ template referenced but not found: $name"
+                FAIL=1
+              fi
+            else
+              # agent 또는 skill — 둘 중 하나에 있어야
+              if [ ! -f ".claude/agents/${name}.md" ] && [ ! -f ".claude/skills/${name}.md" ]; then
+                echo "❌ keep 이름 '$name' — agents/${name}.md 또는 skills/${name}.md 둘 다 없음 (typo 가능)"
+                FAIL=1
+              fi
+            fi
+          done <<< "$ALL_NAMES"
+
+          [ "$FAIL" = "0" ] && echo "✅ mapping check: 모든 keep 이름이 실제 파일과 매칭"
+          [ "$FAIL" = "0" ]
+
       - name: settings.{stack}.json — required hooks contract
         run: |
           set -euo pipefail
