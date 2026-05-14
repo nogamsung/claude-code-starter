@@ -12,6 +12,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.40.0] - 2026-05-14
+
+### Changed (Token audit — `commands/init.md` 636 → 387줄, -39%)
+
+22 릴리스 동안 자주 호출되는 `/init` 의 본문이 636줄로 비대. 점검 결과 **4 mode 반복 패턴이 60% 차지**:
+- Step 3 (하네스 파일 설치): 213줄 — 단일 스택 / 모노레포 / Marketing-Sales-Product / Infra 4 case 각각 비슷한 cp 명령
+- Step 6 (완료 메시지): 162줄 — 같은 4 case 의 5 기둥 상태 + 이제 할 일
+
+**압축 전략**: 공통 패턴 + 모드별 차이만 표로.
+
+### Step 3 압축 (213 → 55줄)
+- 4 mode 모두 동일한 "신규 vs 기존 분기" 패턴 → **공통 2 step 으로 통합** ("CLAUDE.md 설치" + "settings.json 설치")
+- 3-B (모노레포) stacks.json 예시 2개 (단일 + 다중 backend) → **다중 예시 1개로 통합** (다중이 단일의 superset)
+- 3-C (Marketing/Sales/Product) plugin 안내 → **표로 통합** (3 mode × ~15줄 → 표 4줄)
+- 3-D (Infra 모드) 추가 (이전엔 누락된 안내)
+
+### Step 6 압축 (162 → 25줄)
+- 4 mode 의 5 기둥 상태 출력 패턴 동일 → **1 공통 템플릿** + 모드별 추가 안내 표
+- 단일/모노레포/Marketing-Sales/Product 각자 ~40줄 × 4 → 공통 15줄 + 표 5줄
+
+### 정보 손실 0
+- 5 기둥 상태, plugin 필수성, 모드별 추가 명령 모두 보존
+- 반복되는 boilerplate 만 제거
+
+### 측정 — /init 호출 시 토큰
+- `/init` 호출 시마다 Claude 가 본문 read (on-invoke)
+- 636 → 387줄 = ~250줄 × 2.5 토큰/줄 ≈ **600 토큰 절감/호출**
+- 자주 호출되는 entry point 라 누적 효과 큼
+
+### Changed
+
+- `.claude/commands/init.md`: 636 → 387줄 (-39%)
+- 버전 배지 1.39.0 → 1.40.0 (한국어 + 영문 README + plugin.json)
+
+### 의식적 배제
+- **3-B 모노레포의 schema 규칙 단축** — name 추출 규칙 + Service 식별자 정의는 정보 밀도 높음. 유지.
+- **3-C plugin 설치 명령 전체 복사** → 표로 통합. 8개 pm-* 모두 명시 안 하고 1줄 약식 (toolkit / product-discovery / ...).
+- **다른 commands 동시 압축** — new.md (626줄), plan.md (390줄) 도 비대하지만 한 PR 에 묶으면 위험. 별도 PR 후속.
+
+이유: critical fix 외 token-audit 시리즈 라운드 4. v1.30.0 (agent description) → v1.31.0 (templates) → v1.32.0 (settings data) → v1.33.0 (settings behavior) → **v1.40.0 (commands body, init.md 우선)**. 자주 호출되는 entry point 부터.
+
+---
+
 ## [1.39.0] - 2026-05-14
 
 ### Added (Maintainer 가드 — orphan + mapping CI)
