@@ -181,189 +181,71 @@ bash .claude/scripts/init-cleanup.sh kotlin --apply
 
 ## Step 3 — 하네스 파일 설치
 
-> 🔒 **CLAUDE.md ≤ 300줄 캡 (모든 모드 공통)** — 설치하거나 병합한 모든 CLAUDE.md (루트, 역할별 sub-CLAUDE.md 포함) 의 줄 수를 검사합니다. 300줄을 넘으면 초과분을 `.claude/skills/{topic}.md` 또는 `docs/{topic}.md` 로 이관하고 CLAUDE.md 에는 ``상세: `.claude/skills/{topic}.md`` 한 줄로 인덱스만 남깁니다. 사용자에게 이관 결과를 보고하고 확인을 받습니다.
+> 🔒 **CLAUDE.md ≤ 300줄 캡 (모든 모드 공통)** — 설치/병합한 모든 CLAUDE.md 의 줄 수 검사. 초과 시 상세를 `.claude/skills/{topic}.md` 또는 `docs/{topic}.md` 로 이관, CLAUDE.md 는 인덱스 한 줄. (post-edit-lint.sh 가 자동 가드)
 
-### 3-A. 단일 스택 모드
+**공통 패턴 — 모든 모드**:
+1. **CLAUDE.md 설치** — 신규: `cp .claude/templates/CLAUDE.{mode}.md ./CLAUDE.md` · 기존: "아키텍처 규칙", "MUST", "NEVER" 섹션만 병합 (덮어쓰기 전 사용자 확인). 첫 줄 `[프로젝트명]` 교체.
+2. **settings.json 설치** — 신규: `cp .claude/templates/settings.{mode}.json ./.claude/settings.json` · 기존: `hooks` + `permissions` 만 템플릿으로 업데이트, `enabledPlugins` 는 기존 유지.
 
-#### 3-A-1. CLAUDE.md (루트)
+### 3-A. 단일 스택 모드 — 추가 동작 없음
 
-**신규 프로젝트** (CLAUDE.md 없음):
-```bash
-cp .claude/templates/CLAUDE.{stack}.md ./CLAUDE.md
-```
+`.claude/stacks.json` 생성 안 함. `pre-push.sh` 가 루트 감지 폴백.
 
-**기존 프로젝트**: 기존 파일에 템플릿의 "아키텍처 규칙", "반드시 지켜야 할 규칙", "절대 하면 안 되는 것" 섹션을 병합. 덮어쓰기 전 사용자 확인.
-
-사용자에게 프로젝트명을 물어 `CLAUDE.md` 첫 줄의 `[프로젝트명]` 을 교체.
-
-#### 3-A-2. settings.json
-
-**신규**:
-```bash
-cp .claude/templates/settings.{stack}.json ./.claude/settings.json
-```
-
-**기존**: `hooks` + `permissions` 만 템플릿으로 업데이트. `enabledPlugins` 등 기존 설정 유지.
-
-> `.claude/stacks.json` 은 단일 스택 모드에선 **생성하지 않습니다.** `pre-push.sh` 는 자동으로 루트 감지 폴백으로 동작합니다.
-
----
-
-### 3-B. 모노레포 모드
+### 3-B. 모노레포 모드 — `.claude/stacks.json` + 역할별 CLAUDE.md
 
 #### 3-B-1. `.claude/stacks.json` 생성 (단일 진실의 원천)
 
-감지 결과로 `.claude/stacks.json` 을 작성합니다. **동일 role 이 여러 개 있어도 됩니다** (`name` 으로 구분).
-
-**단일 스택 예시** (기존 호환):
-```json
-{
-  "mode": "monorepo",
-  "stacks": [
-    { "role": "backend",  "type": "kotlin-multi", "path": "backend" },
-    { "role": "frontend", "type": "nextjs",       "path": "web" },
-    { "role": "mobile",   "type": "flutter",      "path": "app" }
-  ]
-}
-```
-
-**다중 backend 예시** (신규):
 ```json
 {
   "mode": "monorepo",
   "stacks": [
     { "role": "backend",  "name": "auth", "type": "kotlin-multi", "path": "backend-auth" },
     { "role": "backend",  "name": "ml",   "type": "python",       "path": "backend-ml" },
-    { "role": "frontend", "type": "nextjs", "path": "web" }
+    { "role": "frontend", "type": "nextjs", "path": "web" },
+    { "role": "mobile",   "type": "flutter", "path": "app" }
   ]
 }
 ```
 
-**스키마 규칙:**
-- `role` — 표준 이름 (`backend`/`frontend`/`mobile`) — 별칭 디렉토리를 써도 이 값은 표준
-- `name` — **optional** (role 이 유일할 때 생략 가능). 동일 role 이 2개 이상이면 **필수**. 충돌 금지
-- `type` — 실제 감지된 스택 타입
-- `path` — 실제 발견된 디렉토리명
+**스키마**:
+- `role` — `backend` / `frontend` / `mobile` (표준 이름, 디렉토리 별칭과 무관)
+- `name` — **optional** (role 유일 시 생략, 2개 이상이면 필수). 충돌 금지.
+- `type` / `path` — 감지된 스택 타입 / 실제 디렉토리
 
-**name 자동 추출 규칙:**
-- 디렉토리명이 `backend`, `api`, `server`, `frontend`, `web`, `client`, `mobile`, `app` 같은 기본 별칭이면 → `name` 생략
-- 디렉토리명이 `backend-auth`, `web-admin` 처럼 suffix 가 있으면 → suffix 가 `name`
-- 사용자가 감지 결과를 확인할 때 수정 가능
+**name 추출**: 기본 별칭(`backend`/`api`/`server`/`frontend`/`web`/`client`/`mobile`/`app`) → 생략 · suffix(`backend-auth`) → suffix 가 name.
 
-이 파일은 `/new`, `/start`, `/plan`, `.claude/hooks/pre-push.sh`, `settings.monorepo.json` hooks 가 모두 읽습니다.
+**Service 식별자**: `name` 있으면 `role:name` (예: `backend:auth`), 없으면 `role` (예: `frontend`). `/new`, `/start`, `/plan`, `pre-push.sh`, `settings.monorepo.json` hooks 모두 이 파일 참조.
 
-**Service 식별자 (통칭 `service-id`)**:
-- `name` 있으면 → `role:name` (예: `backend:auth`, `backend:ml`)
-- `name` 없으면 → `role` 그대로 (예: `backend`, `frontend`)
+#### 3-B-2. 루트 CLAUDE.md — `cp .claude/templates/CLAUDE.monorepo.md ./CLAUDE.md`
+플레이스홀더 (`[프로젝트명]`, `[{role}-path]`, `[{role}-stack]`) 를 stacks.json 값으로 치환. 감지 안 된 역할의 행은 표에서 제거.
 
-#### 3-B-2. 루트 CLAUDE.md (인덱스)
+#### 3-B-3. 역할별 CLAUDE.md — 각 stack 마다 `cp templates/CLAUDE.{type}.md ./{path}/CLAUDE.md`
+첫 줄 `[프로젝트명]` 교체 + 역할명 추가 → `# MyApp / backend — Kotlin Spring Boot`. 기존 파일 있으면 덮어쓰기 전 확인.
 
-```bash
-cp .claude/templates/CLAUDE.monorepo.md ./CLAUDE.md
-```
+#### 3-B-4. 루트 settings.json — `cp templates/settings.monorepo.json ./.claude/settings.json`
+**감지된 스택에 없는 도구 권한 제거**:
+- kotlin 없음 → `Bash(./gradlew *)`, `Bash(./mvnw *)`
+- go 없음 → `Bash(go *)`
+- python 없음 → `Bash(uv *)`, `Bash(python *)`, `Bash(pytest *)`, `Bash(ruff *)`, `Bash(mypy *)`, `Bash(alembic *)`, `Bash(uvicorn *)`
+- frontend 없음 → `Bash(npm *)`, `Bash(node *)`
+- mobile 없음 → `Bash(flutter *)`, `Bash(dart *)`
 
-템플릿의 플레이스홀더를 실제 값으로 치환:
-- `[프로젝트명]` → 사용자 입력
-- `[backend-path]`, `[backend-stack]` → stacks.json 값
-- `[frontend-path]`, `[frontend-stack]` → 동일
-- `[mobile-path]`, `[mobile-stack]` → 동일
-- 감지 안 된 역할의 행은 표에서 **제거**
+`enabledPlugins` 도 미사용 plugin (kotlin-lsp 등) 제거. **하위 디렉토리에 별도 `.claude/` 만들지 않음** (루트 1개만 유효).
 
-#### 3-B-3. 역할별 CLAUDE.md (하위 디렉토리)
+### 3-C. Marketing / Sales / Product 모드 — 코드 없음
 
-각 역할에 대해:
+`.claude/stacks.json` 생성 안 함 (코드 빌드/테스트 의미 없음). settings 의 `pre-push.sh` · `post-edit-lint.sh` · `Stop` 훅 없음 (`safety-guard.sh` · `session-start.sh` · `usage-counter.sh` 만).
 
-```bash
-cp .claude/templates/CLAUDE.{type}.md ./{path}/CLAUDE.md
-```
+**필수 plugin 설치 안내** (Step 6 완료 메시지에 자동 포함):
 
-예:
-```bash
-cp .claude/templates/CLAUDE.kotlin-multi.md ./backend/CLAUDE.md
-cp .claude/templates/CLAUDE.nextjs.md       ./web/CLAUDE.md
-cp .claude/templates/CLAUDE.flutter.md      ./app/CLAUDE.md
-```
+| 모드 | 필수 plugin |
+|------|------------|
+| marketing / sales | `/plugin install marketing-skills@marketingskills` |
+| product | `/plugin marketplace add phuryn/pm-skills` + 8개 `pm-*` (toolkit / product-discovery / product-strategy / execution / go-to-market / market-research / data-analytics / marketing-growth) · 선택적으로 marketing-skills |
 
-각 하위 CLAUDE.md 첫 줄 `[프로젝트명]` 도 교체하고, 프로젝트명 뒤에 역할명 추가:
-> `# MyApp / backend — Kotlin Spring Boot (Gradle Multi-Module)`
+### 3-D. Infra 모드 — Terraform/K8s/Helm
 
-**기존 CLAUDE.md 가 하위 디렉토리에 이미 있는 경우**: 덮어쓰기 전 확인, 병합은 단일 스택 모드와 동일 규칙.
-
-#### 3-B-4. 루트 settings.json (병합 템플릿)
-
-```bash
-cp .claude/templates/settings.monorepo.json ./.claude/settings.json
-```
-
-감지된 스택에 따라 `permissions.allow` 를 **실제 필요한 것만** 남기도록 후처리:
-- backend(kotlin/kotlin-multi) 없음 → `Bash(./gradlew *)`, `Bash(./mvnw *)` 제거
-- backend(go/go-multi) 없음 → `Bash(go *)` 제거
-- backend(python/python-multi) 없음 → `Bash(uv *)`, `Bash(uvx *)`, `Bash(python *)`, `Bash(pytest *)`, `Bash(ruff *)`, `Bash(mypy *)`, `Bash(alembic *)`, `Bash(uvicorn *)` 제거
-- frontend 없음 → `Bash(npm *)`, `Bash(npx *)`, `Bash(node *)` 제거
-- mobile 없음 → `Bash(flutter *)`, `Bash(dart *)` 제거
-
-`enabledPlugins` 도 필요 없는 플러그인 (예: kotlin-lsp when no kotlin) 제거.
-
-`.claude/settings.json` 은 **루트 1개만** 유효. 하위 디렉토리에 별도 `.claude/` 를 만들지 않습니다.
-
----
-
-### 3-C. Marketing / Sales / Product 모드
-
-코드 스택이 없는 **문서 전담 프로젝트**입니다. `.claude/stacks.json` 은 **생성하지 않습니다** (코드 빌드/테스트 훅이 의미 없음).
-
-#### 3-C-1. CLAUDE.md (루트)
-
-**신규 프로젝트** (CLAUDE.md 없음):
-```bash
-cp .claude/templates/CLAUDE.marketing.md ./CLAUDE.md   # marketing 모드
-cp .claude/templates/CLAUDE.sales.md     ./CLAUDE.md   # sales 모드
-cp .claude/templates/CLAUDE.product.md   ./CLAUDE.md   # product 모드
-```
-
-**기존 프로젝트**: 기존 파일에 템플릿의 "필수 플러그인", "디렉토리 구조", "MUST", "NEVER" 섹션을 병합. 덮어쓰기 전 사용자 확인.
-
-사용자에게 프로젝트명을 물어 `CLAUDE.md` 첫 줄의 `[프로젝트명]` 을 교체.
-
-#### 3-C-2. settings.json
-
-**신규**:
-```bash
-cp .claude/templates/settings.marketing.json ./.claude/settings.json   # marketing 모드
-cp .claude/templates/settings.sales.json     ./.claude/settings.json   # sales 모드
-cp .claude/templates/settings.product.json   ./.claude/settings.json   # product 모드
-```
-
-**기존**: `hooks` + `permissions` + `enabledPlugins` 를 템플릿으로 덮어쓰기. 다른 기존 `enabledPlugins` 는 유지 가능.
-
-> **코드 빌드/테스트 훅 없음**: 이 3개 모드의 settings 에는 `pre-push.sh` · `post-edit-lint.sh` · `Stop` 훅이 없습니다. `safety-guard.sh` · `session-start.sh` 만 유지.
-
-#### 3-C-3. 플러그인 가용성 확인
-
-각 모드별 필수 플러그인이 설치돼 있지 않으면 관련 커맨드·스킬이 동작하지 않습니다.
-
-**Step 6 완료 메시지에 모드별로 반드시 포함**:
-
-- **marketing / sales 모드**:
-  ```
-  ⚠️ marketing-skills 플러그인 필요 — 아직 설치되지 않았다면:
-      /plugin install marketing-skills@marketingskills
-  ```
-
-- **product 모드** (pm-skills 마켓플레이스 8개 플러그인 전부 필요):
-  ```
-  ⚠️ pm-skills 마켓플레이스 + 8개 플러그인 필요 — 아직 설치되지 않았다면:
-      /plugin marketplace add phuryn/pm-skills
-      /plugin install pm-toolkit@pm-skills
-      /plugin install pm-product-discovery@pm-skills
-      /plugin install pm-product-strategy@pm-skills
-      /plugin install pm-execution@pm-skills
-      /plugin install pm-go-to-market@pm-skills
-      /plugin install pm-market-research@pm-skills
-      /plugin install pm-data-analytics@pm-skills
-      /plugin install pm-marketing-growth@pm-skills
-  (선택) /plugin install marketing-skills@marketingskills
-  ```
+`.claude/stacks.json` 생성 안 함. `pre-push.sh` 의 lint 명령은 stack 무관 (terraform fmt 등).
 
 ---
 
@@ -474,163 +356,32 @@ GitHub 브랜치 보호 안내:
 
 ## Step 6 — 완료 메시지
 
-### 단일 스택 모드
-
+**모든 모드 공통 출력**:
 ```
 ✅ 프로젝트 하네스 구성 완료
+프로젝트: [이름]   모드: [선택 스택]   제거된 파일: N개
 
-프로젝트: [이름]
-스택: [선택 스택]
-제거된 파일: N개
+[5 기둥]
+  1. 컨텍스트:    CLAUDE.md ✅              (monorepo: + 역할별 CLAUDE.md)
+  2. CI/CD 게이트: settings.json hooks ✅    (코드 모드만 lint/test, marketing/sales/product 는 safety+session)
+  3. 도구 경계:   settings.json permissions ✅
+  4. 피드백 루프: /rule ✅
+  5. 팀 지식:    memory/MEMORY.md ✅
+[Git] main+dev 또는 main only · .worktrees/ gitignore 등록 · monorepo: .claude/stacks.json 매니페스트
 
-[하네스 기둥 상태]
-  기둥 1 (컨텍스트):     CLAUDE.md ✅
-  기둥 2 (CI/CD 게이트): .claude/settings.json hooks ✅
-  기둥 3 (도구 경계):    .claude/settings.json permissions ✅
-  기둥 4 (피드백 루프):  /rule 커맨드 ✅
-  기둥 5 (팀 지식):      memory/MEMORY.md ✅
-
-[Git 브랜치 & Worktree]
-  main + dev 또는 main only
-  dev 브랜치: 생성됨 / 사용 안 함
-  .worktrees/: gitignore 등록됨
-
-남은 agents: [목록]
-남은 commands: [목록]
-
-이제 할 일:
-  1. CLAUDE.md 를 열고 프로젝트에 맞게 커스터마이징
-  2. GitHub 브랜치 보호 규칙 설정 (main·dev 또는 main만)
-  3. /start <기능>               → 신규 기능 한 번에 시작 (worktree + PRD + 자동 구현)
-  4. /plan <기능>                → 설계만 (worktree 없이 PRD + 역할 프롬프트)
-  5. /plan <기능> --light        → 가벼운 단일 변경 계획
-  6. AI 실수 시 /rule            → 규칙 추가
-  7. 중요한 결정·교훈은 /memory add
-
-[멀티 모듈 스택 추가]
-  8. /new module <모듈명>        → 새 서브모듈/패키지/서비스
+이제 할 일 (공통):
+  1. CLAUDE.md 커스터마이징
+  2. /start <기능>             # worktree + PRD + 자동 구현 (모노레포는 병렬)
+  3. /plan <기능>              # 설계만, --light 가벼운 변경, --gtm 전략 문서
+  4. AI 실수 시 /rule, 중요 결정은 /memory add
 ```
 
-### Marketing / Sales 모드
+**모드별 추가 안내 (필요 시만 출력)**:
 
-```
-✅ 프로젝트 하네스 구성 완료 ([marketing|sales] 모드)
-
-프로젝트: [이름]
-모드:    [marketing | sales] — 코드 없음
-제거된 파일: N개
-
-[하네스 기둥 상태]
-  기둥 1 (컨텍스트):     CLAUDE.md ✅
-  기둥 2 (CI/CD 게이트): .claude/settings.json hooks (safety-guard + session-start) ✅
-  기둥 3 (도구 경계):    .claude/settings.json permissions (git · gh · 파일 작업만) ✅
-  기둥 4 (피드백 루프):  /rule 커맨드 ✅
-  기둥 5 (팀 지식):      memory/MEMORY.md ✅
-
-[Git 브랜치 & Worktree]
-  main + dev 또는 main only
-  .worktrees/: gitignore 등록됨
-
-남은 agents: code-reviewer, planner, gtm-planner
-핵심 커맨드: /start, /plan, /marketing, /memory, /commit, /pr, /merge, /rule
-
-⚠️ marketing-skills 플러그인 필요 — 아직 설치되지 않았다면:
-    /plugin install marketing-skills@marketingskills
-
-이제 할 일:
-  1. CLAUDE.md 를 열고 프로젝트에 맞게 커스터마이징
-  2. (권장) /marketing context         → product-marketing-context 생성
-  3. /new worktree {type-name}         → 첫 작업 브랜치
-  4. /plan <기능> [--marketing|--sales|--gtm]  → PRD + 전략 문서 생성
-  5. /marketing <카테고리>             → 스킬 기반 작업 (copywriting / seo-audit / cold-email ...)
-  6. 중요한 결정·캠페인 결과는 /memory add
-```
-
-### Product 모드
-
-```
-✅ 프로젝트 하네스 구성 완료 (product 모드)
-
-프로젝트: [이름]
-모드:    product — 코드 없음, Product Management 전담
-제거된 파일: N개
-
-[하네스 기둥 상태]
-  기둥 1 (컨텍스트):     CLAUDE.md (pm-skills 기반) ✅
-  기둥 2 (CI/CD 게이트): .claude/settings.json hooks (safety-guard + session-start) ✅
-  기둥 3 (도구 경계):    .claude/settings.json permissions (git · gh · 파일 작업만) ✅
-  기둥 4 (피드백 루프):  /rule 커맨드 ✅
-  기둥 5 (팀 지식):      memory/MEMORY.md ✅
-
-[Git 브랜치 & Worktree]
-  main + dev 또는 main only
-  .worktrees/: gitignore 등록됨
-
-남은 agents: code-reviewer, planner, gtm-planner
-핵심 커맨드: /discover, /strategy, /write-prd, /plan-launch, /north-star,
-            /start, /plan, /marketing, /memory, /commit, /pr, /merge, /rule
-
-⚠️ pm-skills 마켓플레이스 + 8개 플러그인 필요 — 아직 설치되지 않았다면:
-    /plugin marketplace add phuryn/pm-skills
-    /plugin install pm-toolkit@pm-skills
-    /plugin install pm-product-discovery@pm-skills
-    /plugin install pm-product-strategy@pm-skills
-    /plugin install pm-execution@pm-skills
-    /plugin install pm-go-to-market@pm-skills
-    /plugin install pm-market-research@pm-skills
-    /plugin install pm-data-analytics@pm-skills
-    /plugin install pm-marketing-growth@pm-skills
-(선택) /plugin install marketing-skills@marketingskills
-
-이제 할 일:
-  1. CLAUDE.md 를 열고 프로젝트·팀에 맞게 커스터마이징
-  2. /new worktree {type-name}              → 첫 작업 브랜치
-  3. /discover                              → 제품 발견 (아이디어 → 가정 → 실험)
-  4. /strategy                              → 전략 수립 (포지셔닝·차별점)
-  5. /write-prd <기능>                      → PRD 작성 (docs/prd/)
-  6. /plan-okrs                             → OKR 계획 (docs/okrs/)
-  7. /plan-launch <기능>                    → 런치 플랜 (docs/launch/)
-  8. /plan <기능> --gtm                     → PRD + 마케팅 + 세일즈 통합
-  9. 리서치 인사이트·실패한 가설은 /memory add
-```
-
-### 모노레포 모드
-
-```
-✅ 모노레포 하네스 구성 완료
-
-프로젝트: [이름]
-모드:    monorepo
-스택:
-  - backend  → [path] ([type])
-  - frontend → [path] ([type])
-  - mobile   → [path] ([type])
-
-제거된 파일: N개
-
-[하네스 기둥 상태]
-  기둥 1 (컨텍스트):     루트 CLAUDE.md + 역할별 CLAUDE.md ✅
-  기둥 2 (CI/CD 게이트): .claude/settings.json hooks (경로 가드) ✅
-  기둥 3 (도구 경계):    .claude/settings.json permissions ✅
-  기둥 4 (피드백 루프):  /rule 커맨드 ✅
-  기둥 5 (팀 지식):      memory/MEMORY.md ✅
-  매니페스트:            .claude/stacks.json ✅
-
-[Git 브랜치 & Worktree]
-  .worktrees/: gitignore 등록됨
-
-남은 agents: [유니온 목록]
-남은 templates: [유니온 목록]
-
-이제 할 일:
-  1. 각 역할 CLAUDE.md 를 프로젝트 맞게 커스터마이징
-  2. GitHub 브랜치 보호 규칙 설정
-  3. /start <기능>              → 신규 기능 한 번에 시작 (worktree + PRD + 자동 병렬 구현)
-  4. /plan <기능>               → 설계만 (PRD + 역할별 프롬프트 3세트)
-                                  (--teams 로 활성 스택 agent 병렬 실행)
-  5. /new backend api <Resource>    → backend 스캐폴딩 (개별)
-     /new frontend component <Name> → frontend 컴포넌트
-     /new mobile screen <Name>      → mobile 화면
-  6. /plan backend <기능>       → 역할 prefix 로 구현 설계
-  7. git push — 활성 스택 모두 커버리지 검증
-```
+| 모드 | 추가 출력 |
+|------|----------|
+| 단일 코드 스택 | `/new <Resource>` 스캐폴딩 · 멀티 모듈은 `/new module <name>` |
+| 모노레포 | `/new {backend\|frontend\|mobile} <sub> <Name>` 역할 prefix · `/plan {role} <기능>` · `git push` 시 활성 스택 모두 커버리지 |
+| `marketing` / `sales` | ⚠️ `/plugin install marketing-skills@marketingskills` 필요 · `/marketing context` 권장 · `/marketing <카테고리>` 작업 |
+| `product` | ⚠️ `/plugin marketplace add phuryn/pm-skills` + 8개 `pm-*` 설치 필요 · `/discover`/`/strategy`/`/write-prd`/`/plan-okrs`/`/plan-launch`/`/north-star` 사용 |
+| `infra` | `/start` 로 Terraform/K8s/Helm 작업 · `terraform plan` / `kubectl --dry-run=server` / `helm lint` 검증

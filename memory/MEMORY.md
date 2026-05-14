@@ -6,6 +6,78 @@
 
 ---
 
+## 2026-05-14: v1.40.0 — Token audit 라운드 4 (commands/init.md 압축)
+
+**카테고리:** 결정
+
+### 배경
+22 릴리스 동안 자주 호출되는 `/init` 본문 점검 0회. 측정 결과 636줄로 비대.
+
+분석:
+- Step 3 (하네스 설치): 213줄 — 4 mode 반복 cp 명령
+- Step 6 (완료 메시지): 162줄 — 4 mode 반복 5 기둥 + 이제 할 일
+- 4 mode 반복이 60% 차지
+
+### 결정
+
+**4 mode 반복을 공통 패턴 + 모드별 차이 표로 통합**:
+
+**Step 3 (213 → 55줄, -74%)**:
+- 공통 2 step ("CLAUDE.md 설치" + "settings.json 설치") + 모드별 추가
+- stacks.json 다중 backend 예시 1개로 통합 (단일의 superset)
+- Marketing/Sales/Product plugin 안내 → 표 4줄
+- Infra 모드 추가 (이전 누락)
+
+**Step 6 (162 → 25줄, -85%)**:
+- 4 mode 의 5 기둥 출력 → 공통 템플릿 + 모드별 표
+
+### 핵심 정책 결정
+
+**1. 표로 통합 vs 인라인 case**
+- 표가 더 압축적 + scan 가능
+- Claude 가 표 읽고 모드별 분기 추론 — 잘 동작
+
+**2. 정보 손실 0 보장**
+- 핵심 정보 (5 기둥, plugin 필수성, 추가 명령) 모두 보존
+- boilerplate (반복 출력 패턴) 만 제거
+
+**3. 다른 commands 같이 압축 X**
+- new.md (626줄), plan.md (390줄) 도 비대
+- 한 PR 에 너무 많은 변경 위험 → 별도 후속
+
+### 측정 — /init 호출 시 절감
+- 매 호출 ~250줄 × 2.5 토큰/줄 ≈ 600 토큰 절감
+- /init 는 새 프로젝트 setup 의 entry point — 누적 효과 명확
+
+### 의식적 배제
+
+- **3-B schema 단축** — name 추출 규칙은 정보 밀도 높음. 유지.
+- **8 pm-* plugin 명령 일일이 명시** — 약식 (toolkit / product-discovery / ...) 으로 표 한 줄
+- **new.md / plan.md 동시 압축** — 별도 PR
+
+### 변경 파일
+```
+.claude/commands/init.md           # 636 → 387 (-39%)
+.claude-plugin/plugin.json         # 1.39.0 → 1.40.0
+README.md / README.en.md           # 배지
+CHANGELOG.md, VERSION              # 1.39.0 → 1.40.0
+```
+
+### Token-audit 시리즈 정리 (v1.30~v1.40)
+| 버전 | 영역 |
+|------|------|
+| v1.30.0 | agents description (frontmatter) |
+| v1.31.0 | templates/CLAUDE.md (≤120 cap) |
+| v1.32.0 | settings data (plugin/allow/deny) |
+| v1.33.0 | settings behavior (hooks) |
+| **v1.40.0** | **commands/init.md body (자주 호출되는 entry point)** |
+
+다음 후보:
+- commands/new.md (626줄) 압축
+- commands/plan.md (390줄) 압축
+
+---
+
 ## 2026-05-14: v1.39.0 — Orphan + mapping CI 가드 (mcp-presets 재발 자동 catch)
 
 **카테고리:** 결정
