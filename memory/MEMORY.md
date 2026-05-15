@@ -6,6 +6,74 @@
 
 ---
 
+## 2026-05-15: v1.41.0 — Token audit 라운드 5 (commands/new.md 압축)
+
+**카테고리:** 결정
+
+### 배경
+v1.40.0 (init.md 압축) 후속. /new 도 자주 호출되는 entry point. 626줄 측정.
+
+분석:
+- api 섹션 120줄 = 3 stack (Go / Spring / Python) 각자 핵심 파일 + 주의사항 반복
+- module 섹션 71줄 = 4 stack 매니페스트 등록 절차 반복
+- 두 섹션이 30% 차지
+
+### 결정
+
+**Stack 반복 → 표 통합 + agent 위임**:
+
+**api 섹션 (120 → 60, -50%)**:
+- 스택별 핵심 파일 + 어노테이션 1 표
+- "상세 코드 패턴은 stack-generator agent + patterns.md" 위임 명시
+- 중복 제거: "swag godoc 필수" 같은 규칙은 generator agent 본문에 이미 있음
+
+**module 섹션 (71 → 40, -44%)**:
+- 타입 감지 + 디렉토리 패턴 + 매니페스트 등록 1 표
+- stack 별 핵심 규칙 4줄씩
+
+### 핵심 정책 결정
+
+**1. 정보 위임 vs 직접 명시**
+- /new 는 디스패처 — agent 호출 명령
+- 코드 패턴 상세는 agent 본문 + skills/{stack}-patterns.md 에 이미 있음
+- 명시적 위임 ("상세 코드 패턴은 ... 에 정의") + new.md 는 high-level 워크플로만
+
+**2. worktree / 서브명령 결정 섹션 보존**
+- worktree 120줄 — git 명령 시퀀스 + 브랜치 네이밍 규칙. 정보 밀도 높음
+- 서브명령 결정 113줄 — 5 step 인수 패턴. 단순화 시 분기 모호
+- 두 섹션은 디스패처의 핵심 책임 → 유지
+
+### 의식적 배제
+
+- **worktree / 서브명령 결정 단축** — 정보 밀도 vs 압축
+- **plan.md 동시 압축** — 적정 크기 (390), 우선순위 낮음
+
+### 변경 파일
+```
+.claude/commands/new.md            # 626 → 510 (-19%)
+.claude-plugin/plugin.json         # 1.40.0 → 1.41.0
+README.md / README.en.md           # 배지
+CHANGELOG.md, VERSION              # 1.40.0 → 1.41.0
+```
+
+### Token-audit 시리즈 정리 (v1.30~v1.41)
+| 버전 | 영역 | 절감 |
+|------|------|------|
+| v1.30.0 | agents description | ~70자/세션 |
+| v1.31.0 | templates/CLAUDE.md cap | ~250 토큰/세션 (product 만) |
+| v1.32.0 | settings data | (maintainer 가드) |
+| v1.33.0 | settings hooks | (maintainer 가드) |
+| v1.40.0 | commands/init.md | ~620 토큰/호출 |
+| **v1.41.0** | **commands/new.md** | **~290 토큰/호출** |
+
+다음 후보 (낮은 우선순위):
+- skills/github-actions-patterns.md (1174줄) — on-invoke
+- agents/ai-tester.md, security-reviewer.md (200~285줄) — on-invoke
+
+자주 호출되는 entry point 압축 사이클 사실상 완료. 다음 audit 는 on-invoke 만 남음 (낮은 우선순위).
+
+---
+
 ## 2026-05-14: v1.40.0 — Token audit 라운드 4 (commands/init.md 압축)
 
 **카테고리:** 결정
