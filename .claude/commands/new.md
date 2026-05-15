@@ -155,121 +155,40 @@ prefix 를 소비하고 나머지 인자로 Step 1 부터 진행 (예: `/new bac
 
 ## `api` — REST API 스캐폴딩
 
-> 💡 DB 스키마부터 설계하려면 `/plan db <도메인>` 을 먼저 실행하세요. Migration SQL을 먼저 만들고 이 커맨드로 Entity/Repository 코드를 생성하면 일관성이 보장됩니다.
+> 💡 DB 스키마부터면 `/plan db <도메인>` 먼저 → Migration 생성 후 이 커맨드.
 
 **리소스명**: 두 번째 토큰 (없으면 사용자에게 물어보세요)
 
 ### 스택 자동 감지
 
-| 감지 파일 | 스택 | 섹션 |
-|-----------|------|------|
-| `go.mod` | Go Gin | [Go Gin](#api--go-gin) |
-| `settings.gradle.kts` / `build.gradle.kts` / `build.gradle` | Spring Boot | [Spring Boot](#api--spring-boot) |
-| `pyproject.toml` (`fastapi` 의존성) | Python FastAPI | [Python FastAPI](#api--python-fastapi) |
-| 위 파일 없음 | — | 사용자에게 스택 선택 요청 |
+| 감지 파일 | 스택 | Generator agent | 상세 패턴 |
+|-----------|------|----------------|----------|
+| `go.mod` | Go Gin | `go-generator` | `.claude/skills/go-patterns.md` |
+| `settings.gradle.kts` / `build.gradle.kts` / `pom.xml` | Spring Boot | `kotlin-generator` | `.claude/skills/kotlin-patterns.md` |
+| `pyproject.toml` (`fastapi`) | Python FastAPI | `python-generator` | `.claude/skills/python-patterns.md` |
+| 위 파일 없음 | — | 사용자에게 스택 선택 요청 | — |
 
-### api — Go Gin
+**워크플로**: stack-generator agent 호출 → agent 가 patterns.md 읽고 stack 별 파일 생성. 각 generator agent 의 본문에 핵심 규칙 명시되어 있음 (constructor injection, transactional boundary, async/await 등).
 
-**프로젝트 구조 감지**: `go.work` 존재 시 멀티 서비스 → 어느 서비스에 추가할지 물어봅니다. 선택 디렉토리를 루트로 삼아 단일 서비스 구조 그대로 적용. 공유 도메인은 `pkg/shared/` 배치.
+### 스택별 핵심 생성 파일
 
-**생성할 파일**:
+| 스택 | 핵심 7~9 파일 | 필수 어노테이션 / 패턴 |
+|------|--------------|---------------------|
+| **Go Gin** | `internal/{domain,repository,usecase,handler}/{resource}*.go` + `db/query/{resource}.sql` (sqlc) + `migrations/{N}_create_{resources}_table.{up,down}.sql` + 3 테스트 | swag godoc (`@Summary` `@Tags` `@Router` `@Success` `@Failure`) · `domain/` 외부 import 금지 · sqlc 강제 (raw SQL 금지) |
+| **Spring Boot** | Entity (`domain/`) + Repository QueryDSL 3세트 (`infrastructure/`) + 3 DTOs (`presentation/dto/`) + Service (`application/`) + Controller (`presentation/`) + 2 테스트 | `@Entity` + `@CreationTimestamp` · QueryDSL `*Repository` + `*RepositoryCustom` + `*RepositoryImpl` 3세트 · SpringDoc `@Tag`/`@Operation`/`@Schema` 필수 · 멀티 모듈은 `:domain`/`:infra`/`:api` 분리 |
+| **Python FastAPI** | Model (`models/`) + Schemas (`schemas/`) + Repository (`repositories/`) + Service (`services/`) + Router (`routers/`) + DI deps (`core/deps.py`) + Alembic + 3 테스트 | SQLAlchemy 2.0 (`Mapped[T]` + `mapped_column`) · Pydantic v2 (`@field_validator`, `ConfigDict`) · 모든 함수 `async def` · `services/` 에 `HTTPException` import 금지 (커스텀 예외 → router 변환) · `alembic revision --autogenerate` 후 수동 검토 |
 
-1. **Domain Entity + Errors**
-   - `internal/domain/{resource}.go` — Entity struct
-   - `internal/domain/errors.go` — 없으면 생성
+**모노레포/멀티 감지**:
+- Go: `go.work` → 멀티 서비스, 어느 서비스 물어봄. 공유는 `pkg/shared/`
+- Kotlin: `settings.gradle.kts` 의 `include(` → 멀티 모듈
+- Python: `[tool.uv.workspace]` → 멀티, 어느 service. 공유는 `packages/shared/`
 
-2. **Repository Interface**
-   - `internal/domain/{resource}_repository.go` — CRUD 인터페이스
+**생성 후 안내**:
+- Go: `mockery --name={Resource}Repository --dir=internal/domain --output=mocks` · `sqlc generate` · `swag init -g cmd/main.go -o docs`
+- Spring: 기존 `GlobalExceptionHandler` 패턴 따라 예외 던지기 안내
+- Python: `uv run alembic revision --autogenerate -m "..."` → 검토 → `upgrade head` · `uv run ruff check . && uv run mypy .`
 
-3. **Repository Implementation (GORM + sqlc)**
-   - `internal/repository/{resource}_repository.go` — 단순 CRUD는 GORM, 조건 검색·페이징은 sqlc `*sqlcdb.Queries`
-   - `db/query/{resource}.sql` — sqlc 쿼리
-
-4. **UseCase**
-   - `internal/usecase/{resource}_usecase.go` — 비즈니스 로직 + Request/SearchParams DTO
-
-5. **Handler + Response DTO** (swag 주석 필수)
-   - `internal/handler/{resource}_handler.go` — `@Summary`, `@Tags`, `@Router`, `@Success`, `@Failure` godoc, `RegisterRoutes` 포함
-   - `internal/handler/{resource}_response.go` — `example:"..."` json 태그, 없으면 `ErrorResponse` 생성
-
-6. **Migration**
-   - `migrations/{nextNum:06d}_create_{resources}_table.up.sql`
-   - `migrations/{nextNum:06d}_create_{resources}_table.down.sql`
-
-7. **테스트**
-   - `internal/usecase/{resource}_usecase_test.go` — mockery
-   - `internal/handler/{resource}_handler_test.go` — httptest
-   - `testutil/{resource}_fixture.go` — 없으면 생성
-
-**주의사항 (Go Gin)**:
-- `domain/` 패키지는 외부 import 금지 — 순수 Go 인터페이스만
-- 기존 에러 응답 형식·middleware 방식 먼저 파악하고 따르기
-- `cmd/main.go`의 DI 조립에 신규 의존성 연결 방법 안내
-- 조건 검색·페이징은 sqlc — raw SQL 문자열 금지
-- Handler 메서드 swag godoc 필수
-- 생성 후 안내: `mockery --name={Resource}Repository --dir=internal/domain --output=mocks` / `sqlc generate` / `swag init -g cmd/main.go -o docs`
-
-### api — Spring Boot
-
-**프로젝트 구조 감지**: `settings.gradle.kts`에 `include(`가 있으면 멀티 모듈.
-
-| 파일 | 단일 모듈 | 멀티 모듈 |
-|------|----------|-----------|
-| Entity, VO | `domain/` | `:domain` → `domain/src/main/kotlin/.../domain/` |
-| Service | `application/` | `:domain` → `domain/src/main/kotlin/.../application/` |
-| Repository (interface) | `domain/` | `:domain` → `domain/src/main/kotlin/.../domain/` |
-| Repository (impl) | `infrastructure/` | `:infra` → `infra/src/main/kotlin/.../infrastructure/` |
-| Controller, DTO | `presentation/` | `:api` → `api/src/main/kotlin/.../presentation/` |
-| 테스트 | 각 모듈 `src/test/kotlin/` | 동일 |
-
-**생성할 파일**:
-
-1. **Domain Entity** — `domain/{Resource}.kt`, JPA `@Entity`, `@CreationTimestamp`/`@UpdateTimestamp`
-2. **Repository (QueryDSL 3세트 필수)**
-   - `infrastructure/{Resource}Repository.kt` — `JpaRepository` + Custom 상속
-   - `infrastructure/{Resource}RepositoryCustom.kt` — 동적 쿼리 인터페이스
-   - `infrastructure/{Resource}RepositoryImpl.kt` — `JPAQueryFactory` 구현체
-   - `infrastructure/{Resource}SearchCondition.kt` — 검색 조건 DTO
-3. **DTOs (Schema 필수)**
-   - `presentation/dto/{Resource}Response.kt` — `@Schema` + companion `from()`
-   - `presentation/dto/Create{Resource}Request.kt` — `@Schema` + Bean Validation
-   - `presentation/dto/Update{Resource}Request.kt` — `@Schema` + Bean Validation
-4. **Service** — `application/{Resource}Service.kt`, `@Service`, `@Transactional(readOnly = true)`, CRUD 메서드, `EntityNotFoundException`
-5. **Controller (SpringDoc 필수)** — `presentation/{Resource}Controller.kt`, `@Tag`, `@RestController`, `@RequestMapping("/api/v1/{resources}")`, `@Operation`+`@ApiResponse`, `@Parameter`, `ResponseEntity`+`@Valid`
-6. **테스트**
-   - `test/.../application/{Resource}ServiceTest.kt` — MockK
-   - `test/.../presentation/{Resource}ControllerTest.kt` — `@WebMvcTest`
-
-**주의사항 (Spring Boot)**: 기존 패턴(패키지, 예외, 응답 형태) 먼저 파악. `GlobalExceptionHandler` 있으면 맞춰 예외 던지기. Kotlin 관용 표현 사용. QueryDSL 3세트, SpringDoc 어노테이션, `@Schema` 필수.
-
-### api — Python FastAPI
-
-**프로젝트 구조 감지**: `pyproject.toml` 에 `[tool.uv.workspace]` 가 있으면 멀티 워크스페이스 → 어느 서비스(`services/api` 등)에 추가할지 물어봅니다. 선택 디렉토리를 루트로 삼아 단일 서비스 구조 그대로 적용. 공유 타입은 `packages/shared/src/shared/` 에 배치.
-
-**생성할 파일** (`python-generator` 가 처리):
-
-1. **SQLAlchemy Model** — `app/models/{resource}.py` — `Mapped[...]` + `mapped_column(...)`
-2. **Pydantic Schemas** — `app/schemas/{resource}.py` — `{Resource}Create`, `{Resource}Update`, `{Resource}Response`, `ErrorResponse` (없으면)
-3. **Repository** — `app/repositories/{resource}.py` — `AsyncSession` 주입, `select(...)` + `.scalar_one_or_none()` / `.scalars().all()`
-4. **Service** — `app/services/{resource}.py` — 비즈니스 로직, 커스텀 예외 (`NotFoundError` 등) 전파
-5. **Router** — `app/routers/{resources}.py` — `APIRouter(prefix="/api/v1/{resources}", tags=["{resources}"])`, `response_model`, `responses`, `Path`/`Query` 검증
-6. **DI Deps** — `app/core/deps.py` 에 `get_{resource}_repository` + `get_{resource}_service` 추가, `{Resource}ServiceDep` Annotated 타입 export
-7. **Exceptions** — `app/exceptions.py` 에 `NotFoundError` 등 없으면 생성
-8. **Alembic Migration** — `uv run alembic revision --autogenerate -m "create_{resources}_table"` 안내 후 생성 파일 수동 검토 필수
-9. **테스트**
-   - `tests/services/test_{resource}_service.py` — `AsyncMock(spec=Repository)`
-   - `tests/routers/test_{resource}_router.py` — `httpx.AsyncClient` + `app.dependency_overrides`
-   - `tests/fixtures/{resource}.py` — Factory (없으면 생성)
-
-**주의사항 (Python FastAPI)**:
-- `models/` 에 비즈니스 로직 추가 금지 — Service 에만
-- `services/` 에서 `HTTPException` / `fastapi.*` import 금지 — 커스텀 예외로 전파, Router 또는 `@app.exception_handler` 에서 변환
-- Pydantic v1 스타일 (`@validator`, 내부 `Config`) 금지 — `@field_validator`, `model_config = ConfigDict(...)` 만
-- SQLAlchemy 2.0 스타일만 — `Mapped[T]` + `mapped_column(...)`, `select(...).where(...)` async API
-- 모든 Service·Repository·Router 함수는 `async def` — sync 혼용 금지
-- `app/main.py` 의 `app.include_router(...)` 에 신규 라우터 등록 안내
-- 생성 후 안내: `uv run alembic revision --autogenerate -m "..."` → 생성 파일 검토 → `uv run alembic upgrade head`
-- 생성된 코드는 `uv run ruff check .` + `uv run mypy .` 통과 기준
+> **상세 코드 패턴** (Entity 작성법, Service transactional, Router decorators 등) 은 모두 stack-generator agent 본문 + `.claude/skills/{stack}-patterns.md` 에 정의. 이 커맨드는 agent 디스패치만.
 
 ---
 
@@ -349,70 +268,35 @@ lib/features/{feature_name}/
 
 **인수**: `<moduleName>` (없으면 사용자에게 물어보세요)
 
-### 타입 감지
+### 타입 자동 감지 + 등록 위치
 
-| 감지 조건 | 타입 |
-|----------|------|
-| `go.work` | Go Workspace |
-| `pyproject.toml` + `[tool.uv.workspace]` | Python uv Workspace |
-| `turbo.json` | Next.js Turborepo |
-| `settings.gradle.kts`에 `include(` | Kotlin 멀티 모듈 |
+| 감지 조건 | 타입 | 디렉토리 패턴 | 매니페스트 등록 |
+|----------|------|--------------|---------------|
+| `settings.gradle.kts` + `include(` | Kotlin 멀티 모듈 | `{moduleName}/{build.gradle.kts, src/main/kotlin/, src/main/resources/, src/test/kotlin/}` | `settings.gradle.kts` 의 `include(...)` |
+| `turbo.json` | Next.js Turborepo | `apps/` (독립 배포) 또는 `packages/` (공유) — 사용자에게 물어봄 | 루트 `package.json` workspaces (이미 `apps/*` `packages/*` 등록됐으면 자동) |
+| `go.work` | Go Workspace | `services/{moduleName}/{go.mod, cmd/main.go, internal/{domain,usecase,repository,handler,middleware}/, migrations/, db/{query,sqlc}/, mocks/, testutil/}` | `go.work` 의 `use ./services/{moduleName}` + `go work sync` |
+| `pyproject.toml` + `[tool.uv.workspace]` | Python uv Workspace | `services/` (FastAPI 서비스) 또는 `packages/` (공유 라이브러리) — 사용자에게 물어봄 | 루트 `pyproject.toml` 의 `[tool.uv.workspace].members` + (packages 일 때) `[tool.uv.sources]` + `uv sync` |
 
-감지된 타입을 사용자에게 확인받습니다.
+### Kotlin 핵심 규칙
+- `build.gradle.kts` 의존성: 순수 로직 → `:domain`, 외부 연동 → `:domain` + 외부 lib, API → `:domain` + `:infra`
+- 패키지 (`com.{company}.{project}`) 는 기존 모듈 참고
+- 사용 시: `implementation(project(":{moduleName}"))` + `./gradlew :{moduleName}:build`
 
-### module — Kotlin 멀티 모듈
+### Next.js Turborepo 핵심
+- **apps/** 구조: `apps/{moduleName}/{package.json, tsconfig.json, src/{app,components,hooks,lib,stores,types}/}`
+- **packages/** 구조: `packages/{moduleName}/{package.json, tsconfig.json, src/index.ts}`
+- `package.json` 표준: `name: "@project/{moduleName}"`, `exports: { ".": "./src/index.ts" }`, `scripts: { lint, test, build }`, `devDependencies: { "@project/config": "*" }`
+- 사용 시: 다른 모듈의 `dependencies` 에 `"@project/{moduleName}": "*"` + `npm install` · 빌드 `turbo run build --filter=@project/{moduleName}`
 
-1. **디렉토리 구조**: `{moduleName}/build.gradle.kts`, `src/main/kotlin/com/{company}/{project}/`, `src/main/resources/`, `src/test/kotlin/...` — 패키지는 기존 모듈 참고
-2. **build.gradle.kts**: 용도별 의존성 확인 (순수 로직→`:domain`, 외부 연동→`:domain`+외부 lib, API→`:domain`+`:infra`)
-3. **settings.gradle.kts 업데이트**: `include(":api", ":domain", ":infra", ":{moduleName}")`
-4. **완료 안내**: 파일 목록, 사용 시 `implementation(project(":{moduleName}"))` 추가, `./gradlew :{moduleName}:build` 빌드 확인
+### Go Workspace 핵심
+- `go.mod`: `module github.com/{org}/{project}/services/{moduleName}` + `require github.com/{org}/{project}/pkg/shared v0.0.0`
+- `cmd/main.go`: log + DI 조립 골격
+- 공유 도메인은 `pkg/shared/`, lint 는 각 서비스 디렉토리 (`golangci-lint run ./...`, workspace root 미지원)
 
-### module — Next.js (Turborepo)
-
-사용자에게 묻습니다: `apps/` (독립 배포 앱) vs `packages/` (공유 라이브러리)
-
-**apps/** 선택: `apps/{moduleName}/{package.json, tsconfig.json, src/{app,components,hooks,lib,stores,types}/}`
-
-**packages/** 선택: `packages/{moduleName}/{package.json, tsconfig.json, src/index.ts}`
-
-**package.json**:
-```json
-{
-  "name": "@project/{moduleName}",
-  "version": "0.0.1",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "lint": "eslint src/", "test": "jest", "build": "tsc" },
-  "devDependencies": { "@project/config": "*" }
-}
-```
-
-루트 `package.json`의 `workspaces`가 `"apps/*"`, `"packages/*"`로 등록되어 있으면 추가 작업 불필요. 사용 시 `"@project/{moduleName}": "*"` + `npm install`, 빌드 확인은 `turbo run build --filter=@project/{moduleName}`.
-
-### module — Go Workspace
-
-1. **디렉토리 구조**: `services/{moduleName}/{go.mod, cmd/main.go, internal/{domain,usecase,repository,handler,middleware}/, migrations/, db/{query,sqlc}/, mocks/, testutil/}`
-2. **go.mod**: 기존 서비스 모듈 경로 패턴 확인 — `module github.com/{org}/{project}/services/{moduleName}`, `require github.com/{org}/{project}/pkg/shared v0.0.0`
-3. **cmd/main.go**: 기본 골격 (log + DI 조립 자리)
-4. **go.work 업데이트**: `use` 디렉티브에 `./services/{moduleName}` 추가
-5. **`go work sync`** 실행
-6. **완료 안내**: 파일 목록, 공유 도메인은 `pkg/shared/`, `cd services/{moduleName} && go build ./...` 빌드, `golangci-lint run ./...`는 각 서비스 디렉토리에서 실행 (workspace root 미지원)
-
-### module — Python uv Workspace
-
-사용자에게 묻습니다: `services/` (FastAPI 서비스 / 워커) vs `packages/` (공유 라이브러리)
-
-**services/** 선택:
-1. **디렉토리 구조**: `services/{moduleName}/{pyproject.toml, app/{main.py, core/, db/, models/, schemas/, repositories/, services/, routers/, exceptions.py}, alembic/, tests/}`
-2. **pyproject.toml**: 기존 서비스 참고 — `[project] name = "{moduleName}"`, `dependencies = ["shared", "fastapi>=0.115", ...]`
-3. **루트 pyproject.toml 업데이트**: `[tool.uv.workspace].members` 배열에 `"services/{moduleName}"` 추가
-
-**packages/** 선택:
-1. **디렉토리 구조**: `packages/{moduleName}/{pyproject.toml, src/{moduleName}/__init__.py}`
-2. **pyproject.toml**: `[project] name = "{moduleName}"` + `[build-system] requires = ["hatchling"]` + `[tool.hatch.build.targets.wheel] packages = ["src/{moduleName}"]`
-3. **루트 pyproject.toml 업데이트**: `members` + `[tool.uv.sources]` 에 `{moduleName} = { workspace = true }` 추가
-
-4. **`uv sync`** 실행 — 락파일 재생성
-5. **완료 안내**: 파일 목록, 사용 시 다른 멤버의 `pyproject.toml` `dependencies` 에 `"{moduleName}"` 추가 → `uv sync`, 실행은 `uv run --directory services/{moduleName} ...`
+### Python uv Workspace 핵심
+- **services/** 구조: `app/{main.py, core/, db/, models/, schemas/, repositories/, services/, routers/, exceptions.py}` + `alembic/` + `tests/`
+- **packages/** 구조: `src/{moduleName}/__init__.py` + `pyproject.toml` 에 `[build-system] requires = ["hatchling"]` + `[tool.hatch.build.targets.wheel].packages`
+- 사용 시: 다른 멤버의 `dependencies` 에 `"{moduleName}"` 추가 → `uv sync` · 실행 `uv run --directory services/{moduleName} ...`
 
 ---
 

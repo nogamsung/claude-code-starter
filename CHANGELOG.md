@@ -12,6 +12,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.41.0] - 2026-05-15
+
+### Changed (Token audit — `commands/new.md` 626 → 510줄, -19%)
+
+v1.40.0 (init.md) 후속 — 자주 호출되는 `/new` 본문 점검.
+
+### `api` 섹션 압축 (120 → 60줄, -50%)
+**Before**: 3 stack (Go / Spring Boot / Python FastAPI) 각자 9~10개 파일 + 주의사항 7~8줄 각자 나열.
+**After**:
+- 스택 자동 감지 표에 generator agent + patterns.md 매핑 추가
+- **스택별 핵심 파일 + 어노테이션을 표 1개로 통합**
+- 모노레포/멀티 감지 4줄
+- 생성 후 안내 3 stack 그룹화
+- 핵심 메시지: "상세 코드 패턴은 stack-generator agent 본문 + skills/{stack}-patterns.md 에 정의. 이 커맨드는 agent 디스패치만." — 중복 제거.
+
+### `module` 섹션 압축 (71 → 40줄, -44%)
+**Before**: 4 stack (Kotlin / Next.js / Go / Python) 각자 디렉토리 구조 + 매니페스트 등록 + package.json 예시 등.
+**After**:
+- 타입 자동 감지 + 디렉토리 패턴 + 매니페스트 등록 명령을 **표 1개로**
+- stack 별 핵심 규칙만 4줄씩
+
+### 정보 손실 0
+- 디렉토리 구조, 매니페스트 등록, 사용 명령 모두 보존
+- 중복된 "디렉토리 구조: ..." 패턴만 제거
+
+### 측정
+- `/new api Order` 호출 시 본문 read: ~626 → ~510줄
+- ~290 토큰 절감/호출
+- /new 도 자주 호출되는 entry point
+
+### Changed
+
+- `.claude/commands/new.md`: 626 → 510줄 (-19%)
+- 버전 배지 1.40.0 → 1.41.0
+
+### 의식적 배제
+- **worktree 섹션 (120줄)** — git 명령 시퀀스 + 네이밍 규칙. 정보 밀도 높음. 유지.
+- **서브명령 결정 (113줄)** — 5 step 의 인수 패턴 결정 로직. 단순화 시 분기 모호. 유지.
+- **plan.md (390줄)** — 적정 크기. 다음 audit 후순위.
+
+이유: token-audit 시리즈 라운드 5. 자주 호출되는 entry point (init / new / start / plan) 중 대상 우선. v1.40.0 (init) → **v1.41.0 (new)**.
+
+---
+
 ## [1.40.0] - 2026-05-14
 
 ### Changed (Token audit — `commands/init.md` 636 → 387줄, -39%)
