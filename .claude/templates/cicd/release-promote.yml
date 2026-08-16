@@ -1,0 +1,142 @@
+name: release — promote :latest-dev → version + :latest-prd
+
+# dev → main 머지 시 (= 실제 버전업 + 실서버 배포):
+#   1. next-version.sh 로 SemVer 다음 버전 계산 (머지 메시지의 release:<level> override 가능)
+#   2. dev 에서 검증된 :latest-dev 이미지 digest 를 재빌드 없이 re-tag → :X.Y.Z + :latest-prd
+#      ("테스트한 것 == 배포되는 것" 보장)
+#   3. git tag vX.Y.Z + GitHub Release 생성
+#
+# 설치 위치: .github/workflows/release-promote.yml
+# 의존: .github/scripts/next-version.sh
+# 필요 권한: repo Settings → Actions → Workflow permissions = Read and write
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write   # tag + release
+  packages: write   # ghcr re-tag
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version (SemVer)
+        id: ver
+        env:
+          HEAD_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          # 머지 메시지에 release:major|minor|patch 있으면 자동 판정 override
+          BUMP=""
+          case "$HEAD_MSG" in
+            *release:major*) BUMP="major" ;;
+            *release:minor*) BUMP="minor" ;;
+            *release:patch*) BUMP="patch" ;;
+          esac
+          NEXT=$(BUMP="$BUMP" bash .github/scripts/next-version.sh)
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEXT"  >> "$GITHUB_OUTPUT"
+          echo "✅ next version = v$NEXT  (bump=${BUMP:-auto})"
+
+      - name: Tag 중복 가드
+        id: check
+        run: |
+          if git rev-parse "${{ steps.ver.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ ${{ steps.ver.outputs.tag }} 이미 존재 — skip"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/login-action@v3
+        if: steps.check.outputs.exists == 'false'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: latest-dev 존재 확인
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          set -euo pipefail
+          if ! docker buildx imagetools inspect "${IMAGE}:latest-dev" >/dev/null 2>&1; then
+            echo "❌ ${IMAGE}:latest-dev 가 없습니다. dev-ci.yml 가 먼저 실행되어야 합니다."
+            exit 1
+          fi
+
+      - name: Promote — latest-dev digest 를 :version + :latest-prd 로 re-tag (재빌드 없음)
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            -t "${IMAGE}:${{ steps.ver.outputs.next }}" \
+            -t "${IMAGE}:latest-prd" \
+            "${IMAGE}:latest-dev"
+          echo "✅ 승격 완료: ${IMAGE}:${{ steps.ver.outputs.next }} + :latest-prd"
+
+      - name: git tag + push
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.ver.outputs.tag }}" -m "Release ${{ steps.ver.outputs.tag }}"
+          git push origin "${{ steps.ver.outputs.tag }}"
+
+      - name: Release notes (CHANGELOG 섹션 또는 커밋 로그)
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          set -euo pipefail
+          VER="${{ steps.ver.outputs.next }}"
+          if [ -f CHANGELOG.md ] && grep -q "\[$VER\]" CHANGELOG.md; then
+            awk -v ver="$VER" '
+              /^## \[/ { if ($0 ~ "\\[" ver "\\]") {f=1; next} else if (f) exit }
+              /^---[[:space:]]*$/ { if (f) exit }
+              f { print }
+            ' CHANGELOG.md > .notes.md
+          else
+            PREV=$(git tag --list 'v[0-9]*' --sort=-v:refname | sed -n '2p' || echo "")
+            if [ -n "$PREV" ]; then
+              git log --pretty='- %s (%h)' "${PREV}..${{ steps.ver.outputs.tag }}" > .notes.md
+            else
+              git log --pretty='- %s (%h)' "${{ steps.ver.outputs.tag }}" > .notes.md
+            fi
+          fi
+          [ -s .notes.md ] || echo "Release v$VER" > .notes.md
+
+      - name: GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          body_path: .notes.md
+          make_latest: true
+
+  # --- 옵션: 실서버 배포 ---
+  # latest-prd 가 갱신된 뒤 실제 배포를 트리거하는 자리. 환경에 맞게 주석 해제.
+  # deploy:
+  #   needs: promote
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Deploy latest-prd
+  #       run: |
+  #         # 예) Kubernetes:
+  #         #   kubectl set image deployment/app app=ghcr.io/${{ github.repository }}:latest-prd
+  #         #   kubectl rollout status deployment/app
+  #         # 예) self-hosted docker compose:
+  #         #   docker compose pull && docker compose up -d
+  #         echo "TODO: 실서버 배포 명령"

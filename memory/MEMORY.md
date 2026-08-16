@@ -6,6 +6,45 @@
 
 ---
 
+## 2026-06-04: v1.42.0 — dev→main 버전 사이클 + ghcr Docker 이미지 CI 템플릿
+
+**카테고리:** 결정
+
+### 배경
+사용자가 "버전업은 dev→main 머지 시 지정, 그 버전을 git tag·GitHub Release·ghcr 패키지에 모두 기록,
+해당 버전 태그 이미지 + `latest-prd` 동시 갱신, `latest-dev` 는 dev 머지마다 갱신, latest-dev→latest-prd
+승격이 곧 버전업+실서버 배포, dev 머지마다 second brain 갱신" 을 요청.
+
+이 repo 는 앱·Dockerfile·dev 브랜치가 없는 파일 라이브러리 → 사이클을 직접 실행하지 않고
+**사용자 프로젝트용 재사용 템플릿**으로 제공하기로 결정 (사용자 확인).
+
+### 결정 (설계 분기 — 사용자 확정)
+- **버전 소스 = git 태그 기반** (VERSION 파일 main 커밋 없음). conventional commits 로 다음 SemVer 자동 계산.
+  → CI 가 파일을 main 에 되커밋할 필요가 없어 무한루프 회피.
+- **메모리 갱신 = CI 결정론적 append** (PR 번호·제목·작성자·날짜·이미지 태그). Claude Code Action 미채택 → API 키 불필요.
+- **레지스트리 = ghcr.io** (`GITHUB_TOKEN` `packages: write`, 외부 시크릿 없음).
+- **승격 = `docker buildx imagetools create`** 로 `latest-dev` digest 를 `:X.Y.Z`+`:latest-prd` 로 re-tag.
+  재빌드 안 함 → "dev 에서 테스트한 바이트 == 프로덕션".
+
+### 구현 메모
+- 신규 디렉토리 `.claude/templates/cicd/` (dev-ci.yml, release-promote.yml, next-version.sh, Dockerfile.example, README.md).
+- **`init-cleanup.sh` 무수정으로 자동 보존**: `calc_removals_templates` 가 `[ -f "$f" ]` 로 파일만 제거 → 디렉토리는 skip.
+  install-matrix 의 template 제거 count(예: kotlin 29) 도 불변 → CI 안전. orphan/mapping lint 는 skills/agents·top-level 파일만 검사.
+- `init.md` Step 5(main+dev) 에 옵션 설치 단계 추가.
+- 검증: next-version.sh 단위(0.1.0/patch/minor/major/BREAKING) 통과, actionlint clean, cleanup count 불변, --apply 후 cicd 생존.
+
+### 주의 (README 에 문서화)
+- `dev-ci.yml` 의 memory 잡이 `dev` 에 직접 push → dev 브랜치 보호가 "PR 필수" 면 봇 커밋 거부될 수 있음. status-check-only 권장 or 메모리 잡 제거.
+- Workflow permissions = Read and write 필요.
+
+### 변경 파일
+.claude/templates/cicd/{dev-ci.yml,release-promote.yml,next-version.sh,Dockerfile.example,README.md}  # 신규
+.claude/commands/init.md      # Step 5 옵션 설치
+CLAUDE.md                     # 버전 관리 인덱스 + auto-tag.yml 파일명 정정
+VERSION / plugin.json         # 1.41.0 → 1.42.0
+
+---
+
 ## 2026-05-15: v1.41.0 — Token audit 라운드 5 (commands/new.md 압축)
 
 **카테고리:** 결정

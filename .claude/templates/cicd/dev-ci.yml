@@ -1,0 +1,98 @@
+name: dev CI — build :latest-dev + second brain log
+
+# feature/* → dev 머지마다:
+#   1. Docker 이미지 빌드 → ghcr 의 :latest-dev + :dev-<sha> (immutable 추적용)
+#   2. second brain (memory/MEMORY.md) 에 머지 기록 결정론적 append
+#
+# 설치 위치: .github/workflows/dev-ci.yml
+# 필요 권한: repo Settings → Actions → Workflow permissions = Read and write
+
+on:
+  push:
+    branches: [dev]
+    paths-ignore:
+      - 'memory/**'   # 메모리 자동 커밋이 워크플로를 재트리거하지 않도록
+
+permissions:
+  contents: write   # 메모리 커밋 push
+  packages: write   # ghcr push
+
+concurrency:
+  group: dev-ci-${{ github.ref }}
+  cancel-in-progress: false   # 메모리 커밋이 중간에 잘리지 않게
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push :latest-dev + :dev-<sha>
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest-dev
+            ${{ env.IMAGE }}:dev-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  memory:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Append dev-merge record to second brain
+        env:
+          HEAD_SUBJECT: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          DATE=$(date +%Y-%m-%d)
+          SHORT=$(git rev-parse --short HEAD)
+          AUTHOR=$(git log -1 --format='%an')
+          # 머지/스쿼시 커밋 메시지 첫 줄에서 PR 번호 추출
+          SUBJECT=$(printf '%s' "$HEAD_SUBJECT" | head -1)
+          PR=$(printf '%s' "$SUBJECT" | grep -oE '#[0-9]+' | head -1 || true)
+
+          mkdir -p memory
+          [ -f memory/MEMORY.md ] || printf '# Second Brain\n' > memory/MEMORY.md
+
+          {
+            printf '\n## %s: dev 머지 — %s\n\n' "$DATE" "$SUBJECT"
+            printf '**카테고리:** 참고\n\n'
+            printf -- '- **PR:** %s\n' "${PR:-(none)}"
+            printf -- '- **커밋:** %s\n' "$SHORT"
+            printf -- '- **작성자:** %s\n' "$AUTHOR"
+            printf -- '- **이미지:** %s:dev-%s  (= :latest-dev)\n' "$IMAGE" "$GITHUB_SHA"
+            printf '\n---\n'
+          } >> memory/MEMORY.md
+
+      - name: Commit memory ([skip ci])
+        run: |
+          set -euo pipefail
+          if git diff --quiet memory/MEMORY.md; then
+            echo "ℹ️ memory 변경 없음 — skip"; exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add memory/MEMORY.md
+          git commit -m "docs(memory): dev 머지 기록 [skip ci]"
+          # dev 가 그 사이 진행됐을 수 있으니 rebase 후 push
+          git pull --rebase origin dev || true
+          git push origin dev

@@ -72,8 +72,9 @@ memory/MEMORY.md         # 스타터 개발 second brain
 
 ## 버전 관리
 - `VERSION` 파일이 단일 진실
-- `main` 에 VERSION 변경 커밋 push → GitHub Actions 가 자동 태그·릴리스 (`.github/workflows/release.yml`)
+- `main` 에 VERSION 변경 커밋 push → GitHub Actions 가 자동 태그·릴리스 (`.github/workflows/auto-tag.yml`)
 - `CHANGELOG.md` 에 변경사항 먼저 기록 → VERSION 업데이트 → commit
+- 사용자 프로젝트용 dev→main + ghcr Docker 사이클 템플릿: `.claude/templates/cicd/README.md`
 
 ## 기여 가이드
 1. 변경은 `feature/`, `fix/`, `chore/` 브랜치에서

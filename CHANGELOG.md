@@ -12,6 +12,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.42.0] - 2026-06-04
+
+### Added — dev→main 버전 사이클 + ghcr Docker 이미지 CI 템플릿
+
+사용자 프로젝트에 배포되는 재사용 CI/CD 템플릿 신설. `feature/* → dev → main` 흐름으로
+SemVer 를 git tag · GitHub Release · GitHub Packages(ghcr) 에 한 번에 기록하고,
+dev 에서 검증한 이미지를 **재빌드 없이 승격**해 프로덕션에 배포한다.
+
+**신규 `.claude/templates/cicd/`** (디렉토리 — `/init` cleanup 시 자동 보존):
+- `dev-ci.yml` — push:dev → ghcr `:latest-dev` + `:dev-<sha>` 빌드·push + `memory/MEMORY.md` 머지 기록 결정론적 append (`[skip ci]`)
+- `release-promote.yml` — push:main → SemVer 계산 → `latest-dev` digest 를 `:X.Y.Z` + `:latest-prd` 로 re-tag(재빌드 X) → git tag + GitHub Release
+- `next-version.sh` — 마지막 `v*` 태그 + conventional commits 로 다음 SemVer 계산 (`feat!`/BREAKING→major, `feat`→minor, 그 외→patch, `BUMP`/`release:<level>` override)
+- `Dockerfile.example` — 멀티스테이지 placeholder
+- `README.md` — 사이클·버전 규칙·셋업(권한·브랜치 보호)·검증 가이드
+
+**`.claude/commands/init.md`** — Step 5 (main+dev 전략) 에 "Docker 배포 사이클 설치?" 옵션 추가.
+
+**`CLAUDE.md`** — 버전 관리 섹션에 템플릿 인덱스 1줄 + 잘못된 워크플로 파일명(`release.yml` → `auto-tag.yml`) 정정.
+
+> 핵심: `latest-prd` 는 재빌드가 아니라 `latest-dev` digest 의 re-tag → "테스트한 것 == 배포되는 것".
+> 버전 소스는 git 태그(파일 커밋 없음 → CI 루프 회피), 메모리는 CI 결정론적 append(API 키 불필요).
+
+---
+
 ## [1.41.0] - 2026-05-15
 
 ### Changed (Token audit — `commands/new.md` 626 → 510줄, -19%)
