@@ -343,6 +343,23 @@ GitHub 브랜치 보호 안내:
 - **main**: PR 필수 + status checks + restrict push
 - **dev**: PR 필수 + status checks
 
+#### 옵션 — Docker 배포 사이클 설치 (main+dev 선택 시만)
+
+사용자에게 질문: "ghcr Docker 이미지 + dev→main 버전 사이클(latest-dev / latest-prd) 을 설치할까요?"
+**예** 선택 시:
+
+```bash
+mkdir -p .github/workflows .github/scripts
+cp .claude/templates/cicd/dev-ci.yml          .github/workflows/dev-ci.yml
+cp .claude/templates/cicd/release-promote.yml .github/workflows/release-promote.yml
+cp .claude/templates/cicd/next-version.sh     .github/scripts/next-version.sh
+chmod +x .github/scripts/next-version.sh
+cp .claude/templates/cicd/Dockerfile.example  Dockerfile   # 사용자가 자기 앱에 맞게 수정
+```
+
+설치 후 안내: repo Settings → Actions → Workflow permissions = **Read and write** 필요.
+사이클·버전 규칙·주의사항 상세는 `.claude/templates/cicd/README.md`.
+
 ### B 선택
 
 `dev` 생성하지 않음. `main` 하나만 사용.
