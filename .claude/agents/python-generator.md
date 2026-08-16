@@ -1,6 +1,6 @@
 ---
 name: python-generator
-model: claude-sonnet-4-6
+model: sonnet
 description: Python FastAPI 신규 코드 — SQLAlchemy Model, Pydantic Schema, Repository, Service, Router, Alembic Migration 생성.
 ---
 

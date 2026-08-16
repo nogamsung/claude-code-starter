@@ -12,6 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.43.0] - 2026-08-16
+
+### Changed — agent 모델 버전 고정 제거 (항상 최신 모델 사용)
+
+26개 agent frontmatter 의 `model:` 이 특정 버전(`claude-sonnet-4-6`, `claude-opus-4-6/4-7`,
+`claude-haiku-4-5-20251001`)에 고정되어 있어 새 모델 출시 때마다 스타터가 구모델을 배포하는 문제.
+전부 티어 별칭으로 교체 — Claude Code 가 해당 티어의 최신 모델로 자동 해석:
+
+- `claude-sonnet-4-6` → `sonnet` (generator/modifier 17개 + code-reviewer, ui-designer 등)
+- `claude-opus-4-6`, `claude-opus-4-7` → `opus` (ai-researcher, api-designer, security-reviewer)
+- `claude-haiku-4-5-20251001` → `haiku` (tester 5개)
+
+`planner`, `gtm-planner` 는 이미 별칭 사용 중이라 변경 없음.
+템플릿·커맨드·settings 에는 고정 모델 ID 없음 확인.
+
+---
+
 ## [1.42.0] - 2026-06-04
 
 ### Added — dev→main 버전 사이클 + ghcr Docker 이미지 CI 템플릿

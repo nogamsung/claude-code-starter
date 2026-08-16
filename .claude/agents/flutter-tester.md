@@ -1,6 +1,6 @@
 ---
 name: flutter-tester
-model: claude-haiku-4-5-20251001
+model: haiku
 description: Flutter 테스트 — Widget(WidgetTester), Riverpod Provider 단위, Repository, Integration 테스트 작성.
 ---
 

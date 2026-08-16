@@ -1,6 +1,6 @@
 ---
 name: flutter-modifier
-model: claude-sonnet-4-6
+model: sonnet
 description: Flutter 기존 코드 수정/리팩토링 전문 에이전트. 기존 Widget에 기능 추가, Provider 상태 변경, 화면 레이아웃 수정, Freezed 모델 필드 추가, 리팩토링 시 사용.
 ---
 

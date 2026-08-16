@@ -1,6 +1,6 @@
 ---
 name: nextjs-tester
-model: claude-haiku-4-5-20251001
+model: haiku
 description: Next.js/React 테스트 — 컴포넌트(RTL), 훅(renderHook), API Route, E2E(Playwright) 작성.
 ---
 
