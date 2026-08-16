@@ -1,6 +1,6 @@
 ---
 name: kotlin-tester
-model: claude-haiku-4-5-20251001
+model: haiku
 description: Kotlin Spring Boot 테스트 — Service(MockK), Controller(@WebMvcTest), Repository(@DataJpaTest), 통합 테스트 작성.
 ---
 

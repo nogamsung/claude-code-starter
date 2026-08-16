@@ -1,6 +1,6 @@
 ---
 name: python-tester
-model: claude-haiku-4-5-20251001
+model: haiku
 description: Python FastAPI 테스트 — Service(AsyncMock), Router(httpx AsyncClient), Repository 통합 테스트 작성.
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: kotlin-generator
-model: claude-sonnet-4-6
+model: sonnet
 description: Kotlin Spring Boot 새 코드 생성 전문 에이전트. 새 Entity, Repository, Service, Controller, DTO, Migration 파일을 처음부터 만들 때 사용.
 ---
 

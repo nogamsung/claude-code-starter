@@ -1,6 +1,6 @@
 ---
 name: ai-generator
-model: claude-sonnet-4-6
+model: sonnet
 description: AI/ML 신규 코드 생성 — LLM 호출 코드, RAG chain, 프롬프트, 임베딩, PyTorch 훈련, HuggingFace 추론, MLflow 실험. FastAPI 서비스에 embedded (python-generator 와 협업).
 ---
 

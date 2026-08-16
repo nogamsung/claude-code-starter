@@ -1,6 +1,6 @@
 ---
 name: ai-tester
-model: claude-sonnet-4-6
+model: sonnet
 description: AI/ML 테스트 — 프롬프트 evaluation, RAG 품질, 모델 정확도, LLM 호출 모킹, pytest 통합. 단위·통합·회귀 테스트.
 ---
 

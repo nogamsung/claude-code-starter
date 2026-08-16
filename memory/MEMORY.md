@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-08-16: v1.43.0 — agent 모델 버전 고정 제거 (티어 별칭)
+
+**카테고리:** 결정
+
+### 배경
+사용자 요청: "agent 들이 항상 최신 클로드 모델을 쓰게 해달라." agent frontmatter 의
+`model:` 이 `claude-sonnet-4-6` 등 특정 버전에 고정 → 새 모델 출시 시 스타터 전체가 구모델 배포.
+
+### 결정
+- **`model:` 은 항상 티어 별칭** (`sonnet` / `opus` / `haiku`) — Claude Code 가 최신 모델로 자동 해석.
+- 26개 agent 일괄 교체. 이후 새 agent 추가 시에도 버전 고정 금지.
+- agent 본문의 Anthropic API 코드 예시(`ai-generator.md` 등)는 사용자 프로젝트 생성 코드라 별개 —
+  이번엔 유지, 필요 시 별도 갱신.
+
+---
+
 ## 2026-06-04: v1.42.0 — dev→main 버전 사이클 + ghcr Docker 이미지 CI 템플릿
 
 **카테고리:** 결정
